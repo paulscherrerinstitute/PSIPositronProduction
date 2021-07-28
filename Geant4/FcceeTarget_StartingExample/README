@@ -1,0 +1,18 @@
+
+1. Please setup Geant4 and 'G4_CMAKE_DIR' (needed in compile.sh). For example, do as what I do:
+
+  > source setup.sh
+
+  (Or setup your own Geant4)
+
+2. Go to run_Injector and compile
+
+  > cd run_Injector
+
+  > ./compile.sh
+
+  (Or create your own Injector/CMakeLists.txt before compile)
+
+3. Run the simulation
+
+  > ./run.sh
