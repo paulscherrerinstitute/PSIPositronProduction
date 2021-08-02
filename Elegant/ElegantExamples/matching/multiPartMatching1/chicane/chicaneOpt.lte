@@ -1,0 +1,24 @@
+B1M1: mark,fitpoint=1
+B1M2: mark,fitpoint=1
+B2M1: mark,fitpoint=1
+B2M2: mark,fitpoint=1
+B3M1: mark,fitpoint=1
+B3M2: mark,fitpoint=1
+B4M1: mark,fitpoint=1
+B4M2: mark,fitpoint=1
+B1: sbend,angle="T1",l="LB T1 * T1 sin /",e1=0,e2="T1",fint=0.288,hgap=0.02
+B2: sbend,angle="T1 chs",l="LB T1 * T1 sin /",e1="T1 chs",e2=0,fint=0.288,hgap=0.02
+B3: sbend,angle="T4 chs",l="LB T4 * T4 sin /",e1=0,e2="T4 chs",fint=0.288,hgap=0.02
+B4: sbend,angle="T4",l="LB T4 * T4 sin /",e1="T4",e2=0,fint=0.288,hgap=0.02
+lq1: drift,l="0.2 lQ -"
+q1: quad,l="lQ"
+lq2: drift,l="0.2 lQ -"
+q2: quad,l="lQ"
+l12: drift,l="L1 T1 cos / 0.2 -"
+l23A: drift,l="L2 2 /"
+l23B: drift,l="L2 4 /"
+L23C: drift,l="L2 4 /"
+l34: drift,l="L3 T4 cos / 0.2 -"
+l4: drift,l=0.76937
+bl: line=(B1M1,B1,B1M2,lq1,q1,l12,B2M1,B2,B2M2,l23a,l23b,l23c,B3M1,B3,B3M2,l34,q2,lq2,B4M1,B4,B4M2,l4)
+

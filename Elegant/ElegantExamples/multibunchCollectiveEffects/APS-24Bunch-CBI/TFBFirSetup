@@ -1,0 +1,110 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)] || [string length $env(OAG_TOP_DIR)]==0} {
+    set env(OAG_TOP_DIR) /usr/local
+}
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+#
+# Set up FIR filter coefficients for transverse feedback.
+# The coefficients assume that the TFBPICKUP element outputs the beam position with no processing or delay.
+# Setting STRENGTH=-1 on the TFBDRIVER element would nominally perform feedback with gain=1
+# M. Borland, 2/2016
+#
+
+set usage {usage: TFBFirSetup -twiss <filename> -pickup <elementName> -driver <elementName> -plane {x|y} -output <filename> -terms <number>(6)}
+set twiss ""
+set pickup ""
+set driver ""
+set plane ""
+set output ""
+set terms 6
+set args $argv
+if {[APSStrictParseArguments {twiss pickup driver plane output terms}] || ![string length twiss] || ![string length pickup] \
+    || ![string length driver] || ![string length $plane] || ![string length $output]} {
+    return -code error "$usage"
+}
+
+if [file exists $output] {
+    return -code error "in use: $output"
+}
+set plane [string tolower $plane]
+if [lsearch -exact [list x y] $plane]==-1 {
+    return -code error "invalid plane: use x or y"
+}
+if {[expr $terms<1] || [expr $terms>15]} {
+    return -code error "terms:[1, 15] not satisfied"
+}
+
+set tmpRoot /tmp/[APSTmpString]
+
+exec sddsprocess $twiss -match=col,ElementName=$pickup -pipe=out -nowarning \
+    | sddsconvert -pipe -retain=column,*$plane -retain=param,nu$plane \
+    -edit=col,*$plane,%/$plane/P/  -rename=parameter,nu$plane=nu \
+    | sddsexpand -pipe=in $tmpRoot.P 
+set check [exec sdds2stream -npages=bare $tmpRoot.P]
+if $check!=1 {
+    file delete $tmpRoot.P
+    puts stderr "Error: $pickup occurs $check times in the lattice. Must be 1."
+    exit 1
+}
+
+exec sddsprocess $twiss -match=col,ElementName=$driver -pipe=out -nowarning \
+    | sddsconvert -pipe -retain=column,*$plane -edit=col,*$plane,%/$plane/D/ \
+    | sddsexpand -pipe=in $tmpRoot.D 
+set check [exec sdds2stream -npages=bare $tmpRoot.D]
+if $check!=1 {
+    file delete $tmpRoot.D
+    puts stderr "Error: $driver occurs $check times in the lattice. Must be 1."
+    exit 1
+}
+
+exec sddssequence -pipe=out -define=k,type=short -sequence=begin=0,end=[expr $terms-1],n=$terms \
+  | sddsxref $tmpRoot.P -pipe -leave=* -transfer=param,beta*,alpha*,psi*,nu \
+  | sddsxref $tmpRoot.D -pipe -leave=* -transfer=param,beta*,alpha*,psi* \
+  | sddsprocess -pipe \
+    "-define=parameter,dphi,psiD psiP - 0 > pop ? : nu + $ " \
+    "-define=col,psik,2 pi * nu * k * dphi +" \
+    "-define=col,Ak,betaP betaD / sqrt psik cos alphaD psik sin * - *" \
+    "-define=col,Bk,betaP betaD * sqrt psik sin * chs" \
+    "-define=col,Ak2,Ak sqr" \
+    "-define=col,AkBk,Ak Bk *" \
+    "-define=col,Bk2,Bk sqr" \
+    | tee $output.akbk \
+    | sddsprocess -pipe -process=Ak*,sum,%sSum -process=Bk*,sum,%sSum \
+    | sddscollapse -pipe \
+    | sddsprocess -pipe \
+    -define=col,r1c1,Ak2Sum -define=col,r1c2,AkBkSum -define=col,r1c3,AkSum \
+    -define=col,r2c1,AkBkSum -define=col,r2c2,Bk2Sum -define=col,r2c3,BkSum \
+    -define=col,r3c1,AkSum -define=col,r3c2,BkSum -define=col,r3c3,$terms \
+    | sddsconvert -pipe -retain=col,r?c? \
+    | sddscollect -pipe -collect=suffix=c1 -collect=suffix=c2 -collect=suffix=c3 \
+    | sddsmatrixop -pipe -invert \
+    | sddsconvert -pipe=in $output.w -edit=col,doubleColumn*,Zni/w/
+
+exec sddsprocess $output.w -pipe=out -clip=1,1 \
+    | sddsexpand -pipe=in $output.w2
+
+exec sddsxref $output.akbk $output.w2 -pipe=out -leave=* -transfer=parameter,w* \
+    | sddsprocess -pipe=in $output.1 \
+    "-define=column,ParameterValue,Ak w0 * Bk w1 * + w2 +" \
+    "-print=column,ElementParameter,A%hd,k" \
+    "-print=column,ElementName,$driver" \
+    -process=ParameterValue,sum,anSum
+
+exec sddssequence -pipe=out -define=index,type=short -sequence=begin=0,end=14,delta=1 \
+    | sddsprocess -pipe=in $output.2 \
+    "-print=column,ElementName,$pickup" \
+    "-print=column,ElementParameter,A%hd,index" \
+    "-define=column,ParameterValue,index 0 == ? 1 : 0 $ " 
+
+exec sddscombine $output.1 $output.2 -merge $output -retain=col,Element*,Parameter*
+
+file delete $output.akbk $output.w2 $tmpRoot.P $tmpRoot.D $output.w $output.1 $output.2
+
+
+

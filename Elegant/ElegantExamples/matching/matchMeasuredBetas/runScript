@@ -1,0 +1,20 @@
+#!/bin/csh
+set nonomatch
+
+# Compute reference beta functions
+elegant run0.ele
+
+# Compute beta functions with errors
+# This is the "measurement"
+elegant run1.ele
+
+# Perform optimization of quads to match "measured" beta functions
+elegant run2.ele
+
+# Compure actual and inferred quad strengths
+
+sddsprintout -col=Element* -col=ParameterValue run1.erl "-title=Actual quadrupole strengths"
+
+sddsprocess run2.param -pipe=out -match=col,ElementParameter=K1 | sddsprintout -pipe=in -col=Element* -col=ParameterValue "-title=Inferred quadrupole strengths"
+
+

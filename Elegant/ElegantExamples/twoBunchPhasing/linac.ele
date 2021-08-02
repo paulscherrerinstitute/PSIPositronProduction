@@ -1,0 +1,19 @@
+&run_setup
+        lattice = lattice.lte
+        use_beamline = bl,
+        p_central_mev = 10
+        output = %s.out
+&end
+
+&run_control
+        n_steps = 2
+        first_is_fiducial = 1
+        reset_rf_for_each_step = 0
+&end
+
+&sdds_beam
+        input = makeBeam.out,
+        track_pages_separately = 1
+&end
+
+&track &end

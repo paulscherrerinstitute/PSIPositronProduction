@@ -1,0 +1,11 @@
+! Find ideal beta functions for matched fodo channel
+
+&run_setup
+        lattice = fodo.lte,
+        p_central_mev = 1e3
+&end
+
+&twiss_output
+        filename = %s.twi
+        matched = 1
+&end

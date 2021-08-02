@@ -1,0 +1,18 @@
+#!/bin/bash  
+
+if [ $# != 1 ] ; then
+    echo "usage: run <#OfCores>"
+    echo "For serial run: 'run 1'"
+    exit 1
+fi
+
+cores=$1
+if [ $cores == 1 ] ; then
+    elegant daTrack.ele
+    elegant lmaTrack.ele
+else
+    mpiexec -np $cores Pelegant daTrack.ele
+    mpiexec -np $cores Pelegant lmaTrack.ele
+    sddssort lmaTrack.mmap -column=s 
+    \rm lmaTrack.mmap~
+fi

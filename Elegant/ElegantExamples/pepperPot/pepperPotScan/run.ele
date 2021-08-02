@@ -1,0 +1,27 @@
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 5
+        output = %s.out
+        final = %s.fin
+&end
+
+&run_control
+        n_indices = 2
+&end
+
+&vary_element name=RC, item=DX, initial=-0.06, final=0.06, index_number=0, index_limit=11 &end
+&vary_element name=RC, item=DY, initial=-0.06, final=0.06, index_number=1, index_limit=11 &end
+
+&bunched_beam
+        n_particles_per_bunch = 10000000
+        one_random_bunch = 1
+        beta_x = 25
+        beta_y = 15
+        emit_x = 5e-5
+        emit_y = 3e-5
+        distribution_type[0] = 2*"gaussian"
+        distribution_cutoff[0] = 2*3
+&end
+
+&track &end
+

@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Get twiss file (supplies tunes)
+elegant run0.ele
+
+# Process to add revolution time
+sddsprocess run0.twi -process=s,max,sMax -define=param,T0,"sMax c_mks /",units=s
+
+# Make drive file with swept frequency around the horizontal tune
+sddssequence -pipe=out -define=Pass,type=long -seq=begin=0,end=1048575,delta=1 \
+  | sddsxref run0.twi -pipe -leave=* -transfer=param,* \
+  | sddsprocess -pipe=in drive.sdds \
+  -define=col,t,"T0 Pass *",units=s \
+  -define=col,tune,"nux 0.01 - Pass 1048576 / .02 * +" \
+  -define=col,xDrive,"Pass tune * 360 * dsin 4e-6 *"
+
+# Display the tune sweep
+sddsfft drive.sdds drive.fft -col=Pass,xDrive
+sddsbreak drive.sdds -pipe=out -rowlimit=65536 \
+| sddsfft -pipe=in drive.fft1 -col=Pass,xDrive
+
+sddsplot -mode=y=norm \
+         -col=f,FFTxDrive drive.fft1 -split=page -graph=line,vary -order=spect \
+         -col=f,FFTxDrive drive.fft 
+
+# Track with excitation of x tune
+elegant run1.ele
+
+# Show x' and delta vs pass
+# Note that delta damps to a non-zero value because the path-length is not exactly
+# the same as the nominal one (since orbit is modulated around the ring
+# due to radiation losses).
+sddsplot -col=Pass,'(Cxp,Cdelta)' run1.w1 -limit=xmax=1e7 -sep=1 -layout=1,2 -join=x
+
+# Look at data in the frequency domain
+sddsbreak run1.w1 -pipe=out -rowlimit=65536 \
+    | sddsfft -pipe=in run1.fft -col=Pass,Cx,Cdelta
+sddsplot -layout=1,2 -join=x -split=page -group=page,names -sep=names -mode=linlog \
+         -column=f,FFTCx run1.fft -same \
+         -column=f,FFTCdelta run1.fft -same
+
+

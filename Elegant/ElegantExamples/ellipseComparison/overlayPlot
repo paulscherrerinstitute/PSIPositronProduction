@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Make 2D histogram of (x, xp) at watch point W1
+sddshist2d run.w1 run.w1.h2d -col=x,xp -xparam=100 -yparam=100
+
+# Find twiss parameters at W1
+sddsprocess run.twi -match=col,ElementName=W1 -pipe=out \
+    | sddsexpand -pipe=in run.twi.W1 
+
+# Find beam emittance from bunch file (different location than W1, in general)
+sddsanalyzebeam run.bun -pipe=out -corrected \
+    | sddsexpand -pipe=in run.bun.ana
+
+#
+# Work in normalized coordinates (u, up), then transform to (x, xp)
+# x  = u sqrt(beta)
+# xp = up sqrt(beta) - alpha/sqrt(beta)*u
+#
+if [[ -e ellipse.sdds ]] ; then
+    \rm ellipse.sdds
+fi
+sddssequence -pipe=out -define=theta -sequence=begin=0,end=1,n=1000 \
+    | sddsxref run.twi.W1 -pipe -leave=* -transfer=param,beta*,alpha* \
+    | sddsxref run.bun.ana -pipe -leave=* -transfer=param,ex,ey \
+    | sddsprocess -pipe=in ellipse.sdds \
+    "-redefine=col,theta,theta 2 * pi *" \
+    "-define=param,Su,ex sqrt" \
+    "-define=param,Sup,Su betax /" \
+    "-define=col,u,theta cos Su *" \
+    "-define=col,up,theta sin Sup *" \
+    "-define=col,x,u betax sqrt *,units=m" \
+    "-define=col,xp,up betax sqrt * alphax betax sqrt / u * -" \
+    "-define=col,x2,x 2 *,units=m" \
+    "-define=col,xp2,xp 2 *" 
+
+sddscontour -shade run.w1.h2d -shape=ellipse.sdds,x,xp -shape=ellipse.sdds,x2,xp2
+

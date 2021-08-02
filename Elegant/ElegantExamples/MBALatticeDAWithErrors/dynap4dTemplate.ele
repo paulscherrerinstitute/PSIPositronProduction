@@ -1,0 +1,50 @@
+! Example of off-momentum DA calculation
+
+&semaphores
+&end
+
+&run_setup
+	lattice =lattice.lte,
+	use_beamline = ringm,
+	p_central_mev = 3000,
+          tracking_updates = 0,
+          random_number_seed = <seed>
+          rootname = <rootname>
+&end
+
+&load_parameters
+        filename = <configuration>.param
+&end
+&rpn_load
+        filename = <oneTurnFile>,
+        tag = ref
+        load_parameters = 1
+&end
+
+&alter_elements name=MALIN, item=DP, value="(<moffset> 10000 /)", alter_at_each_step=1 &end
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=0, alter_at_each_step=1 &end
+
+&run_control
+        n_passes = <turns>
+&end
+
+
+&closed_orbit
+    output = %s.clo,
+    closed_orbit_accuracy = 1e-9,
+    closed_orbit_iterations = 500,
+    iteration_fraction = 0.1
+    fixed_length = 1
+&end
+
+&find_aperture
+        output = %s.aper
+        mode = "n-line",
+        n_lines = <lines>
+        xmax = 0.03
+        ymax = 0.008
+        nx = 100,
+        n_splits = 1
+        split_fraction = 0.1
+&end
+

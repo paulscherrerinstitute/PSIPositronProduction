@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Script to turn ILMATRIX parameter file into a latex table.
+
+if [ ! -e ILMatrix.sdds ] ; then
+   echo "Not found: ILMatrix.sdds"
+   exit 1
+fi
+
+
+sddsprintout ILMatrix.sdds ILMatrixTableInput.tex -column=LatexSymbol,label=Quantity -column=ParameterValue,label=Value,format=%10.3g \
+    -latex=booktab 
+
+pdflatex ILMatrixTable.tex

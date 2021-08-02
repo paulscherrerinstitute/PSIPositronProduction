@@ -1,0 +1,43 @@
+! s-dependent momentum aperture without errors
+
+&run_setup
+    lattice = "parTrack.new",
+    p_central_mev = 375,
+    use_beamline="par",
+    magnets = %s.mag
+&end
+
+&twiss_output
+        filename = %s.twi,
+        matched = 1
+        radiation_integrals = 1
+&end
+
+! put some 8-pole and 10-pole in the dipoles to make things more interesting
+
+&alter_elements name=*, type=CSBEND, item=K3, value=1e2 &end
+&alter_elements name=*, type=CSBEND, item=K4, value=1e3 &end
+
+! put in some x-y coupling to make more interesting
+&alter_elements name=Q1, item=TILT, start_occurence=1, end_occurence=1, value=1e-3 &end
+
+&run_control
+        ! Synchrotron period is 500 turns
+        n_passes = 1000
+&end
+
+&momentum_aperture
+        output = %s.mmap
+        x_initial = 1e-5,
+        y_initial = 1e-5,
+        delta_negative_limit = -0.05,
+        delta_positive_limit = 0.05,
+        delta_step_size = 0.01,
+        steps_back = 1,
+        split_step_divisor = 10,
+        splits = 1,
+        s_start = 0.0,
+        s_end = "(30.6667 2 /)",
+        include_name_pattern = [QSB]*,
+        verbosity = 2
+&end

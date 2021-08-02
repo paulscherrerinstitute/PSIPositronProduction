@@ -1,0 +1,54 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+#
+# This script runs elegant to get the response matrix for a given quad fudge factor
+# 
+#
+set usage {usage: quadUniformRunScript -tagList <string> -valueList <string>}
+set tagList ""
+set valueList ""       
+set args $argv
+if {[APSStrictParseArguments {tagList valueList}] || ![llength $tagList]} {
+    return -code error "$usage"
+}
+
+if [llength $tagList]!=[llength $valueList] {
+    return -code error "tagList and valueList are of different lengths"
+}
+
+#
+# Expect only one tag/value pair: strengthFactor
+#
+
+set knownTagList [list strengthFactor]
+foreach tag $knownTagList {
+    if [lsearch -exact $tagList $tag]==-1 {
+        return -code error "tag $tag not given"
+    }
+}
+foreach value $valueList tag $tagList {
+    if [lsearch -exact $knownTagList $tag]==-1 {
+        return -code error "unknown tag: $tag"
+    }
+    set $tag $value
+}
+
+set lattice standard
+catch {exec elegant ${lattice}_quadUniform.ele -macro=strengthFactor=$strengthFactor} result
+
+# Process the measured response matrices to include the calibration factor to convert
+# from mm/A to m/rad.  Really only need to do this once but it is quick.
+
+set calibration [expr 1/1.93]
+if ![file exists ${lattice}-H.sddscal] {
+    exec sddsprocess ${lattice}-H.sdds ${lattice}-H.sddscal "-redefine=column,%s,%s $calibration *,select=PTB:H*"
+}
+if ![file exists ${lattice}-V.sddscal] {
+    exec sddsprocess ${lattice}-V.sdds ${lattice}-V.sddscal "-redefine=column,%s,%s $calibration *,select=PTB:V*"
+}

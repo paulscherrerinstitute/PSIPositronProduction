@@ -1,0 +1,23 @@
+&run_setup
+        p_central_mev = 325,
+        lattice = "ptb.lte",
+        use_beamline = PTB,
+&end
+
+&run_control
+&end
+&alter_elements name=PTB:Q*, item=K1, value=<strengthFactor>,
+        multiplicative=1 &end
+
+&correct
+    mode = "trajectory", method = "global",
+    verbose = 1, n_iterations = 1, n_xy_cycles = 3,
+    correction_accuracy[0] = 150e-6, 150e-6,
+&end
+
+&correction_matrix_output
+        response[0] = %s.hrm, %s.vrm,
+&end
+
+&bunched_beam &end
+&track &end

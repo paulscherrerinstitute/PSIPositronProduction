@@ -1,0 +1,19 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+if ![file exists parTrack.log] {
+    catch {exec elegant parTrack.ele > parTrack.log}
+}
+
+# plot motion
+exec sddsplot -colum=Pass,Cdelta parTrack.w1 
+
+# take FFT
+exec sddsprocess parTrack.w1 -pipe=out -clip=1,0 | sddsfft -pipe=in parTrack.fft -column=Pass,Cdelta -nowarning
+exec sddsplot parTrack.fft -column=f,FFTCdelta -mode=linlog
+
+# Try NAFF instead
+exec sddsprocess parTrack.w1 -pipe=out -clip=1,0 \
+    | sddsnaff -pipe -column=Pass,Cdelta -term=freq=1 \
+    | sddsprintout -pipe -column=CdeltaFrequency

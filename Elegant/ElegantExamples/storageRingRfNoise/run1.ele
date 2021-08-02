@@ -1,0 +1,56 @@
+! Run with no noise
+
+&run_setup
+        lattice = run0.new,
+        use_beamline = RINGRFM,
+        p_central_mev = 7e3,
+        default_order = 2,
+	semaphore_file = %s.done
+        tracking_updates = 1
+&end
+
+&load_parameters
+        filename_list = "ILMatrix.sdds SREffects.sdds",
+        change_defined_values = 1
+&end
+&alter_elements name=SR1, item=COUPLING, value="40e-12 2.5e-9 /" &end
+&alter_elements name=*, type=WATCH, item=FLUSH_INTERVAL, value=250 &end
+
+&rpn_load
+	filename = run0.twi
+	tag = ref
+&end
+&rpn_load
+	filename = run0.twi
+	tag = ref
+	load_parameters = 1
+&end
+
+&run_control
+        n_passes = 270000
+&end
+
+&twiss_output 
+   filename=%s.twi,
+   matched = 1,
+   radiation_integrals = 1,
+   concat_order=2,
+&end
+
+&bunched_beam  
+        n_particles_per_bunch = 10000,
+        bunch = %s.bun,
+        distribution_cutoff[0] = 3*3,
+        sigma_s = "(20e-12 c_mks mult)",
+        sigma_dp = "(ref.Sdelta0)",
+        emit_x = "(ref.ex0)",
+        emit_y = 40e-12,
+	beta_x = "(ref.betax)",
+	beta_y = "(ref.betay)",
+	eta_x = "(ref.etax)",
+        enforce_rms_values[0] = 3*1,
+&end
+
+&track &end
+
+&save_lattice filename = %s.new &end

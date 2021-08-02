@@ -1,0 +1,46 @@
+! Example of off-momentum DA calculation with rf
+
+&semaphores
+&end
+
+&run_setup
+	lattice =lattice.lte,
+	use_beamline = ringrf,
+	p_central_mev = 3000,
+          tracking_updates = 0,
+          random_number_seed = <seed>
+          rootname = <rootname>
+&end
+
+&load_parameters
+        filename = <configuration>.param
+&end
+&rpn_load
+        filename = <oneTurnFile>,
+        tag = ref
+        load_parameters = 1
+&end
+
+! Compute the rf frequency and phase from on-momentum tracking data, since that gives the
+! best value in the presence of a closed orbit and element-by-element radiation.
+&alter_elements name=RF, item=FREQ, value="(176 ref.Ct /)", alter_at_each_step=1 &end
+&alter_elements name=RF, item=PHASE, value="(180 ref.Cdelta -3e9 * 1.5e6 / dasin -)", alter_at_each_step=1 &end
+
+&alter_elements name=MALIN, item=DP, value="(<moffset> 10000 /)", alter_at_each_step=1 &end
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=1, alter_at_each_step=1 &end
+
+&run_control
+        n_passes = <turns>
+&end
+
+&find_aperture
+        output = %s.aper
+        mode = "n-line",
+        n_lines = <lines>
+        xmax = 0.03
+        ymax = 0.008
+        nx = 100,
+        n_splits = 1
+        split_fraction = 0.1
+&end
+

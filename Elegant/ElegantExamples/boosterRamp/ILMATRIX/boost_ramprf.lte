@@ -1,0 +1,7 @@
+ring1:ILMATRIX
+WS: WATCH, FILENAME="%s.ws", LABEL="particle statistics at each turn", MODE="param", flush_interval=5000
+RF: RFCA, VOLT=1, FREQ=351930276.7826087, phase=180
+RAMP: RAMPP,waveform="RfRamp.sdds=time+MomentumRatio"
+SR1: SREFFECT
+momap: clean,mode="absvalue",deltaLimit=0.04
+BOOST:   LINE=(WS,RAMP,RF,ring1,sr1,momap)

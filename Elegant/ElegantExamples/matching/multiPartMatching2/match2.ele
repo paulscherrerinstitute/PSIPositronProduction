@@ -1,0 +1,153 @@
+! Match tune adjustment section
+! Go for nux=38.2 and nuy=19.3
+
+&run_setup
+        lattice = aps.lte
+        use_beamline = tune,
+        p_central_mev = 7e3
+        final = %s.fin
+        parameters = %s.param
+        default_order = 1
+&end
+
+&twiss_output
+        output_at_each_step = 1
+        matched = 1
+        radiation_integrals = 1
+&end
+
+! Load some values from the main cell solution for use in expressions
+&rpn_load
+        filename = match1.twi
+        tag = ref
+&end
+&rpn_load
+        filename = match1.twi
+        tag = ref
+        load_parameters = 1
+&end
+
+&run_control
+&end
+
+&optimization_setup
+        method = "simplex", mode="minimize",
+        target = 1e-12,
+        tolerance = 1e-12,
+        n_passes = 3,
+        n_evaluations = 1500
+        n_restarts = 5,
+        log_file = /dev/tty,
+        verbose = 0
+        output_sparsing_factor = 30
+&end
+
+! Emittance constraint (weighted sum of values from main cells and matching cells)
+! Effective emittance less than 5 nm
+&optimization_term
+        term = "
+1 ref.Sdelta0 ref.etax * sqr ref.ex0 ref.betax * / + sqrt ref.ex0 * 36 * 
+1 Sdelta0 etax * sqr ex0 betax * / + sqrt ex0 * 4 * 
++ 40 / 
+5e-9 1e-10 segt" &end
+
+! Tune constraint
+&optimization_term
+        term = "ref.nux 18 * nux + 38.2 .01 sene" &end
+&optimization_term
+        term = "ref.nuy 18 * nuy + 19.3 .01 sene" &end
+
+! Maximum beta functions
+&optimization_term
+        term = "max.betax 45 .1 segt" &end
+&optimization_term
+        term = "max.betay 35 .1 segt" &end
+
+! Periodicity
+&optimization_term
+        term = "betax ref.betax / 1 .01 sene" &end
+&optimization_term
+        term = "etax ref.etax / 1 .01 sene" &end
+&optimization_term
+        term = "betay ref.betay / 1 .01 sene" &end
+
+! Beta functions at straight
+&optimization_term
+        term = "S2END#1.betax 20 5 sene" &end
+&optimization_term
+        term = "S3END#1.betax 20 5 sene" &end
+&optimization_term
+        term = "S2END#1.betay 3 2 sene" &end
+&optimization_term
+        term = "S3END#1.betay 3 2 sene" &end
+
+! All quads are allowed to vary
+&optimization_variable
+        name = S2A:Q1, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2A:Q2, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2A:Q3, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2A:Q4, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2A:Q5, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+
+&optimization_variable
+        name = S2B:Q1, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2B:Q2, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2B:Q3, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2B:Q4, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S2B:Q5, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+
+&optimization_variable
+        name = S3A:Q1, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3A:Q2, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3A:Q3, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3A:Q4, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3A:Q5, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+
+&optimization_variable
+        name = S3B:Q1, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3B:Q2, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3B:Q3, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3B:Q4, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable
+        name = S3B:Q5, item = K1, lower_limit=-0.9, upper_limit=0.9, step_size=1e-3 &end
+
+&bunched_beam &end
+
+&optimize &end
+
+! Evaluate the solution
+
+&run_setup
+        lattice = aps.lte
+        use_beamline = tune,
+        p_central_mev = 7e3
+        default_order = 1
+        magnets = %s.mag
+&end
+
+&load_parameters
+        filename = %s.param,
+        change_defined_values = 1
+&end
+
+&twiss_output
+        filename = %s.twi,
+        matched = 1
+        radiation_integrals = 1
+&end
+

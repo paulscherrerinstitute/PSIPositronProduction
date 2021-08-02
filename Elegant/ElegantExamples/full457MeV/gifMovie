@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sddsplot -device=spng,template=movie-%04d.png -column=x,y full457MeV-*.wc -graph=dot -same -separate=1 -title=@PreviousElementName
+convert movie-????.png -trim movie.gif
+

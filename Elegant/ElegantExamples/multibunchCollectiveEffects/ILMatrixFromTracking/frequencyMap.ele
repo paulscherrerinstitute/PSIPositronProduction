@@ -1,0 +1,27 @@
+&semaphores &end
+
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = RING,
+	p_central_mev = 6.0e3,
+        magnets = %s.mag,
+        tracking_updates = 1
+&end
+
+&run_control
+	n_steps = 1,
+        n_passes = 256,
+&end
+
+&frequency_map
+	output = %s.fma,
+	xmin = 1e-6,
+	! The range here is pretty small, but that's all we care about for simulations of 
+	! damped beams and instabilities. We aren't trying to replicate the behavior out to
+	! the DA, nor could we.
+	xmax = 0.002,
+	ymax = 0.0005,
+	nx = 64,
+	ny = 64,
+&end
+

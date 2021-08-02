@@ -1,0 +1,27 @@
+#!/bin/bash
+
+elegant bunch.ele 
+
+# Replace 20 with the number of cores you want to use
+mpiexec -np 20 Pelegant run1.ele > run1.log &
+
+sleep 5
+
+sddsplot -repeat "-device=motif,-movie true -keep 1" -limit=xmin=0,xmax=1e7 -layout=2,2 \
+    -column=Pass,Particles run1.w1 -end \
+    -column=Pass,Sdelta run1.w1 -end \
+    -column=Pass,St run1.w1 -end \
+    -column=Pass,ex run1.w1 &
+
+while true ; do
+    if [ -e run1.done ] ; then
+        break
+    else
+        echo -n "."
+        sleep 10
+    fi
+done
+
+sddsplot "-device=motif,-movie true -interval 0.1" \
+    -col=t,p run1.w2 -split=page,col=particleID,width=100 -sep=page -graph=sym,vary=subtype -mode=x=meancenter -same
+

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+sddscontour -thick=2 -device=lpng,onwhite  -title= -topline= -shade \
+            -waterfall=parameter=x0,indep=f,color=FFTx parTrack.w1a.fft -log=1e-6 -ylabel='$gn$r$bx$n' \
+            | convert -trim - fftWaterfall.png 
+
+\rm nuxVsJx.*
+
+sddsplot3 nuxVsJx -thick=2 -ylabel='$gn$r$bx$n' -col=Jx,nux parTrack.fft.fit -graph=sym,scale=1.5,fill -sparse=30 -col=Jx,nuxFit parTrack.naff.fit -graph=line,type=1,thick=4  -title=@sddspfitLabel 

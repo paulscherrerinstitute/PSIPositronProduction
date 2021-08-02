@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ $# != 1 ] ; then
+   echo "usage: scanQuad <quadrupole#>"
+   echo "<quadrupole#> is 1, 2, 3, ..., 10"
+   exit 1
+fi
+
+# Run elegant, scanning LTP:Q$1 from 80% to 120% in 11 steps
+elegant scanTemplate.ele -macro=n=$1
+
+# Postprocess and plot the flag output files, which give (x, y, x', y') coordinates
+# for particles at the flags FL1, FL2, and FL3
+for file in scan-Q$1.FL? ; do
+    # Add parameters giving the x and y centroids 
+    sddsprocess $file -nowarning -process=[xy],ave,C%s
+    # Clean up backup copy
+    \rm ${file}~
+    # Plot each of the 11 steps on a separate page
+    # In the plot window that pops up, there is one page for each of the 11 steps.
+    # Press 'n' to go to the next page and 'p' to go to the previous page
+    sddsplot -split=page -groupby=page -separate=page -title="$file" \
+    	     -column=x,y $file -graph=dot -samescales \
+	     -parameter=Cx,Cy $file -graph=sym,subtype=1,fill
+done
+
+# Plot the centroids vs s, highlighting the values at the BPM locations
+sddsplot -join=x -layout=1,2 -split=page \
+	 -column=s,Cx scan-Q$1.cen -topline=scan-Q$1 \
+	 -column=s,Cx scan-Q$1.cen -match=column,ElementType=*MON* -graph=sym,fill,subtype=1 \
+	 -end \
+	 -column=s,Cy scan-Q$1.cen \
+	 -column=s,Cy scan-Q$1.cen -match=column,ElementType=*MON* -graph=sym,fill,subtype=1

@@ -1,0 +1,21 @@
+fodo.lte
+	Simple FODO lattice
+
+runServer
+	Tcl script to run a "server" that updates a file with lattice functions
+	Usage: runServer setup.ele update.ele update.sdds
+setup.ele
+	Used by runServer to provide setup of elegant
+update.ele
+	Used by runServer to give elegant instructions for updates
+	
+makeUpdate
+	Tcl script to make update.sdds file, which simulates an update
+	from the control system
+
+To try this out:
+% runServer setup.ele update.ele update.sdds > runServer.log &
+% makeUpdate ; sleep 1 ; sddsplot -col=s,beta? -graph=line,vary update.twi
+% makeUpdate ; sleep 1 ; sddsplot -col=s,beta? -graph=line,vary update.twi
+% makeUpdate ; sleep 1 ; sddsplot -col=s,beta? -graph=line,vary update.twi
+Each plot should be slightly different.

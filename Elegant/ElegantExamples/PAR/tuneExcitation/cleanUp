@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm *.w1 *.fft* *.sdds *.twi *.mag

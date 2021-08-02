@@ -1,0 +1,6 @@
+Example of using tracking to optimize a linac and bunch compressor including a 4th-harmonic linearizer.
+The parameters are optimized to get the desired beam energy and the minimum bunch length.
+This example takes a while to run; using Pelegant is recommended.
+
+Example by M. Borland, APS.
+

@@ -1,0 +1,99 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+set usage {usage: processHist <rootname>}
+set filter 1
+set rootname ""
+if [llength $argv]!=1 {
+    return -code error "$usage"
+}
+set rootname [lindex $argv 0]
+
+set input $rootname.sdds
+puts stderr "input is $input"
+
+if [string compare [exec sddscheck $input] "ok"]!=0 {
+    return -code error "$input: [exec sddscheck $input]"
+}
+puts stderr "file is ok"
+
+if 1 {
+    set columnList [exec sddsquery -column $input]
+    foreach column $columnList {
+	set ${column}Data [exec sdds2stream -column=$column $input]
+    }
+} else {
+    if [catch {sdds load $input data} result] {
+	return -code error "$result"
+    }
+    
+    set columnList $data(ColumnNames)
+
+    foreach column $columnList {
+	set ${column}Data [lindex $data(Column.$column) 0]
+	puts stderr "${column}Data loaded"
+    }
+}
+
+set number [llength [set ${column}Data]]
+for {set i 0} {$i<$number} {incr i} {
+    set runName $rootname-$i
+    if ![file exists $runName.done] {
+	puts stdout "Not done: $runName"
+	continue
+    }
+    set hList [lsort [glob -nocomplain $runName.h??]]
+    if [llength $hList]!=100 {
+	puts stdout "Missing histogram files for $runName"
+	continue
+    }
+    foreach column $columnList {
+	set $column [lindex [set ${column}Data] $i]
+    }
+    puts stderr "Working on $i (modWavelength=$modWavelength)"
+
+    set c_mks 2.997924580000000e+08
+    set nEdge 4.0
+    set nCenter 10.0
+    set edgeSigma 10.0
+    set St [expr $edgeSigma*$modWavelength/$c_mks]
+    set flat [expr $nCenter*$edgeSigma*$modWavelength/$c_mks]
+
+    set f0 [expr 1./($modWavelength/2.9979e8)]
+    set fm [expr $f0*0.9]
+    set fp [expr $f0*1.1]
+    set limit [expr $edgeSigma/2.9979e8*$nCenter/4.0]
+    if $filter {
+	set startFreqLP [expr $f0*1.1]
+	set endFreqLP [expr $f0*1.2]
+	set startFreqHP [expr $f0*0.8]
+	set endFreqHP [expr $f0*0.9]
+	set filterCmd "sddsfdfilter -pipe -column=dt,dtFrequencyResidual \
+	               -lowpass=start=$startFreqLP,end=$endFreqLP -cascade \
+                       -highpass=start=$startFreqHP,end=$endFreqHP "
+    } else {
+	set filterCmd cat
+    }
+    eval exec sddscombine $hList -pipe=out \
+	| sddsprocess -pipe -process=dt,ave,dtAve \
+	{"-redefine=col,dt,dt dtAve -,units=s"} \
+	-clip=1300,1300 \
+	| tee $runName.ds1 \
+	| sddspfit -pipe -col=dt,dtFrequency -terms=9 \
+	| $filterCmd \
+	| sddsnaff -pipe -col=dt,dtFrequencyResidual \
+	-terminate=frequencies=1 -nowarnings \
+	| sddscombine -merge -pipe=in $runName.ds2 -delete=parameter,*
+    exec sddscollapse $runName.ds1 $runName.ds3
+    exec sddsprocess $rootname.sdds -pipe=out \
+	"-test=column,i_row $i ==" \
+	| sddsexpand -pipe=in $runName.ds4 
+    exec sddsxref $runName.ds2 $runName.ds3 -take=* -pipe=out \
+	| sddsxref $runName.ds4 -pipe -leave=* -transfer=param,* \
+	| sddsconvert -pipe=in $runName.naff \
+	-rename=column,dtFrequencyResidualFrequency=f \
+	-rename=column,dtFrequencyResidualAmplitude=Amplitude 
+    file delete -force $runName.ds1 $runName.ds2 $runName.ds3 $runName.ds4
+}
+exit

@@ -1,0 +1,39 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+
+APSStandardSetup
+
+# Make a bunch with a profile that matches the equilibrium with HHC
+
+set usage {usage: makeBunch -rootname <filename> -momentum <GeV>(6.0) -nPerBunch \#(100000) -profile <filename>}
+set rootname ""
+set momentum 7.0
+set nPerBunch 100000
+set profile ""
+set args $argv
+if {[APSStrictParseArguments {rootname momentum nPerBunch profile}] || ![string length $rootname] || ![string length $profile]} {
+    return -code error "$usage"
+}
+if [file exists $rootname.sdds] {
+   return -code error "in use: $rootname.sdds"
+}
+if ![file exists $profile] {
+    return -code error "not found: $profile"
+}
+
+catch {exec elegant makeBunch.ele -macro=momentum=[expr $momentum*1e3],rootname=$rootname,nPerBunch=$nPerBunch,St0=12e-12} result
+if ![file exists $rootname.done] {
+    puts stderr "$result"
+    exit 1
+}
+
+file delete -force $rootname.tsamples
+exec sddssampledist $rootname.tsamples \
+    -column=independentVariable=t,df=rho,datafile=$profile,output=t -samples=$nPerBunch
+exec sddsconvert $rootname.out -pipe=out -delete=column,t \
+    | sddsxref -pipe=in $rootname.tsamples $rootname.bun -take=t
+file delete -force $rootname.out

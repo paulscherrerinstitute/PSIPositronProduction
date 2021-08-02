@@ -1,0 +1,32 @@
+&run_setup
+        lattice = LSC.lte
+        p_central = <p>,
+        rootname = <rootname>,
+        semaphore_file = %s.done,
+        sigma = %s.sig,
+        centroid = %s.cen,
+&end
+
+&alter_elements name=Z1, item=BINS, value=<lscBins> &end
+&alter_elements name=Z1, item=RADIUS_FACTOR, value=<radiusFactor> &end
+&alter_elements name=Z1, item=SMOOTHING, value=<smoothing> &end
+&alter_elements name=Z1, item=SG_HALFWIDTH, value=<SGHW> &end
+&alter_elements name=Z1, item=SG_ORDER, value=<SGOrder> &end
+&alter_elements name=Z1, item=HIGH_FREQUENCY_CUTOFF0, value=<HighCutoff0> &end
+&alter_elements name=Z1, item=HIGH_FREQUENCY_CUTOFF1, value=<HighCutoff1> &end
+&alter_elements name=Z1, item=L, value=<lengthFactor>, multiplicative=1 &end
+
+&alter_elements name=H??, item=BINS, value=<lscBins> &end
+
+&alter_elements name=Q, item=TOTAL, value=<charge> &end
+
+&save_lattice filename = %s.new &end
+
+&run_control
+&end
+
+&sdds_beam
+        input = <rootname>.input
+&end
+
+&track &end

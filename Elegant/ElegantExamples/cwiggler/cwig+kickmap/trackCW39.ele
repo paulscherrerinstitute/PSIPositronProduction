@@ -1,0 +1,27 @@
+! Used for comparison with full kickmap tracking
+
+&run_setup
+        lattice = latticeCW.lte
+        p_central_mev = 3e3
+        output = %s.out
+        use_beamline = BL39
+&end
+
+&run_control 
+&end
+
+&bunched_beam 
+              bunch = %s.bun
+              ! Create a 30mm x 8 mm grid centered on (0, 0) with
+              ! 50x50 points
+              distribution_type[0] = 2*dynamic-aperture,
+              beta_x = 15, emit_x = 15e-6,
+              beta_y = 8, emit_y = 8e-6,
+              n_particles_per_bunch = 2500
+              distribution_cutoff[0] = 50, 50,
+              centroid[2] = -0.004
+&end
+              
+
+&track &end
+

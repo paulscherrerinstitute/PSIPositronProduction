@@ -1,0 +1,52 @@
+! An elegant run for the booster, lattice 1.
+! 1. Tracks a Booster brunch with RF turned on
+! 2. The momentum and RF are ramped
+! 3. Lattice is modeled using ILMATRIX
+
+&run_setup
+    lattice = "boost_ramprf.lte",                 
+    use_beamline = "boost",
+    p_central_mev = 450,
+    magnets = "%s.mag",
+    default_order = 1,
+    concat_order = 1,
+    tracking_updates = 0
+&end
+
+&load_parameters
+        filename_list = "SREffects.param ILMatrix.param"
+        change_defined_values = 1
+&end
+
+&modulate_elements
+        name = RF, item = VOLT,
+        filename = RfRamp.sdds,
+        time_column = time,
+        amplitude_column = Voltage
+        differential = 0
+&end
+
+
+&twiss_output
+    filename = "%s.twi"
+    radiation_integrals = 1
+&end
+
+&run_control
+    n_steps = 1,
+    n_passes = 200000,
+&end
+
+&bunched_beam
+    bunch = "%s.bun"
+    n_particles_per_bunch = 1000,
+    time_start = 0,
+    emit_x = .36e-6, emit_y = 0.036e-6,
+    beta_x = 16.048, alpha_x = 0.0,
+    beta_y = 2.7260, alpha_y = 0.0,
+    Po = 880.626, sigma_dp = 4.1e-4, sigma_s = 0.087,
+&end
+
+&track &end
+
+&stop &end

@@ -1,0 +1,22 @@
+Common parameters
+	SzEdge = 10*lambda 
+	edges are 4 sigma
+	center is 10 sigma
+	20 bins per wavelength
+	--> 3600 bins
+
+Scripts (a little stripped down to work without oagtclsh)
+	runBeamU <rootname>
+	e.g. runBeamU set12
+	This will create lots of csh scripts called set12-?.job
+	Submit the scripts if you have a queue, or run them sequentially like this (assuming bash shell)
+	for file in set12-?.job; do $file; done
+
+	processHist <rootname>
+	Run this after all the jobs are done.  Makes files <rootname>-*.naff
+	Try
+	sddsplot -column=s,Amplitude set12-*.naff -graph=line,vary -mode=y=normalize -legend=parameter=modWavelength
+
+Parameters on this run work well
+set12	4MP, 1% MA, 100A, LP filter (0.20, 0.21), 1/3 length system
+

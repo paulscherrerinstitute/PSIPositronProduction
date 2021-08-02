@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [[ $# != 4 ]] ; then
+   echo "usage: slitArray <inputFile> <outputFile> <spacingInMm> <gapWidthInMm>"
+   exit 1
+fi
+
+sddsprocess $1 $2 \
+            "-define=parameter,spacing,$3 1e3 /,units=m" \
+            "-define=parameter,width,$4 1e3 /,units=m" \
+            "-define=col,survives,x abs spacing mod spacing 2 / - abs width 2 / < ? 1 : 0 $ " \
+            -process=x,count,OriginalCount \
+            -filter=col,survives,1,1 \
+            -process=x,count,NewCount \
+            "-redefine=parameter,Charge,NewCount OriginalCount / Charge *,units=C" 
+
+

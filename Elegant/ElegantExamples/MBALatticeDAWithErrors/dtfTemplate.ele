@@ -1,0 +1,40 @@
+! Perform tracking to get the tunes vs momentum offset using a particular
+! configuration of errors and corrections
+
+&semaphores
+&end
+
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = ring,
+	p_central_mev = 3000,
+          tracking_updates = 0,
+          random_number_seed = <seed>
+          rootname = <rootname>
+&end
+
+&load_parameters
+        filename = <configuration>.param
+&end
+
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=0, alter_at_each_step=1 &end
+
+&run_control
+        n_passes = 128
+&end
+
+&tune_footprint
+        delta_output = %s.dtf
+        xmin = 0
+        xmax = 0
+        ymin = 0
+        ymax = 0
+        nx = 0
+        ny = 0
+        delta_min = -0.04
+        delta_max = 0.04
+        ndelta = 180
+        ignore_half_integer = 1
+        quadratic_spacing = 0
+        compute_diffusion = 0
+&end

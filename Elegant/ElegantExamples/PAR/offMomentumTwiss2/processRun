@@ -1,0 +1,23 @@
+#!/bin/bash
+
+sddsxref run.twi run.fin -pipe=out -leave=* -transfer=param,MALIN.DP \
+  | sddsprocess -pipe -define=col,delta,MALIN.DP \
+  | sddscombine -pipe -merge \
+  | sddssort -pipe -col=s -col=delta \
+  | sddsbreak -pipe -change=s \
+  | sddsprocess -pipe -process=s,first,s \
+  | sddsmpfit -pipe -indep=delta -depen=betax,betay,etax -terms=3 -copyParameters \
+  | sddscollapse -pipe=in run.proc
+
+sddsplot -layout=1,3 -unsup=y -join=x -pspace=0.1,0.9,0,0 \
+  -col=s,'(betaxIntercept,betaxSlope,betaxCurvature)' run.proc -separate=1 \
+  -col=s,Profile run.mag -overlay=xmode=norm,yfact=0.04 -omnipresent
+
+sddsplot -layout=1,3 -unsup=y -join=x -pspace=0.1,0.9,0,0 \
+  -col=s,'(betayIntercept,betaySlope,betayCurvature)' run.proc -separate=1 \
+  -col=s,Profile run.mag -overlay=xmode=norm,yfact=0.04 -omnipresent
+
+sddsplot -layout=1,3 -unsup=y -join=x -pspace=0.1,0.9,0,0 \
+  -col=s,'(etaxIntercept,etaxSlope,etaxCurvature)' run.proc -separate=1 \
+  -col=s,Profile run.mag -overlay=xmode=norm,yfact=0.04 -omnipresent
+

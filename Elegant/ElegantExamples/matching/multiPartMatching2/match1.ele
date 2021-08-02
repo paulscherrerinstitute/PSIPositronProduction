@@ -1,0 +1,116 @@
+! Match (SECTOR1,-SECTOR1) to get 3-fold beamsize ratio between successive straights
+
+&run_setup
+        lattice = aps.lte
+        use_beamline = IN1,
+        p_central_mev = 7e3
+        final = %s.fin
+        parameters = %s.param
+        default_order = 1
+&end
+
+&twiss_output
+        output_at_each_step = 1
+        matched = 1
+        radiation_integrals = 1
+&end
+
+&run_control
+&end
+
+&optimization_setup
+        method = "simplex", mode="minimize",
+        target = 1e-12,
+        tolerance = 1e-12,
+        n_passes = 3,
+        n_evaluations = 1500
+        n_restarts = 5,
+        log_file = /dev/tty,
+        verbose = 0
+        output_sparsing_factor = 30
+&end
+
+! Constraints on effective emittance
+&optimization_term
+        term = "1 Sdelta0 etax * sqr ex0 betax * / + sqrt ex0 * 5e-9 1e-10 segt" &end
+&optimization_term
+        term = "1 Sdelta0 S1END#1.etax * sqr ex0 S1END#1.betax * / + sqrt ex0 * 5e-9 1e-10 segt" &end
+
+! Beam size ratio constraint
+&optimization_term
+        term = "
+ex0         betax * Sdelta0         etax * sqr + sqrt 
+ex0 S1END#1.betax * Sdelta0 S1END#1.etax * sqr + sqrt 
+/ 3 .1 sene" &end
+
+! Vertical beta a ID straight
+&optimization_term
+        term = "betay 3 .5 sene" &end
+&optimization_term
+        term = "S1END#1.betay 3 .5 sene" &end
+
+! x tune between 36.05/40 and 38.45/40 per cell
+! y tune between 17.05/40 and 19.45/40 per cell
+&optimization_term
+        term = "nux 20 * 36.05 1e-3 selt" &end
+&optimization_term
+        term = "nux 20 * 38.45 1e-3 segt" &end
+&optimization_term
+        term = "nuy 20 * 17.05 1e-3 selt" &end
+&optimization_term
+        term = "nuy 20 * 19.45 1e-3 segt" &end
+
+# Limits on maximum beta functions
+&optimization_term
+        term = "max.betax 55 1e-3 segt" &end
+&optimization_term
+        term = "max.betay 35 1e-3 segt" &end
+
+# All quads are allowed to vary
+&optimization_variable
+        name = S1A:Q1, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1A:Q2, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1A:Q3, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1A:Q4, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1A:Q5, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+
+&optimization_variable
+        name = S1B:Q1, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1B:Q2, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1B:Q3, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1B:Q4, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+&optimization_variable
+        name = S1B:Q5, item = K1, lower_limit=-1.1, upper_limit=1.1, step_size=1e-3 &end
+
+&bunched_beam &end
+
+&optimize &end
+
+! Evaluate the solution
+
+&run_setup
+        lattice = aps.lte
+        use_beamline = IN1,
+        p_central_mev = 7e3
+        default_order = 1
+        magnets = %s.mag
+&end
+
+&load_parameters
+        filename = %s.param,
+        change_defined_values = 1
+&end
+
+&twiss_output
+        filename = %s.twi,
+        matched = 1
+        radiation_integrals = 1
+&end
+

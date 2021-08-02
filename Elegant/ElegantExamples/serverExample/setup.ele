@@ -1,0 +1,12 @@
+&run_setup
+	lattice = fodo.lte,
+	p_central_mev = 1e3
+	default_order = 1
+&end
+
+&twiss_output
+	filename = ideal.twi
+	matched = 1
+&end
+
+

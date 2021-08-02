@@ -1,0 +1,18 @@
+Example of how to use transverse wakes and impedances for equivalent computation.
+M. Borland, 2018
+
+makeWI
+        Makes wake file, then uses sddsfft to transform it into an impedance.
+        Output wake file: wake.sdds
+        Output impedance file: impedance.sdds
+
+imped1.ele
+        Run with impedance
+wake1.ele
+        Run with wake
+
+Sequence:
+% makeWI
+% elegant wake1.ele
+% elegant imped1.ele
+% sddsplot -column=t,yp wake1.out imped1.out -grap=dot,vary 

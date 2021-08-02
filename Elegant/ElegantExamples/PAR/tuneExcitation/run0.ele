@@ -1,0 +1,12 @@
+&run_setup
+        lattice = parTrack.lte,
+        p_central_mev = 450
+        magnets = %s.mag
+&end
+
+&twiss_output
+        filename = %s.twi
+        matched = 1
+        radiation_integrals = 1
+&end
+

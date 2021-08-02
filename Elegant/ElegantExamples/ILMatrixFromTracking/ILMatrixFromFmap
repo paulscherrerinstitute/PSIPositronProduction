@@ -1,0 +1,154 @@
+#!/bin/bash
+
+# Script to make ILMATRIX parameter file from frequency map and tune vs momentum
+
+if [ ! -e frequencyMap.fma ] ; then
+   echo Not found: frequencyMap.fma
+   exit 1
+fi
+if [ ! -e tuneFootprint.dtf ] ; then
+    echo Not found: tuneFootprint.dtf
+    exit 1
+fi
+if [ ! -e closedOrbit.clo ] ; then 
+    echo Not found: closedOrbit.clo
+    exit 1
+fi
+if [ ! -e closedOrbit.fin ] ; then 
+    echo Not found: closedOrbit.fin
+    exit 1
+fi
+if [ ! -e Basic.twi ] ; then
+   echo Not found: Basic.twi
+   exit 1
+fi
+
+# Determine momentum dependence of orbit (second-order dispersion)
+sddscollapse closedOrbit.fin closedOrbit.finc
+sddsprocess closedOrbit.clo -pipe=out -clip=1,0,invert \
+    | sddsexpand -pipe \
+    | sddscollapse -pipe \
+    | sddsxref closedOrbit.finc -pipe -take=MALIN.DP \
+    | sddsmpfit -pipe -independent=MALIN.DP -dependent=x,xp,y,yp -terms=4 \
+    | sddscollapse -pipe \
+    | sddsconvert -pipe -retain=column,*Curvature \
+    | sddstranspose -pipe \
+    | sddsconvert -pipe -rename=col,Column=ParameterValue \
+    | sddsxref -pipe=in ILMatrix.xref -nowarning ILMatrix.sdds0 -match=OldColumnNames=ColumnName  -take=*
+\rm closeOrbit.finc
+
+# These parameters allow filtering out of possibly invalid tune values. Basically, we only fit that
+# part of the data that doesn't cross the integer or half integer.
+nux=`sdds2stream -parameter=nux Basic.twi`
+nuy=`sdds2stream -parameter=nuy Basic.twi`
+nuxMin=`rpnl $nux = int - 2 mult int 0.5 mult 0.05 +`
+nuyMin=`rpnl $nuy = int - 2 mult int 0.5 mult 0.05 +`
+nuxMax=`rpnl $nux = int - 2 mult int 0.5 mult 0.45 +`
+nuyMax=`rpnl $nuy = int - 2 mult int 0.5 mult 0.45 +`
+
+# Fit the tune vs momentum offset
+sddsprocess tuneFootprint.dtf -pipe=out -filter=col,nux,$nuxMin,$nuxMax -filter=col,nuy,$nuyMin,$nuyMax \
+    | sddsmpfit -pipe=in tuneFootprint.dtf.fit -terms=4 -info=tuneFootprint.dtf.info \
+    -indep=delta -depend=nu?
+
+sddsplot -groupby=namei -sep=namei "-title=Tunes vs momentum offset" \
+    -column=delta,nu? tuneFootprint.dtf.fit -graph=sym \
+    -column=delta,nu?Fit tuneFootprint.dtf.fit 
+
+# Determine the amplitude-dependence of the tunes and path-length
+
+tmpFile=`tmpname`
+sddsprocess Basic.twi $tmpFile -process=beta?,first,%s0 
+
+# Compute Ax and Ay for each point in the frequency map
+# Fit tunes and path-length vs Ay for constant Ax
+sddsxref frequencyMap.fma -pipe=out -leave=* -transfer=parameter,beta?0 $tmpFile \
+    | sddsprocess -pipe -filter=col,x,2e-4,1 \
+    -filter=col,nux,$nuxMin,$nuxMax -filter=col,nuy,$nuyMin,$nuyMax \
+    -define=col,Ax,"x sqr betax0 /",units=m -define=col,Ay,"y sqr betay0 /",units=m  \
+    | sddssort -col=Ax -col=Ay -pipe \
+    | sddsbreak -pipe -change=Ax \
+    | sddsprocess -pipe -process=Ax,first,Axp \
+    | sddsmpfit -pipe=in frequencyMap.fma.fitAy -indep=Ay -depen=nux,nuy,s -copy -terms=4  -info=frequencyMap.fma.AyInfo -copyParameters
+\rm $tmpFile
+
+sddsplot frequencyMap.fma.fitAy "-title=Fits to horizontal tune vs Ay for constant Ax" \
+    -groupby=page -split=page -sep=page \
+    -column=Ay,nux -graph=sym -column=Ay,nuxFit 
+
+sddsplot frequencyMap.fma.fitAy "-title=Fits to vertical tune vs Ay for constant Ax" \
+    -groupby=page -split=page -sep=page \
+    -column=Ay,nuy -graph=sym -column=Ay,nuyFit 
+
+sddsplot frequencyMap.fma.fitAy "-title=Fits to path length vs Ay for constant Ax" \
+    -groupby=page -split=page -sep=page \
+    -column=Ay,s -graph=sym -column=Ay,s
+
+# Fit vs Ax the coefficients of fits vs Ay
+sddsprocess frequencyMap.fma.AyInfo -pipe=out -define=col,Ax,Axp,units=m \
+    | sddscombine -pipe -merge -delet=param,* \
+    | sddssort -pipe -column=Order -col=Ax \
+    | sddsbreak -pipe -change=Order \
+    | sddsprocess -pipe -process=Order,first,AyOrder \
+    | sddsmpfit -pipe=in -terms=4 frequencyMap.fma.fitAxAy -info=frequencyMapFit.infoAxAy -indep=Ax -depen=*Coefficient -copyParameters
+
+# sddsprintout -param=AyOrder -col frequencyMapFit.infoAxAy
+
+sddsplot frequencyMap.fma.fitAxAy -groupby=tag,page -sep=page -split=page \
+    -column=Ax,nuxCoefficient -graph=sym -tag=id=nux \
+    "-title=Fits to coefficients of nux(Ay) fits vs Ax" \
+    -column=Ax,nuxCoefficientFit -tag=id=nux -end \
+    -column=Ax,nuyCoefficient -graph=sym -tag=id=nuy \
+    "-title=Fits to coefficients of nuy(Ay) fits vs Ax" \
+    -column=Ax,nuyCoefficientFit -tag=id=nuy -end \
+    -column=Ax,sCoefficient -graph=sym -tag=id=s \
+    "-title=Fits to coefficients of s(Ay) fits vs Ax" \
+    -column=Ax,sCoefficientFit -tag=id=s
+
+# Convert to a form suitable for loading in elegant for an ILMATRIX element.
+# The ILMATRIX is assumed to be named RING1
+quan=(nux nuy s)
+Quan=(NUX NUY DS)
+plane=(x y s)
+ring=RING1
+for index in 0 1 2 ; do 
+    # Amplitude terms
+    sddsprocess frequencyMapFit.infoAxAy -nowarning -pipe=out \
+	"-define=col,OrderSum,Order AyOrder +" \
+	-filter=col,OrderSum,1,2 \
+	"-print=column,CoefName,${Quan[index]}%ldAX%.0fAY,Order,AyOrder" \
+	"-edit=column,ElementParameter,CoefName,%/0AX//%/0AY//" \
+	"-print=column,ElementName,${ring}" \
+	"-define=column,ParameterValue,${quan[index]}CoefficientCoefficient Order fact * AyOrder fact *" \
+	| sddscombine -pipe -merge \
+        | sddsxref ILMatrix.xref -pipe -match=ElementParameter -take=LatexSymbol,LatexOrder \
+	| tee ILMatrix.A${plane[index]} \
+	| sddsprintout -pipe -col=ElementParameter -col=ParameterValue
+    if [ $index -ne 2 ] ; then
+        # Momentum terms
+        sddsprocess tuneFootprint.dtf.info -pipe=out \
+            -filter=col,Order,1,3 \
+	    "-print=column,ElementParameter,${Quan[index]}%ldM,Order" \
+	    "-print=column,ElementName,${ring}" \
+	    "-define=column,ParameterValue,${quan[index]}Coefficient Order fact *" \
+        | sddsxref -pipe=in ILMatrix.xref ILMatrix.delta${plane[index]} -match=ElementParameter -take=LatexSymbol,LatexOrder
+    fi
+done
+
+
+# nominal lattice functions and derivatives, alphac
+sddsprocess Basic.twi -pipe=out -process=s,max,sMax -process=*eta*,first,%s0 -process=alpha?,first,%s0 \
+            | sddscollapse -pipe \
+            | sddsconvert -pipe -delete=col,Stage,SVN*,dnu*,eta*2*,eta*3* \
+            | sddstranspose -pipe -oldColumnNames=ColumnName \
+            | sddsconvert -pipe -rename=col,Column=ParameterValue \
+            | sddsxref ILMatrix.xref -nowarning -pipe=in ILMatrix.sdds1 -match=ColumnName -take=* 
+
+sddscombine ILMatrix.sdds0 ILMatrix.sdds1 ILMatrix.Ax ILMatrix.Ay ILMatrix.As ILMatrix.deltax ILMatrix.deltay \
+    -merge -pipe=out -delete=param,* -retain=column,ElementName,ElementParameter,ParameterValue,LatexSymbol,LatexOrder \
+    | sddssort -pipe -column=LatexOrder \
+    | tee ILMatrix.sdds \
+    | sddsprintout -pipe -col=ElementName -col=ElementParameter -col=ParameterValue
+
+\rm ILMatrix.Ax ILMatrix.As ILMatrix.deltax ILMatrix.Ay ILMatrix.deltay ILMatrix.sdds1 ILMatrix.sdds0
+

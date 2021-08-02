@@ -1,0 +1,15 @@
+#!/bin/bash
+
+input=$1
+output=$2
+pass=$3
+interval=$4
+
+T0=`rpnl 450 mev / beta.p c_mks mult 30.6667 /`
+
+sddsprocess bunch.out newbunch.out \
+    "-define=parameter,dt,450 mev / beta.p c_mks * 30.6667 / rec $pass 1 + *,units=s" \
+    "-redefine=col,t,t dt +,units=s"  \
+    "-redefine=column,particleID,n_rows $pass * $interval / particleID +,type=long"
+
+sddscombine $input newbunch.out -merge -overwrite $output

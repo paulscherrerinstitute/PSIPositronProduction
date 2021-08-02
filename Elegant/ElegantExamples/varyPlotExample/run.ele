@@ -1,0 +1,24 @@
+&run_setup
+        lattice = par.lte,
+        p_central_mev = 450
+        final = %s.fin
+        default_order = 1
+        sigma = %s.sig
+&end
+
+&run_control n_indices=1 &end
+
+&vary_element name=Q4, item=K1, initial=-0.05, final=0.05, index_number=0, index_limit=11,
+              multiplicative=1, differential=1 &end
+
+&bunched_beam 
+              n_particles_per_bunch = 10000
+              emit_x = 0.37e-6,
+              emit_y = 0.037e-6,
+              sigma_dp = 1e-2,
+              beta_x = 2
+              beta_y = 10
+              enforce_rms_values[0] = 3*1,
+&end
+
+&track &end

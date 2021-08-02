@@ -1,0 +1,27 @@
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = RING,
+	p_central_mev = 7e3,
+	default_order = 2,
+        magnets = %s.mag,
+	random_number_seed = 98777521,
+        semaphore_file = %s.done,
+&end
+
+&twiss_output
+        filename = "%s.twi",
+        concat_order = 2,
+        radiation_integrals = 1,
+        higher_order_chromaticity = 1,
+        chromatic_tune_spread_half_range = 0.015,
+        output_at_each_step = 1
+        compute_driving_terms = 0
+&end
+
+&run_control 
+&end
+
+&bunched_beam &end
+
+&track &end
+

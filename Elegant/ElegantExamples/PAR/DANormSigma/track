@@ -1,0 +1,21 @@
+#!/bin/bash  
+
+elegant parTrack.ele
+
+# Compute beam sizes at the start of the lattice, assuming kappa=ey/ex=0.1 and alphax=alphay=etay=etayp=0
+sddsprocess parTrack.twi parTrack.twip -process=beta*,first,%s0 -process=eta*,first,%s0 \
+    -define=param,kappa,0.10 \
+    -define=param,ex,"ex0 1 kappa Jx / + /",units=m \
+    -define=param,ey,"ex kappa *",units=m \
+    -define=param,Sx0,"betax0 ex * etax0 Sdelta0 * sqr + sqrt",units=m \
+    -define=param,Sy0,"betay0 ey * sqrt",units=m
+
+# Plot beam sizes assuming kappa=0.1
+plot_beamsize parTrack 0.1
+
+# Scale DA with beam sizes
+sddsxref parTrack.aper parTrack.twip -leave=* -transfer=param,S?0 -pipe=out \
+    | sddsprocess -pipe=in parTrack.apers -define=col,xNorm,"x Sx0 /",symbol='x/$gs$r$bx$n' \
+    -define=col,yNorm,"y Sy0 /",symbol='y/$gs$r$by$n'
+
+sddsplot -col=xNorm,yNorm parTrack.apers 

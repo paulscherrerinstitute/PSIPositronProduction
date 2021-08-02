@@ -1,0 +1,42 @@
+#!/bin/bash
+
+if [ $# -ne 1 ] ; then
+   echo "usage: runCase <caseNumber>"
+   exit 1
+fi
+
+caseNumber=`echo $1 | awk '{printf("%03d\n", $1)}'`
+
+if [ ! -e correct_$caseNumber.done ] ; then
+    echo "File correct_$caseNumber.done not found. Did you run prepCase?"
+    exit 1
+fi
+if [ ! -e oneTurn_$caseNumber.done ] ; then
+    echo "File oneTurn_$caseNumber.done not found. Did you run prepCase?"
+    exit 1
+fi
+seed=`sdds2stream -column=Seed correct_$caseNumber.sdds`
+
+# Run dynamic aperture for various momentum offset (units of 10^-4)
+lines=31
+turns=1024
+ncores=16
+moffset=-500
+while [ $moffset -lt 501 ] ; do
+    rootname=dynap6d_${caseNumber}_${moffset}
+    if [ -e $rootname.done ] ; then
+        echo "$rootname.done exists --- not rerunning"
+    else 
+        args="-macro=configuration=correct_$caseNumber,rootname=$rootname,moffset=$moffset,turns=$turns,lines=$lines,seed=$seed,oneTurnFile=oneTurn_$caseNumber.fin"
+        if [ $ncores -gt 2 ] ; then
+	    # This command is local to APS clusters. Replace with your local command or use elegant/Pelegant directly
+            csubPelegant -cores 32 -queue aps -walltime 1:00:00 \
+		-input dynap6dTemplate.ele -rootname $rootname -force 1 \
+		-name $rootname -arguments $args
+        else
+            elegant $args
+        fi
+    fi
+    moffset=$((moffset+50))
+done
+

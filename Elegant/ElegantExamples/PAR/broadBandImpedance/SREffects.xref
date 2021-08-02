@@ -1,0 +1,12 @@
+SDDS1
+&column name=ColumnName type=string &end
+&column name=ElementParameter type=string &end
+&column name=ElementName type=string &end
+&data mode=ascii no_row_counts=1 &end
+Jx               JX             SR1
+Jy               JY             SR1
+Jdelta           JDELTA         SR1
+ex0              EXREF          SR1
+Sdelta0          SDELTAREF      SR1
+dDelta           DDELTAREF      SR1
+pCentral         PREF           SR1

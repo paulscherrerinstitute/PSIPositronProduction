@@ -1,0 +1,23 @@
+#!/bin/bash
+
+E=1000
+while [[ $E -lt 7100 ]] ; do
+    # Run aps lattice at 1500 MeV
+    elegant run.ele -macro=energy=$E
+
+    # Run IBS for 20mm bunch length, 1 nC/bunch
+    ibsEmittance run-$E.twi run-$E.ibs -coupling=0.01 -length=20 -charge=1
+    \rm run-$E.twi
+
+    E=$((E+250))
+done
+
+sddscombine run-*.ibs -collapse run.ibs -overwrite
+\rm run-*.ibs
+
+sddsplot "-title=Effect of IBS vs energy" -graph=line,vary \
+    -col=Energy,emitxInput run.ibs -legend=spec="No IBS" \
+    -col=Energy,emitx run.ibs -legend=spec="IBS"
+
+
+

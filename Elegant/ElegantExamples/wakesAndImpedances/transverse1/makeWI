@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Make an impedance for a damped resonator with angular frequency 5GHz and Q of 10
+# See B. W. Zotter and S. A. Kheifets, Impedances and Wakes in High-Energy Particle Accelerators, 1998.
+
+wr=5e9
+Q=10
+
+# Make the single-sided wake function (data for t>=0) needed by elegant's TRWAKE element
+sddssequence -pipe=out -define=t,units=s \
+    -sequence=begin=0,end=50e-9,n=8192 \
+    | sddsprocess -pipe=in wake.sdds \
+    "-define=parameter,wr,$wr" \
+    "-define=parameter,Rs,10e3" \
+    "-define=parameter,Q,$Q" \
+    "-define=parameter,Qp,Q sqr 4 rec - sqrt" \
+    "-define=parameter,wrp,wr Qp * Q /" \
+    "-define=parameter,A,wr Rs * Qp /" \
+    "-define=parameter,tau,2 Q * wr /" \
+    "-define=column,W,t 0 < ? 0 : wrp t * sin t tau / exp / A * $ ,units=V/C/m" \
+
+# Take FFT and fix units/normalization
+# In particular, multiply by the time span and divide all but the f=0 row by 2.
+sddsprocess wake.sdds -pipe=out -process=t,spread,%sSpread \
+    "-define=param,dt,tSpread n_rows 1 -,units=s" \
+    | sddsfft -pipe -col=t,W -full \
+    | sddsprocess -pipe=in impedance.sdds -redefine=col,%s,"i_row 0 == ? 1 : 0.5 $ %s * tSpread *",units=Ohms/m,select=????FFT*
+
+sddsplot -column=t,W wake.sdds
+sddsplot -column=f,????FFTW impedance.sdds -mode=loglin -graph=line,vary -legend
+
+

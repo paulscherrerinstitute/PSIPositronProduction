@@ -1,0 +1,78 @@
+&semaphores
+&end
+
+&run_setup
+        lattice = lattice.lte
+        use_beamline = RINGRFMHZFB,
+        p_central_mev = 7e3,
+        rootname = <rootname>
+&end
+
+&load_parameters
+        filename_list = "ILMatrix.sdds SREffects.sdds xfb.param yfb.param",
+        filename = SREffects.sdds,
+        change_defined_values = 1
+        verbose = 1
+&end
+&load_parameters
+        filename = <cavitySetup>
+        change_defined_values = 1
+        verbose = 1
+&end
+&load_parameters
+        filename = <diagSetup>
+        change_defined_values = 1
+        verbose = 1
+        allow_missing_elements = 1
+&end
+        
+&rpn_expression
+ expression = "
+{sddsprocess Basic.twi -pipe=out -process=s,max,sMax | sdds2stream -pipe -parameter=sMax} sto sMax
+sMax c_mks / 6e3 mev / beta.p / sto T0
+" 
+&end
+
+&alter_elements name=Q, item=TOTAL, value="(<current> 1e3 / T0 *)" &end
+
+&alter_elements name=Z[ZT]_*, item=RAMP_PASSES, value=<rampTurns> &end
+&alter_elements name=Z[ZT]_*, item=START_ON_PASS, value=<delayTurns> &end
+
+&alter_elements name=RFMM, item=AMPLITUDE_FILTER, string_value=<ampFilter> &end
+&alter_elements name=RFMM, item=PHASE_FILTER, string_value=<phaseFilter> &end
+&alter_elements name=RFMM, item=UPDATE_INTERVAL, value=<fbInterval> &end
+
+&alter_elements name=H??, item=DISABLE, value=1 &end
+&alter_elements name=H00, item=DISABLE, value=0 &end
+&alter_elements name=H00, item=START_PASS, value="(<turns> 1000 -)" &end
+
+&alter_elements name=WP??, item=DISABLE, value=0 &end
+&alter_elements name=WP??, item=FLUSH_INTERVAL, value=100 &end
+
+&alter_elements name=WPC, item=DISABLE, value=0 &end
+&alter_elements name=WPC, item=START_PASS, value="(<turns> 500 -)" &end
+&alter_elements name=WPC, item=INTERVAL, value=50 &end
+
+&save_lattice filename = %s.new &end
+
+&run_control
+        n_passes = <turns>
+&end
+
+&twiss_output
+        matched = 1
+        filename = %s.twi
+&end
+
+&sdds_beam
+        input = <bunch>,
+	track_pages_separately = 0,
+        use_bunched_mode = 1
+	n_duplicates = 23,
+        duplicate_stagger[0] = 1e-5,
+        duplicate_stagger[2] = 3e-6,
+	duplicate_stagger[4] = "(sMax c_mks / 24 /)",
+&end
+
+&track &end
+

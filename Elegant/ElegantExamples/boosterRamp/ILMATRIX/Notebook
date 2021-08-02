@@ -1,0 +1,23 @@
+Example of setting up ramped tracking of the APS booster using the ILMATRIX method.
+
+* Create the file momentumProgram.sdds, with columns time (s) and momentum (beta*gamma) units. This gives the
+ramp of the momentum vs time.
+sddssequence -pipe=out -define=time,units=s -seq=begin=0,end=250e-3,delta=1.22e-6 \
+| sddsprocess -pipe=in momentumProgram.sdds -define=col,momentum,"7e3 450 - 250e-3 / time * 450 + mev /" 
+
+* Compute lattice parameters at initial energy:
+elegant boost450.ele 
+
+* Make rf ramps:
+computeRfRamp -twiss boost450.twi -momentum momentumProgram.sdds=time+momentum \
+  -output RfRamp.sdds -Vmax 9.0 -harmonic 432 -overVoltage 1.5 -Vped 0.1
+
+* Set up ILMATRIX using twiss data
+ILMatrixSetup boost450
+
+* Create SREFFECTS ramping file
+SREffectsSetup boost450
+
+* Run booster simulation:
+mpiexec -np 7 Pelegant boost_ramp.ele
+

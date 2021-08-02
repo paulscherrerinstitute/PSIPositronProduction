@@ -1,0 +1,138 @@
+!! Three steps
+!! 1. Find initial DA
+!! 2. Optmize the dA
+!! 3. Find final DA
+
+
+!! 1. Find initial DA
+&run_setup
+        lattice = parTrack.lte
+        p_central_mev = 450
+        final = %s.fin
+        parameters = %s.param
+        semaphore_file = %s.done
+&end
+
+&run_control 
+             n_passes = 400
+&end
+
+&twiss_output
+        matched = 1
+        output_at_each_step = 1
+&end
+
+&error_control error_log = %s.erl &end
+&error_element name = Q*, item=TILT, amplitude=5e-4, bind=0 &end
+&error_element name = Q*, item=FSE, amplitude=5e-4, bind=0 &end
+
+&find_aperture
+        output = run.da0,
+        xmin = -0.06
+        xmax = 0.06
+        ymax = 0.02
+        mode = "n-lines"
+        n_lines = 11
+        n_splits = 1
+&end
+
+!! 2. Optmize the dA
+
+&run_setup
+        lattice = parTrack.lte
+        p_central_mev = 450
+        final = %s.fin
+        parameters = %s.param
+        semaphore_file = %s.done
+&end
+
+&load_parameters
+        filename = run.erl,
+        change_defined_values = 1,
+        force_occurence_data = 1
+&end
+
+&run_control 
+             n_passes = 400
+&end
+
+&twiss_output
+        matched = 1
+        output_at_each_step = 1
+&end
+
+&find_aperture
+        xmin = -0.06
+        xmax = 0.06
+        ymax = 0.02
+        mode = "n-lines"
+        n_lines = 11
+        n_splits = 1
+        optimization_mode = 1
+&end
+
+&optimization_setup
+        mode = minimize
+        method = simplex
+        target = 4000, !! This is deliberately a bit large to limit the runtime for this example
+        tolerance = 1e-12
+        n_passes = 3
+        n_evaluations = 1500
+        n_restarts = 0
+        verbose = 1
+        log_file = /dev/tty
+&end
+
+&optimization_term
+        term = "DaArea 1e-16 + betax betay * sqrt / rec Particles 1e-16 + / "
+&end
+
+&optimization_variable
+        name = Q1, item = K1, lower_limit=-4, upper_limit=4, step_size = 0.001 &end
+&optimization_variable
+        name = Q2, item = K1, lower_limit=-4, upper_limit=4, step_size = 0.001 &end
+&optimization_variable
+        name = Q3, item = K1, lower_limit=-4, upper_limit=4, step_size = 0.001 &end
+&optimization_variable
+        name = Q4, item = K1, lower_limit=-4, upper_limit=4, step_size = 0.001 &end
+
+&bunched_beam &end
+&optimize &end
+
+&save_lattice filename = %s.new &end
+
+!! 3. Find final DA
+
+&run_setup
+        lattice = run.new,
+        p_central_mev = 450
+        final = %s.fin
+        parameters = %s.param
+        semaphore_file = %s.done
+&end
+
+&load_parameters
+        filename = run.erl,
+        change_defined_values = 1,
+        force_occurence_data = 1
+&end
+
+&run_control 
+             n_passes = 400
+&end
+
+&twiss_output
+        matched = 1
+        output_at_each_step = 1
+&end
+
+&find_aperture
+        output = run.da1,
+        xmin = -0.06
+        xmax = 0.06
+        ymax = 0.02
+        mode = "n-lines"
+        n_lines = 11
+        n_splits = 1
+&end
+

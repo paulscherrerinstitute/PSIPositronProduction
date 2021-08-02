@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sddsplot -lspace=0.1,0.3,-1.0,0.95 -column=s,beta? full457MeV.twi -graph=line,vary -unsuppress -legend -column=s,Profile full457MeV.mag -overlay=xmode=norm,yfact=0.04
+
+sddsplot -lspace=0.6,0.9,-1.0,0.95 -column=s,S[xy] full457MeV.sig -graph=line,vary -unsuppress -legend -column=s,Profile full457MeV.mag -overlay=xmode=norm,yfact=0.04
+
+sddsplot -column=x,y full457MeV-*.wc -graph=dot -same -separate=1 -title=@PreviousElementName

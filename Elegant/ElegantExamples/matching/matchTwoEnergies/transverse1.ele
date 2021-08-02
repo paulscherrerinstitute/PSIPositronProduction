@@ -1,0 +1,110 @@
+! match transverse plane
+
+&run_setup
+        p_central_mev = 5
+        lattice = lattice.lte
+        parameters = %s.param
+        default_order = 1
+&end
+
+&run_control
+&end
+
+! Twiss parameters for the first beam
+&twiss_output
+        output_at_each_step = 1
+        matched = 0
+        beta_x = 1
+        beta_y = 1
+&end
+
+&parallel_optimization_setup
+        method = "hybridsimplex",
+        mode = "minimize",
+        tolerance = 1e-14,
+        target = 1e-6,
+        n_evaluations = 1500,
+        n_passes = 3,
+        n_restarts = 200,
+        population_log = %s.pop
+&end
+
+&optimization_term
+        term = "max.betax max.betay 2 maxn" &end
+
+&optimization_term
+        term = "MATCH1#1.betax MATCH2#1.betax 1e-2 sene" &end
+&optimization_term
+        term = "MATCH1#1.betay MATCH2#1.betay 1e-2 sene" &end
+&optimization_term
+        term = "MATCH1#1.alphax MATCH2#1.alphax 1e-2 sene" &end
+&optimization_term
+        term = "MATCH1#1.alphay MATCH2#1.alphay 1e-2 sene" &end
+
+&optimization_variable
+        name = QC1, item = B, lower_limit = 0, upper_limit = 1.5, step_size = 1e-3 &end
+&optimization_variable
+        name = QC3, item = B, lower_limit = 0, upper_limit = 1.5, step_size = 1e-3 &end
+&optimization_variable
+        name = QC5, item = B, lower_limit = 0, upper_limit = 1.5, step_size = 1e-3 &end
+&optimization_variable
+        name = QC7, item = B, lower_limit = 0, upper_limit = 1.5, step_size = 1e-3 &end
+
+&optimization_variable
+        name = QC2, item = B, lower_limit = -1.5, upper_limit = 0, step_size = 1e-3 &end
+&optimization_variable
+        name = QC4, item = B, lower_limit = -1.5, upper_limit = 0, step_size = 1e-3 &end
+&optimization_variable
+        name = QC6, item = B, lower_limit = -1.5, upper_limit = 0, step_size = 1e-3 &end
+&optimization_variable
+        name = QC8, item = B, lower_limit = -1.5, upper_limit = 0, step_size = 1e-3 &end
+
+&optimization_variable
+        name = Q11, item = K1, lower_limit = 0, upper_limit = 5, step_size = 1e-3 &end
+&optimization_variable
+        name = Q13, item = K1, lower_limit = 0, upper_limit = 5, step_size = 1e-3 &end
+&optimization_variable
+        name = Q12, item = K1, lower_limit = -5, upper_limit = 0, step_size = 1e-3 &end
+&optimization_variable
+        name = Q14, item = K1, lower_limit = -5, upper_limit = 0, step_size = 1e-3 &end
+
+&optimization_variable
+        name = Q21, item = K1, lower_limit = 0, upper_limit = 5, step_size = 1e-3 &end
+&optimization_variable
+        name = Q23, item = K1, lower_limit = 0, upper_limit = 5, step_size = 1e-3 &end
+&optimization_variable
+        name = Q22, item = K1, lower_limit = -5, upper_limit = 0, step_size = 1e-3 &end
+&optimization_variable
+        name = Q24, item = K1, lower_limit = -5, upper_limit = 0, step_size = 1e-3 &end
+
+&bunched_beam &end
+
+&optimize &end
+
+&run_setup
+        p_central_mev = 5
+        lattice = lattice.lte
+        magnets = %s.mag
+        default_order = 1
+&end
+
+&load_parameters
+        filename = %s.param,
+        change_defined_values = 1
+&end
+
+&twiss_output
+        matched = 0
+        beta_x = 1
+        beta_y = 1
+        filename = %s.twi
+&end
+
+&run_control
+&end
+
+&bunched_beam &end
+
+&track &end
+
+

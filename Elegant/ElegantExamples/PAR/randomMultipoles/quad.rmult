@@ -1,0 +1,24 @@
+SDDS1
+&parameter name=MagnetType, type=string, fixed_value=quad &end
+&parameter name=BoreRadius, type=double, fixed_value=6.000000e-02, units=m &end
+&parameter name=EffectiveLength, type=double, fixed_value=2.300000e-01, units=m &end
+&parameter name=SxPole, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SyPole, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SxSplit, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SySplit, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SphiHalves, type=double, fixed_value=1.000000e-04 &end
+&parameter name=SrPole, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=referenceRadius, type=double, fixed_value=6.000000e-02, units=m &end
+&column name=order, type=long &end
+&column name=an, type=double &end
+&column name=bn, type=double &end
+&data mode=ascii no_row_counts=1 &end
+1 4.071603e-03 1.090959e-03
+2 8.243629e-04 8.347562e-04
+3 1.188561e-03 3.522548e-04
+4 3.087566e-04 3.130336e-04
+5 3.518181e-04 1.463109e-04
+6 3.013283e-05 3.014397e-05
+7 8.026645e-05 6.669914e-05
+8 3.570811e-05 3.623074e-05
+9 5.036138e-05 2.961903e-05

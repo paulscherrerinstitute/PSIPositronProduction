@@ -1,0 +1,220 @@
+! Match linac from output of L1 to exit of bunch compressor
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L1OtoL3FS2",
+        p_central = "{sddsprocess longit.cen -pipe=out -clip=1,0,invert | sdds2stream -pipe -col=pCentral}"
+        final = %s.finOptA,
+        parameters = %s.paramOptA,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = longit.param
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&twiss_output
+        matched = 0,
+        reference_file = twiss.input,
+        output_at_each_step = 1
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 0.1,
+        tolerance = 1e-10, n_passes = 3, n_evaluations = 300, 
+        n_restarts = 6,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 20
+&end
+
+&optimization_term term = "max.betax 20 1 segt " &end
+&optimization_term term = "max.betay 20 1 segt " &end
+&optimization_term term = "L2:QM3M#1.betax L2:QM3M#1.betay 1 - 1 segt " &end
+&optimization_term term = "L2:QM4M#1.betax L2:QM4M#1.betay 1 + 1 selt " &end
+&optimization_term term = "L2:QM5M#1.betax L2:QM5M#1.betay 1 - 1 segt " &end
+&optimization_term term = "L2:QM6M#1.betax L2:QM6M#1.betay 1 + 1 selt " &end
+&optimization_term term = "L2:QM7M#1.betay 15 5 sene " &end
+&optimization_term term = "L2:QM7M#1.betax 15 5 sene " &end
+&optimization_term term = "L3:PM1M#1.alphay sqr " &end
+&optimization_term term = "L3:PM1M#1.betay 5 1 segt " &end
+&optimization_term term = "alphax -0.2 0.2 sene " &end
+&optimization_term term = "betax 0.8 0.1 sene " &end
+&optimization_term term = "alphay -1.5 0.2 sene " &end
+&optimization_term term = "betay 6 1.5 sene " &end
+&optimization_term term = "Transmission 1 - abs " &end
+
+&optimization_variable
+        name = L1:QM1, item=K1, lower_limit=-15, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = L1:QM2, item=K1, lower_limit=-15, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = L1:QM3, item=K1, lower_limit=-15, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = L1:QM4, item=K1, lower_limit=-15, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = L1:QM5, item=K1, lower_limit=-15, upper_limit=15, step_size = 0.1 &end
+
+&optimization_variable
+        name = L2:QM1, item=K1, lower_limit=-1e10, upper_limit=-1e6, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM2, item=K1, lower_limit=1e6, upper_limit=1e10, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM3, item=K1, lower_limit=-1e10, upper_limit=-1e6, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM4, item=K1, lower_limit=1e6, upper_limit=1e10, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM5, item=K1, lower_limit=-1e10, upper_limit=-1e6, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM6, item=K1, lower_limit=1e6, upper_limit=1e10, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM7, item=K1, lower_limit=-1e10, upper_limit=-1e6, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM8, item=K1, lower_limit=1e6, upper_limit=1e10, step_size = 1e6 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+! Continuing matching, including three screen emittance measurement system
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L1OtoL3FS5",
+        p_central = "{sddsprocess longit.cen -pipe=out -clip=1,0,invert | sdds2stream -pipe -col=pCentral}"
+        final = %s.finOptB,
+        parameters = %s.paramOptB,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = transverse.paramOptA,
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&twiss_output
+        matched = 0,
+        reference_file = twiss.input,
+        output_at_each_step = 1
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&alter_elements name=L3:FS4, item=FITPOINT, value=1 &end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 0.01,
+        tolerance = 1e-10, n_passes = 4, n_evaluations = 600, 
+        n_restarts = 18,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 20
+&end
+
+&optimization_term term = " max.betax 20 2 segt  " &end
+&optimization_term term = " max.betay 20 2 segt  " &end
+&optimization_term term = " L2:QM3M#1.betax L2:QM3M#1.betay 2 segt  " &end
+&optimization_term term = " L2:QM4M#1.betay L2:QM4M#1.betax 2 segt  " &end
+&optimization_term term = " L2:QM5M#1.betax L2:QM5M#1.betay 2 segt  " &end
+&optimization_term term = " L2:QM6M#1.betay L2:QM6M#1.betax 2 segt  " &end
+&optimization_term term = " L2:QM7M#1.betay 30 1 segt  " &end
+&optimization_term term = " L2:QM7M#1.betax 5 1 selt  " &end
+&optimization_term term = " L2:QM8M#1.betax L2:QM8M#1.betay - abs 15 1 segt " &end
+&optimization_term term = " L3:PM1M#1.betay 10 2 segt  " &end
+&optimization_term term = " L3:BM4M#2.betax 0.8 .01 sene  " &end
+! For the three-screen system, the screen-to-screen distance is ds=0.963216006 .
+! To get 60 deg phase advance between screens, want beta=ds/tan(60) at the center
+! screen with alpha=0.
+&optimization_term term = " L3:FS4#1.betax 0.963216006 60 dtan / - sqr 10000 *" &end
+&optimization_term term = " L3:FS4#1.betay 0.963216006 60 dtan / - sqr 10000 *" &end
+&optimization_term term = " L3:FS4#1.alphax sqr 10000 * " &end
+&optimization_term term = " L3:FS4#1.alphay sqr 10000 *  " &end
+&optimization_term term = "L3:QM3.K1 abs 3.2 0.02 segt " &end
+
+&optimization_variable
+        name = L2:QM5, item=K1, lower_limit=-1e10, upper_limit=-1e6, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM6, item=K1, lower_limit=1e6, upper_limit=1e10, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM7, item=K1, lower_limit=-1e10, upper_limit=-1e6, step_size = 1e6 &end
+&optimization_variable
+        name = L2:QM8, item=K1, lower_limit=1e6, upper_limit=1e10, step_size = 1e6 &end
+&optimization_variable
+        name = L3:QM4, item=K1, lower_limit=0, upper_limit=100, step_size=1 &end
+&optimization_variable
+        name = L3:QM3, item=K1, lower_limit=-4, upper_limit=0, step_size=1 &end
+&optimization_variable
+        name = L3:QM6, item=K1, lower_limit=0, upper_limit=100, step_size=1 &end
+&optimization_variable
+        name = L3:QM5, item=K1, lower_limit=-100, upper_limit=0, step_size=1 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+! Evaluate everything
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L1OtoL3FS5",
+        p_central = "{sddsprocess longit.cen -pipe=out -clip=1,0,invert | sdds2stream -pipe -col=pCentral}"
+        final = %s.fin,
+        output = %s.out,
+        magnets = %s.mag,
+        parameters = %s.param,
+        always_change_p0 = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = transverse.paramOptB,
+        change_defined_values = 1
+&end
+
+&floor_coordinates
+        filename = %s.flr,
+        include_vertices = 1,
+        magnet_centers = 1
+&end
+
+&twiss_output
+        matched = 0,
+        filename = %s.twi,
+        reference_file = twiss.input,
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&sdds_beam 
+        input = beamFile.sdds,
+        reuse_bunch = 1
+&end
+ 
+&track &end
+

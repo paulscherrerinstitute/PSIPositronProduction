@@ -1,0 +1,23 @@
+SDDS1
+&column name=QuantityName, type=string,  &end
+&column name=ElementName, type=string,  &end
+&column name=ElementParameter, type=string,  &end
+&data mode=ascii, &end
+! page number 1
+                  16
+fResonance RFMM FREQ
+hm RFMM PRELOAD_HARMONIC 
+NCavities RFMM N_CAVITIES 
+Q RFMM Q 
+beta RFMM BETA 
+fDrive RFMM DRIVE_FREQUENCY 
+Ra RFMM RA 
+Vc RFMM V_SETPOINT 
+phisDeg90 RFMM PHASE_SETPOINT 
+q RFMM PRELOAD_CHARGE
+fHHC RFHM FREQ 
+QLHHC RFHM Q 
+RaHHC RFHM RA 
+nHHC RFHM N_CAVITIES 
+hHHC RFHM PRELOAD_HARMONIC 
+q RFHM PRELOAD_CHARGE

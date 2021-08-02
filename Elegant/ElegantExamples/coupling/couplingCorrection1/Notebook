@@ -1,0 +1,33 @@
+Scripts to perform coupling correction for the APS ring, emulating what is done
+in APS operations.
+
+M. Borland, APS
+
+run0.ele
+        Runs the full lattice to test and get twiss parameters
+
+makeSkewKnobFiles
+        Makes a set of knob files for use in coupling minimization using run0.twi
+
+makeSkewReponse
+skewResponseTemplate.ele
+        Script and template for computing response of s36 to skew strength, plus inverse
+
+correctCoupling
+        Script to perform coupling correction and adjust vertical emittance
+        Uses skewResponse.inv and skew knob files.
+        Also uses
+        etayCorrTemplate.ele --- Template file for etay correction
+        couplingCorrTemplate.ele --- Template file for coupling minimization and ey setting
+
+To run the example
+$ elegant run0.ele 
+$ makeSkewKnobFiles 
+$ makeSkewResponse
+$ elegant run1.ele
+$ sddsprintout -parameter=e? run1.mom
+$ correctCoupling -rootname run1 -input errors.param -eyTarget 1
+$ sddsprintout -param=e? run1-CC.mom 
+
+\rm run1-CC* skew?-???.sdds run0.done run0.mag run0.mom run0.new run0.param run0.twi run0.w1 run1.cc-log run1.done 
+\rm run1-etayCorrection.param run1.m* run1.new run1.param run1.twi run1.w1 skewResponse.inv skewResponse.sdds test-* test.cc-log 

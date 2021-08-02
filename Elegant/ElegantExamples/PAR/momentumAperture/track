@@ -1,0 +1,36 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+if ![file exists parTrack.done] {
+    catch {file delete parTrack.log}
+    catch {exec mpiexec -np 18 Pelegant parTrack.ele > parTrack.log}
+} else {
+    puts stdout "Tracking already done---using existing results"
+    flush stdout
+}
+
+# Plot the momentum aperture 
+
+exec sddsplot -column=s,deltaPositive -col=s,deltaNegative parTrack.mmap -graph=sym,fill \
+    -column=s,Profile parTrack.mag -overlay=xmode=norm,yfact=0.04 
+
+# Evaluate IBS
+exec ibsEmittance parTrack.twi parTrack.ibs -charge=120 -coupling=0.01 -rf=voltage=0.030,harmonic=1 
+catch {exec sddsprintout -param=emitx -param=emitx0,end -param=emity,end -param=sigmaDelta -param=sigmaDelta0,end -param=sigmaz -param=sigmaz0,end parTrack.ibs} result
+puts stderr "$result"
+
+# Extract some data
+catch {exec sdds2stream -parameter=emitx,emity,sigmaDelta,sigmaz parTrack.ibs} data
+set emitx [lindex $data 0]
+set emity [lindex $data 1]
+set Sdelta [lindex $data 2]
+set Sz [expr 1e3*[lindex $data 3]]
+
+# Evaluate the lifetime
+exec touschekLifetime parTrack.tlife -twiss=parTrack.twi -aperture=parTrack.mmap \
+    -charge=120 -emitInput=$emitx -emityInput=$emity \
+    -deltaInput=$Sdelta -length=$Sz -ignoreMismatch
+
+catch {exec sddsprintout -param=tLifetime parTrack.tlife} result
+puts stderr "$result"

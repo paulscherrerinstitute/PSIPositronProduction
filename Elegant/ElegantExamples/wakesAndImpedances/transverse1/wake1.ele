@@ -1,0 +1,27 @@
+&run_setup
+        lattice = lattice.lte,
+        default_order = 1,
+        use_beamline = bltrw,
+        p_central = 1000,
+        output = %s.out,
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 100000,
+        emit_nx = 0.0,
+        emit_ny = 0.0,
+        sigma_dp = 0.00,
+        sigma_s = 20e-3,
+        distribution_type[0] = 3*"gaussian",
+        distribution_cutoff[0] = 3*3,
+        halton_sequence[0] = 3*1,
+        halton_radix[0] = 2,3,5,7,11,13,
+        centroid[0] = 1e-3, 0, 1e-3, 0
+&end
+ 
+&track &end
+

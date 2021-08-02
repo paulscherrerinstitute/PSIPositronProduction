@@ -1,0 +1,46 @@
+! Load everything, correct chromaticity, and evaluate
+
+&run_setup
+        lattice = aps.lte
+        use_beamline = ring,
+        p_central_mev = 7e3
+        parameters = %s.param
+        magnets = %s.mag,
+        default_order = 2
+&end
+
+! Load K1 values from last step 
+&load_parameters
+        filename = match2.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+&load_parameters
+        filename = match1.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+
+&twiss_output
+        filename = %s.twi,
+        output_at_each_step = 1,
+        matched = 1,
+        radiation_integrals = 1
+&end
+
+&run_control &end
+
+! Force S1B:S3 to have same strength as S1A:S3
+&link_elements source=S1A:S3, target=S1B:S3, item=K2, equation=K2 &end
+
+&chromaticity
+        dnux_dp = 0,
+        dnuy_dp = 0,
+        change_defined_values = 1,
+        sextupoles = "S1A:S3 S1A:S4"
+&end
+
+
+&bunched_beam &end
+
+&track &end

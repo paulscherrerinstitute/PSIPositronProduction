@@ -1,0 +1,23 @@
+! Put some small errors on the quads and then compute the beta functions
+! This simulates the real machine and measurement
+
+&run_setup
+        lattice = fodo.lte,
+        p_central_mev = 1e3
+&end
+
+&run_control &end
+
+&error_control error_log = %s.erl &end
+&error_element name=Q*, item=K1, amplitude=0.1, bind=0 &end
+
+&twiss_output 
+              filename = %s.twi
+              matched = 0
+              output_at_each_step = 1
+              reference_file = run0.twi,
+&end
+
+&bunched_beam &end
+
+&track &end

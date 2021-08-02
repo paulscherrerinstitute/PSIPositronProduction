@@ -1,0 +1,25 @@
+Example of performing an experiment to detect the positional offset of
+quadrupole magnets in a transport line.
+M. Borland, ANL, August 2016.
+
+ltp375MeV.lte
+	Lattice file
+
+scanQuad
+	Bash script to run a scan of K1 for a given quadrupole.
+	It uses scanTemplate.ele as the input file for elegant
+	The number of the quadrupole must be given on the commandline
+	E.g., to scan LTP:Q7, use
+	% scanQuad 7
+	After running, a bunch of plot windows will pop up.
+	Read the script file for more description
+	
+scanTemplate.ele
+	Template command file for scanning a quadrupole.
+	The quadrupole is misaligned by +1mm in x and y, so we can
+	get an idea of the sensitivity.
+
+fitSlopes
+        After running scanQuad, can be used to fit the BPM readings vs
+        quad strength. E.g.,
+        % fitSlopes 7

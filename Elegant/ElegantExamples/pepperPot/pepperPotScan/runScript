@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Better to use Pelegant if multi-core machine is available:
+mpiexec -np 8 Pelegant run.ele 
+#elegant run.ele 
+
+# Simple analysis to estimate emittance using the assumption that the
+# beam is upright at the aperture
+# +/-1mm aperture is 1m from the observation point.
+sddscollapse run.fin -pipe=out \
+    | sddsprocess -pipe=in run.finc \
+    -filter=col,Particles,0,0,\! \
+    "-define=parameter,L,1,units=m" \
+    "-define=parameter,A,1e-3,units=m" \
+    "-define=parameter,RmsSize,A 3 sqrt /,units=m" \
+    -process=RC.DX,rms,SxRmsEst,weight=Particles \
+    "-define=col,SxpSample,Sx sqr RmsSize sqr - sqrt L /" \
+    -process=SxpSample,rms,SxpRmsEst,weight=Particles \
+    "-define=parameter,exEst,SxRmsEst SxpRmsEst *,units=m" \
+    "-define=parameter,betaxEst,SxRmsEst SxpRmsEst /,units=m" \
+    -process=RC.DY,rms,SyRmsEst,weight=Particles \
+    "-define=col,SypSample,Sy sqr RmsSize sqr - sqrt L /" \
+    -process=SypSample,rms,SypRmsEst,weight=Particles \
+    "-define=parameter,eyEst,SyRmsEst SypRmsEst *,units=m" \
+    "-define=parameter,betayEst,SyRmsEst SypRmsEst /,units=m" 
+
+sddsplot -column=x,y run.out -graph=dot
+
+sddsprintout run.finc -param=e?Est -param=beta?Est 
+ 

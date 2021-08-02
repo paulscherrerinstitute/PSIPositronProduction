@@ -1,0 +1,98 @@
+! Match beta functions at the end of the fourth chicane dipole
+! using the last four linac quads
+
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        ! Beamline is from L1 output to the exit of the bunch compressor chicane
+        use_beamline = L1ToECC,
+        expand_for = beamFile.sdds,
+        always_change_p0 = 1,
+        final = %s.fin
+        parameters = %s.param
+&end
+
+! This command sets up Twiss parameter computation, using as it's starting
+! point some values stored in a previous simulation output. One can also give
+! the values explicitly using the beta_x, beta_y, alpha_x, etc. parameters
+
+&twiss_output
+        matched = 0,
+        output_at_each_step = 1,
+        reference_file = beamFile.sdds.twi,
+        reference_element = _BEG_
+&end
+
+&optimization_setup
+        mode = "minimize", method = "simplex",
+        n_restarts = 3,
+        n_evaluations = 1500, n_passes = 3,
+        log_file = /dev/tty,
+        verbose = 0
+&end
+
+! Try to make betax<0.5m and |alphax|<1
+&optimization_term
+        term = "betax 0.5 0.01 segt" 
+&end
+&optimization_term
+        term = "alphax abs 1 0.1 segt" 
+&end
+
+! Try to make betay<5m and |alphay|<5
+&optimization_term
+       term = "betay 5 0.01 segt"
+&end
+&optimization_term
+        term = "alphay abs 5 0.1 segt" 
+&end
+
+! Try to keep maximum beta functions less than 20 m
+&optimization_term
+        term = "max.betax 20 .1 segt" &end
+&optimization_term
+        term = "max.betay 20 .1 segt" &end
+
+&optimization_variable
+        name = L2:QM5, item = K1, lower_limit=-1e9, upper_limit=1e9, step_size=1e6 &end
+&optimization_variable
+        name = L2:QM6, item = K1, lower_limit=-1e9, upper_limit=1e9, step_size=1e6 &end
+&optimization_variable
+        name = L2:QM7, item = K1, lower_limit=-1e9, upper_limit=1e9, step_size=1e6 &end
+&optimization_variable
+        name = L2:QM8, item = K1, lower_limit=-1e9, upper_limit=1e9, step_size=1e6 &end
+
+&run_control
+&end
+
+&bunched_beam
+&end
+
+&optimize &end
+
+! Evaluate the solution we just found
+
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        use_beamline = L1ToECC,
+        expand_for = beamFile.sdds,
+        always_change_p0 = 1,
+        magnets = %s.mag
+&end
+
+! Load the K1 values from the solution we just found
+
+&load_parameters
+        filename = part1.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+
+&twiss_output
+        matched = 0,
+        filename = %s.twi,
+        reference_file = beamFile.sdds.twi,
+        reference_element = _BEG_
+&end
+

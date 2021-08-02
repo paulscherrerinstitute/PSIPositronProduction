@@ -1,0 +1,74 @@
+Example of basic run with main and harmonic cavity beamloading, rf feedback,
+beam feedback, and impedance for 24 bunches.
+The bunch form factor is used in setting up the rf phase setpoint.
+M. Borland, 2/13/2016
+
+Source files:
+lattice.lte
+        Lattice file, including the full element-by-element lattice and 
+        beamlines for use in fast tracking
+
+AmpFeedbackFilters.sdds
+PhaseFeedbackFilters.sdds
+        From T. Berenc, used to model rf feedback for main cavity.
+
+Basic.ele
+        Basic run for setting up fast tracking, getting lattice parameters
+
+ILMatrixSetup
+ILMatrix.xref
+        Set up ILMATRIX for fast tracking. Makes the file ILMatrix.sdds
+        One can also copy this file from elsewhere, e.g., from a tracking
+        based determination.
+
+SREffectsSetup
+SREffects.xref
+        Set up SREFFECTS For fast tracking
+
+beamLoadCalcHHC
+computeBunchLength
+beamLoadXref.sdds
+        Precalculate beamloading including iterative solution for the bunch length.
+        Allows computing the synchronous phase setpoint for the main cavities
+        Create parameter file to set up RFMODE elements including feedback
+
+makeBunch
+makeBunch.ele
+        Makes a single bunch (duplicated for tracking).
+        Used by runCases.
+
+makeDiagParamFile
+        Makes a "diagnostic" setup file to configure WATCH and HISTOGRAM elements.
+        Used by runCases.
+
+ring_rw.impe
+ring_zt.impe
+ring_zz.impe
+        Old impedance files from Y.C. Chae
+        Should really sum these to make a single impedance for better performance.
+
+runTemplate.ele
+        Template for running with impedance and longitudinal feedback
+runCases
+        Run jobs. Needs modification for local queueing system.
+        Read the comments in this script!
+
+TFBFirSetup
+        Script to configure transverse bunch-by-bunch feedback FIR filters.
+        This script will be distributed in version 29.1 of elegant.
+
+====        
+
+Sequence of operations
+
+** Set up lattice model
+elegant Basic.ele
+SREffectsSetup
+ILMatrixSetup
+TFBFirSetup -twiss Basic.twi -pickup XPICKUP -driver XDRIVER -plane x -output xfb.param -terms 6
+TFBFirSetup -twiss Basic.twi -pickup YPICKUP -driver YDRIVER -plane y -output yfb.param -terms 6
+
+
+** run jobs
+runCases
+

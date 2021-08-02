@@ -1,0 +1,10 @@
+This is an example of a linac with a bunch compressor in the middle,
+showing how to simulate phase and voltage errors. It is similar to 
+../bunchCompJitter, but in this case the errors are generated external 
+to elegant.
+
+To run:
+% ./jitter
+% ./cleanUp
+
+Example by M. Borland, APS.

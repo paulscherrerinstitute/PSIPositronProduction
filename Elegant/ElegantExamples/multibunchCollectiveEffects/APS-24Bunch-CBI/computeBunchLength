@@ -1,0 +1,112 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+set usage "usage: computeBunchLength -twiss <filename> -Vm <MV> -hm <harmonic> -I <mA> -hh <harmonicRatio> -RoQh <Ohms> -Qlh <value> -nh <#cav> -dfh <kHz>"
+set twiss ""
+set Vm 3.157
+set hm 432
+set I 200
+set hh 3
+set RoQh 208
+set Qlh 13.6e3
+set nh 3
+set dfh 27.6
+set args $argv
+if {[APSStrictParseArguments {twiss Vm hm I hh RoQh Qlh nh dfh}] || ![string length $twiss]} {
+    puts stderr $usage
+    exit 1
+}
+if ![file exists $twiss] {
+    puts stderr "Not found: $twiss"
+    exit 1
+}
+
+set dataItemList [list U0 Sdelta0 ex0 alphac pCentral revFreq sMax]
+if [catch {exec sddsconvert $twiss -pipe=out -topage=1 \
+             | sddsprocess -pipe -process=s,max,sMax \
+             "-define=parameter,revFreq,sMax pCentral beta.p c_mks * / rec" \
+             | sdds2stream -pipe \
+             -parameter=[join $dataItemList ,]} dataList] {
+    puts stderr "$dataList"
+    exit 1
+}
+set index 0
+foreach item $dataItemList {
+    set ${item} [lindex $dataList $index]
+    incr index
+}
+set revFreq1 [expr $revFreq]
+set sMax1 [expr $sMax]
+
+set harmonic $hm
+set harmonicRatio $hh
+
+set pi 3.141592653589793
+set cMKS 2.997924580000000e+08
+set energy [expr sqrt($pCentral*$pCentral+1)*0.51099906]
+set omegaRF [expr $harmonic*2*$pi*$revFreq]
+set rfFrequency [expr $omegaRF/(2*$pi)]
+set I [expr $I/1e3]
+set Vm [expr $Vm*1e6]
+set U0 [expr $U0*1e6]
+set dfh [expr $dfh*1e3]
+
+proc computeBunchShape {} {
+    global dataItemList plot
+    eval global $dataItemList bunchLength harmonic phis twiss
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy Vm
+    global bunchDuration sMax
+    global harmonicRatio harmonicMode lastHarmonicMode harmonicCavityPhase Vh
+    global pi cMKS U0 energy omegaRF rfFrequency
+
+    exec sddssequence -pipe=out -define=t,type=double,units=s -sequence=begin=[expr -0.25/$rfFrequency],end=[expr 0.25/$rfFrequency],n=10000 \
+        | sddsprocess -pipe=in $twiss.longit \
+        "-define=param,C1,[expr $alphac*$cMKS*$Vm/1e6/($energy*$sMax*$omegaRF)]" \
+        "-define=param,alphac,$alphac" \
+        "-define=param,Sdelta0,$Sdelta0" \
+        "-define=param,phis,$phis" \
+        "-define=param,k,$Vh $Vm / abs" \
+        "-define=param,n,$harmonicRatio,type=short" \
+        "-define=param,phih,$harmonicCavityPhase" \
+        "-define=param,omega,$omegaRF" \
+        "-define=col,phi,omega t *" \
+        "-define=col,Phi1,phis cos  phi     phis + cos -" \
+        "-define=col,Phi2,phih cos  phi n * phih + cos - k * n /" \
+        "-define=col,Phi3,phis sin  phih sin k * + phi *" \
+        "-define=col,Phi,Phi1 Phi2 + Phi3 - C1 *" \
+        "-define=col,rhoArg,Phi alphac sqr / Sdelta0 sqr / chs" \
+        -process=rhoArg,min,%sMin \
+        "-define=col,rho,rhoArg chs exp" \
+        -process=rho,integ,rhoInteg,functionOf=t \
+        "-redefine=col,rho,rho rhoInteg /" \
+        -process=t,rms,tRms,weight=rho \
+	"-define=param,VrfMain,$Vm 1e6 /,units=MV" 
+
+}
+
+set St 25e-12
+set lastSt 0
+
+set left 100
+while {[expr (abs($St-$lastSt)/$St)>1e-4] && $left>0} {
+    # Compute beam loading voltage in the HHC
+    set psih [expr atan($dfh/($rfFrequency*$hh)*$Qlh*2)]
+    set Vh [expr $nh*$I*$RoQh*$Qlh*cos($psih)*exp(-pow($omegaRF*$hh*$St, 2)/2)]
+    set harmonicCavityPhase [expr $psih-$pi/2.]
+
+    # Compute synchronous phase for the main cavity
+    set phis [expr $pi-asin(($U0-$Vh*sin($harmonicCavityPhase))/$Vm)]
+    # puts stderr "St=$St, Vh=$Vh V, phih=$harmonicCavityPhase, phim = $phis"
+
+    # Compute the bunch shape
+    computeBunchShape
+    set lastSt $St
+    set St [exec sdds2stream -pipe -parameter=tRms $twiss.longit]
+    set St [expr (0.2*$St+0.8*$lastSt)]
+    incr left -1
+}
+puts stdout "$St"

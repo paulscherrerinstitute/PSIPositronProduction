@@ -1,0 +1,38 @@
+Example of matching two beams that share a linac and transport line elements.
+M. Borland, 2017
+===================
+
+lattice.lte
+        Lattice file
+
+longitudinal.ele
+        Performs adjustment of linac voltages to obtain the same beam energy at the
+        end of the linac for two beams starting with different energies.
+
+transverse1.ele
+        Runs transverse matching a combination of separate and common quadrupoles
+        Loads results of longitudinal run.
+
+transverse2.ele
+        Confirms the results for the two beams
+
+cleanUp
+        Script to clean up output files
+
+===============
+Sequence:
+
+! Longitudinal matching
+elegant longitudinal.ele
+
+! Transverse matching. Use parallel optimizer!
+mpiexec -np 18 Pelegant transverse1.ele
+
+! Verification
+elegant transverse2.ele
+
+! Compare results and verify that they agree at the end
+sddsplot -graph=line,vary -groupby=names -sep=names -layout=1,2 -join=x -col=s,beta[xy] transverse2-1.twi transverse2-2.twi  
+
+! Clean up
+./cleanUp

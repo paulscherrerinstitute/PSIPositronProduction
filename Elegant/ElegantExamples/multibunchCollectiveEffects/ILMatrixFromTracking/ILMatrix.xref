@@ -1,0 +1,38 @@
+SDDS1
+&column name=ColumnName type=string &end
+&column name=ElementParameter type=string &end
+&column name=ElementName type=string &end
+&data mode=ascii no_row_counts=1 &end
+betax0           BETAX           RING1
+betay0           BETAY           RING1
+alphax0          ALPHAX          RING1
+alphay0          ALPHAY          RING1
+etax0            ETAX            RING1
+etaxp0           ETAPX           RING1
+etay0            ETAY            RING1
+etayp0           ETAPY           RING1
+dbetax/dp        BETAX1M         RING1
+dbetay/dp        BETAY1M         RING1
+dalphax/dp       ALPHAX1M        RING1
+dalphay/dp       ALPHAY1M        RING1
+nux              NUX             RING1
+dnux/dp          NUX1M           RING1
+dnux/dp2         NUX2M           RING1
+dnux/dp3         NUX3M           RING1
+nuy              NUY             RING1
+dnuy/dp          NUY1M           RING1
+dnuy/dp2         NUY2M           RING1
+dnuy/dp3         NUY3M           RING1
+dbetax/dp        BETAX1M         RING1
+dbetay/dp        BETAY1M         RING1
+sMax             L               RING1
+alphac           ALPHAC          RING1
+alphac2          ALPHAC2         RING1
+dnux/dAx	 NUX1AX		 RING1
+dnux/dAy	 NUX1AY		 RING1
+dnuy/dAx	 NUY1AX		 RING1
+dnuy/dAy	 NUY1AY		 RING1
+xCurvature       ETAX1          RING1
+yCurvature       ETAY1          RING1
+xpCurvature      ETAPX1         RING1
+ypCurvature      ETAPY1         RING1

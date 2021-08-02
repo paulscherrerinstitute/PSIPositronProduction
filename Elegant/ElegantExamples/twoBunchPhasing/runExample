@@ -1,0 +1,4 @@
+#!/bin/bash
+elegant makeBeam.ele
+elegant linac.ele
+sddsplot -col=t,p makeBeam.out -graph=dot,subtype=4 -legend=spec=before -col=t,p linac.out -graph=dot,type=1,subtype=4 -legend=spec=after

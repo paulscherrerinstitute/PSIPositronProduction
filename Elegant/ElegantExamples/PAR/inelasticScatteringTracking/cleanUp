@@ -1,0 +1,4 @@
+#!/bin/bash
+
+\rm run0.mmap* run0.mag run0.twi parTrack.new run1.is* run1.done run1.mag run1.twi  *.interp *.his  *.done
+

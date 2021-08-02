@@ -1,0 +1,18 @@
+! Set up a FODO lattice with various apertures
+
+! Quadrupole aperture is 10 mm, round
+qap: maxamp,x_max=0.01,y_max=0.01,elliptical=1
+! Drift aperture is 40mm by 10mm, n=6 super-ellipse
+dap: maxamp,x_max=0.020,y_max=0.005,elliptical=1,exponent=6
+
+! Quads are 10 cm long, made up of 10 pieces
+qf1: kquad,l=0.01,k1=1.0
+qfh: line=(5*(qap,qf1),qap)
+
+qd1: kquad,l=0.01,k1=-1.0
+qdh: line=(5*(qap,qd1),qap)
+
+d: drift,l=5.0
+
+cell: line=(qfh,dap,d,2*qdh,dap,d,qfh)
+bl: line=(qfh,5*cell,qfh)

@@ -1,0 +1,7 @@
+kmap: ukickmap,l=3.12,input_file="kickMap.sdds",n_kicks=39,field_factor="39 sqrt"
+bl: line=(kmap)
+
+
+
+
+

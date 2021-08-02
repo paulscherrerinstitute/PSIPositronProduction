@@ -1,0 +1,4 @@
+#!/bin/bash
+
+\rm ellipse.sdds run.bun run.bun.ana run.twi run.twi.W1 run.w1 run.w1.h2d *~ *.*~
+

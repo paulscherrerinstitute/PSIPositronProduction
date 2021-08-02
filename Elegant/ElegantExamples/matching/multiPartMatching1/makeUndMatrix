@@ -1,0 +1,47 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+set usage {usage: makeUndMatrix -output <filename> -energy <MeV>}
+set output ""
+set energy 217
+set args $argv 
+if {[APSStrictParseArguments {output energy}] || ![string length $output] || \
+        $energy<=0} {
+    return -code error "$usage"
+}
+if [file exists $output] {
+    return -code error "exists: $output"
+}
+set BRho [expr $energy/299.792458]
+set poles 15
+set period [expr (0.2343/$poles)*2]
+set B [expr 3.1/(100*$period)/0.934]
+set K1 [expr 0.5/pow($BRho/$B,2)]
+
+if [catch {open $output w} fid] {
+    return -code error "$fid"
+}
+
+set kl [expr sqrt($K1)*0.2343]
+set R33 [expr cos($kl)]
+set R34 [expr 1.0/sqrt($K1)*sin($kl)]
+set R43 [expr -sqrt($K1)*sin($kl)]
+set R44 $R33
+
+puts $fid "undulator matrix for $energy MeV: 0 0 0 0 .2343 0"
+puts $fid "R1: 1  0.2343  0 0 0 0"
+puts $fid "R2: 0    1     0 0 0 0"
+puts $fid "R3: 0 0  $R33 $R34 0 0"
+puts $fid "R4: 0 0  $R43 $R44 0 0"
+puts $fid "R5: 0 0   0    0   1 0"
+puts $fid "R6: 0 0   0    0   0 1"
+close $fid
+
+exec sddsmakedataset [file rootname $output].sdds \
+    -column=K1L,type=double,units=1/m -data=[expr $K1*10*0.2343] \
+    -column=Energy,type=double,units=MeV -data=$energy 

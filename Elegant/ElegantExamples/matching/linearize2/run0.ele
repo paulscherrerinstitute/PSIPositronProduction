@@ -1,0 +1,18 @@
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 1e3
+        use_beamline = BLD
+&end
+
+&run_control
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1000
+        emit_x = 1e-11
+        beta_x = 10
+        emit_y = 0,
+        sigma_dp = 5e-2
+&end
+
+&track &end

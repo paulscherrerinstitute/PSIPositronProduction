@@ -1,0 +1,6 @@
+Q: charge,total=1e-9
+MALIN: malign
+L1: rfca,freq=2856e6,volt=10e6,l=3
+M1: trfmode,freq=2855e6,ra=100e9,q=10000,bin_size=0.1e-12,n_bins=300,reset_for_each_step=0,record="%s.m1",interpolate=1
+bl: line=(Q,MALIN,L1,M1)
+

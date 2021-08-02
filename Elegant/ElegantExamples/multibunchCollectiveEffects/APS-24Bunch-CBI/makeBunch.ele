@@ -1,0 +1,39 @@
+&run_setup
+        lattice = lattice.lte
+        use_beamline = GB
+        p_central_mev = <momentum>
+        rootname = <rootname>
+        output = %s.out,
+        semaphore_file = %s.done
+&end
+
+&run_control 
+&end
+
+&rpn_load
+        tag = ref
+        filename = Basic.twi
+&end
+&rpn_load
+        tag = ref
+        filename = Basic.twi
+        load_parameters = 1
+&end
+
+&bunched_beam
+        n_particles_per_bunch = <nPerBunch>
+        emit_x = "(ref.ex0 ref.Jx rec ref.Jy rec + /)",
+	emit_y = "(ref.ex0 ref.Jx rec ref.Jy rec + /)",
+        sigma_dp = "(ref.Sdelta0)",
+        sigma_s = "(<St0> c_mks *)",
+        beta_x = "(ref.betax)",
+        beta_y = "(ref.betay)",
+        eta_x = "(ref.etax)",
+        distribution_type[0] = 3*"gaussian",
+        distribution_cutoff[0] = 3*3,
+        enforce_rms_values[0] = 3*1,
+        one_random_bunch = 0
+&end
+
+&track &end
+

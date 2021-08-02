@@ -1,0 +1,241 @@
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L3FS5ToL5O",
+        p_central = <p1>,
+        final = %s.finOptA,
+        parameters = %s.paramOptA,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = longit.param
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&twiss_output
+        matched = 0,
+        reference_file = twiss.input,
+        output_at_each_step = 1,        
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 0.1,
+        tolerance = 1e-10, n_passes = 3, n_evaluations = 300, 
+        n_restarts = 6,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 20
+&end
+
+&optimization_term  term = "max.betax 30 1 segt " &end
+&optimization_term  term = "max.betay 30 1 segt " &end
+&optimization_term  term = "L4:QM4M#1.betax 15 1 sene " &end
+&optimization_term  term = "L4:QM4M#1.betay 10 2 sene " &end
+&optimization_term  term = "L4:QM5M#1.betay 15 1 sene " &end
+&optimization_term  term = "L4:QM5M#1.betax 11 2 sene " &end
+&optimization_term  term = "L4:QM6M#1.betax 15 1 sene " &end
+&optimization_term  term = "L4:QM6M#1.betay 11 2 sene " &end
+&optimization_term  term = "L4:QM7M#1.betay 15 1 sene " &end
+&optimization_term  term = "L4:QM7M#1.betax 11 2 sene " &end
+&optimization_term  term = "L5:QM1M#1.betax 15 1 sene " &end
+&optimization_term  term = "L5:QM1M#1.betay 11 2 sene " &end
+&optimization_term  term = "L5:QM2M#1.betay 15 1 sene " &end
+&optimization_term  term = "L5:QM2M#1.betax 11 2 sene " &end
+&optimization_term  term = "L5:QM3M#1.betax 15 1 sene " &end
+&optimization_term  term = "L5:QM3M#1.betay 11 2 sene " &end
+&optimization_term  term = "L5:QM4M#1.betay 15 1 sene " &end
+&optimization_term  term = "L5:QM4M#1.betax 11 2 sene " &end
+&optimization_term  term = "betax 13 2 sene " &end
+&optimization_term  term = "betay 16 2 sene " &end
+&optimization_term  term = "alphax -1.2 0.2 sene " &end
+&optimization_term  term = "alphay 1 0.2 sene " &end
+&optimization_term  term = "Transmission 1 - sqr " &end
+
+&optimization_variable
+        name = L4:QM1, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L4:QM3, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L4:QM5, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L4:QM7, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM2, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM4, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L4:QM2, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+&optimization_variable
+        name = L4:QM4, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+&optimization_variable
+        name = L4:QM6, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM1, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM3, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L3FS5ToL5O",
+        p_central = <p1>,
+        final = %s.finOptA,
+        parameters = %s.paramOptA,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = transverse.paramOptA
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+
+&twiss_output
+        matched = 0,
+        reference_file = twiss.input,
+        filename = %s.twiA,
+&end
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L5PB",
+        p_central = "{sddsprocess transverse.twiA -pipe=out -match=col,ElementName=L5AS1BEG | sdds2stream -pipe -col=pCentral0}",
+        final = %s.finOptB,
+        parameters = %s.paramOptB,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = quadDefault.param
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+&load_parameters
+        filename = transverse.paramOptA
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&twiss_output
+        matched = 0,
+        reference_file = transverse.twiA,
+        reference_element = L5AS1BEG,
+        output_at_each_step = 1,
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 0.1,
+        tolerance = 1e-10, n_passes = 3, n_evaluations = 300, 
+        n_restarts = 6,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 20
+&end
+
+&optimization_term  term = "max.betax 30 1e-8 segt " &end
+&optimization_term  term = "max.betay 30 1e-8 segt " &end
+&optimization_term  term = "betax 9.6 1e-9 sene" &end
+&optimization_term  term = "betay 9.6 1e-9 sene" &end
+&optimization_term  term = "alphax 1 1e-9 sene" &end
+&optimization_term  term = "alphay 1 1e-9 sene" &end
+&optimization_term  term = "-.5 LTP:Q7.K1 1e-12 selt ", &end
+&optimization_term  term = ".5 LTP:Q6.K1 1e-12 segt ", &end
+
+&optimization_variable
+        name = L5:QM1, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM2, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM3, item=K1, lower_limit=0, upper_limit=1e10, step_size=1e5 &end
+&optimization_variable
+        name = L5:QM4, item=K1, lower_limit=-1e10, upper_limit=0, step_size=1e5 &end
+&optimization_variable
+        name = LTP:Q10, item=K1, lower_limit=0, upper_limit=5, step_size=0.01 &end
+&optimization_variable
+        name = LTP:Q9, item=K1, lower_limit=-5, upper_limit=0, step_size=0.01 &end
+&optimization_variable
+        name = LTP:Q8, item=K1, lower_limit=0, upper_limit=5, step_size=0.01 &end
+&optimization_variable
+        name = LTP:Q7, item=K1, lower_limit=-5, upper_limit=0, step_size=0.1 &end
+&optimization_variable
+        name = LTP:Q6, item=K1, lower_limit=0, upper_limit=5, step_size=0.1 &end
+&optimization_variable
+        name = PB:Q1, item=K1, lower_limit=-5, upper_limit=0, step_size=0.01 &end
+&optimization_variable
+        name = PB:Q2, item=K1, lower_limit=0, upper_limit=5, step_size=0.01 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "L3FS5ToPBC1",
+        p_central = <p1>,
+        final = %s.fin,
+        parameters = %s.param,
+        magnets = %s.mag,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = transverse.paramOptA
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+&load_parameters
+        filename = transverse.paramOptB
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&twiss_output
+        matched = 0,
+        reference_file = twiss.input,
+        filename = %s.twi
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&bunched_beam &end
+
+&track &end

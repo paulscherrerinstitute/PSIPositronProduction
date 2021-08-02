@@ -1,0 +1,7 @@
+#!/bin/bash 
+
+elegant run1.ele
+elegant run2.ele
+
+sddsprintout -parameter=Cs,format=%21.15e run1.fin -title="Fixed length"
+sddsprintout -parameter=Cs,format=%21.15e run2.fin -title="Non-fixed length"

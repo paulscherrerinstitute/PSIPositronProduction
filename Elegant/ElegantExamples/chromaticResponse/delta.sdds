@@ -1,0 +1,11 @@
+SDDS1
+&column name=ElementName type=string &end
+&column name=ElementParameter type=string &end
+&column name=ParameterValue type=double &end
+&data mode=ascii &end
+!Page 1
+1
+DPKICK DP 0
+!Page 2
+1 
+DPKICK DP 1e-6

@@ -1,0 +1,64 @@
+! Try to recover the quadrupole errors by matching the "measured" beta
+! functions in run1.twi
+
+&subprocess
+command = "sddsprocess run1.twi run1.betaxTerms 
+-match=col,ElementName=MM \"-print=col,Term,MM#%ld.betax %e - sqr,ElementOccurence,betax\""
+&end
+
+&subprocess
+command = "sddsprocess run1.twi run1.betayTerms 
+-match=col,ElementName=MM \"-print=col,Term,MM#%ld.betay %e - sqr,ElementOccurence,betay\""
+&end
+
+
+&run_setup
+        lattice = fodo.lte,
+        p_central_mev = 1e3
+        default_order = 1
+        final = %s.fin
+        parameters = %s.param
+&end
+
+&run_control &end
+
+&twiss_output 
+              filename = %s.twi
+              matched = 0
+              output_at_each_step = 1
+              reference_file = run0.twi,
+              concat_order = 1
+&end
+
+&optimization_setup
+        mode = minimize,
+        method = simplex,
+        tolerance = 1e-16
+        target = 1e-10
+        n_evaluations = 1500
+        n_passes = 3,
+        n_restarts = 1
+        log_file = /dev/tty,
+        verbose = 0
+        output_sparsing_factor = 100
+&end
+
+&optimization_variable name=Q1, item=K1, lower_limit=-10, upper_limit=10, step_size = 1e-3 &end
+&optimization_variable name=Q2, item=K1, lower_limit=-10, upper_limit=10, step_size = 1e-3 &end
+&optimization_variable name=Q3, item=K1, lower_limit=-10, upper_limit=10, step_size = 1e-3 &end
+&optimization_variable name=Q4, item=K1, lower_limit=-10, upper_limit=10, step_size = 1e-3 &end
+
+&optimization_term 
+                   input_file = run1.betaxTerms,
+                   input_column = Term
+                   verbose = 1
+&end
+&optimization_term 
+                   input_file = run1.betayTerms,
+                   input_column = Term
+                   verbose = 1
+&end
+
+&bunched_beam &end
+
+&optimize &end

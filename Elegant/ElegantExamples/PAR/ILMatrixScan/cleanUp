@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm ILMatrix.sdds track.fft track.mag track.w1 twiss.mag twiss.twi

@@ -1,0 +1,109 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0 $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+APSStandardSetup
+
+set usage {usage: beamLoadCalc -output <filename> -Ql <value> -RaOverQ <Ohms> -QlHHC <value> -dfHHC <kHz> -current <mA> -Vcavity <MV> -extraU0 <MeV> -deltaDfMain <kHz> -harmonic <number> -mainHarmonic <number> -nHHC <number> -nMain <number>}
+set output ""
+set Ql 3.96e3
+set Qm 22e3
+set RaOverQ 352.6
+set current 200.
+set Vcavity 3.157
+set extraU0 0.
+set QlHHC 13.6e3
+set dfHHC 27.6
+set RaOverQHHC 208
+set deltaDfMain 0
+set harmonic 3
+set mainHarmonic 432
+set nHHC 3
+set nMain 9
+set args $argv
+if {[APSStrictParseArguments {mainHarmonic output Qm Ql RaOverQ current Vcavity extraU0 QlHHC dfHHC deltaDfMain harmonic nHHC RaOverQHHC nMain}] || ![string length $output]} {
+    return -code error "$usage"
+}
+if [file exists $output] {
+    return -code error "in use: $output"
+}
+
+set tmpRoot /tmp/[APSTmpString]
+APSAddToTempFileList $tmpRoot.1 $tmpRoot.2 $tmpRoot.3 $tmpRoot.4
+
+if [catch {exec computeBunchLength -twiss Basic.twi -Vm $Vcavity -hm $mainHarmonic -I $current -hh $harmonic -RoQh $RaOverQHHC -Qlh $QlHHC -nh $nHHC -dfh $dfHHC} St] {
+    puts stderr "$St"
+    exit 1
+}
+
+exec sddsprocess Basic.twi -pipe=out -process=s,max,%sMax \
+    | sddscollapse -pipe \
+    | sddsconvert -pipe -retain=col,sMax,U0 \
+    | sddsprocess -pipe \
+    "-define=column,St,$St,units=s" \
+    "-define=column,dU0,$extraU0,units=MeV" \
+    "-define=column,hm,$mainHarmonic,type=short" \
+    "-redefine=column,U0,U0 $extraU0 + 1e6 *,units=eV" \
+    "-define=column,NCavities,$nMain,type=long" \
+    "-define=column,Q,$Qm" \
+    "-define=column,Ql,$Ql" \
+    "-define=column,beta,Q Ql / 1 -" \
+    "-define=column,T0,sMax c_mks / 6e3 mev / beta.p /,units=s" \
+    "-define=column,fDrive,hm T0 /,units=Hz" \
+    "-define=column,RaOverQ,$RaOverQ,units=Ohms" \
+    "-define=column,Ra,RaOverQ Q *,units=Ohms" \
+    "-define=column,omega,fDrive 2 * pi *" \
+    "-define=column,k,omega 4 / RaOverQ *,units=V/C" \
+    "-define=column,tau,2 Ql * omega /" \
+    "-define=column,Vc,$Vcavity 1e6 * NCavities /,units=V" \
+    "-define=column,dfHHC,$dfHHC 1e3 *,units=Hz" \
+    "-define=column,QLHHC,$QlHHC" \
+    "-define=column,RaOverQHHC,$RaOverQHHC,units=Ohm" \
+    "-define=column,RaHHC,$RaOverQHHC QLHHC *,units=Ohm" \
+    "-define=column,nHHC,$nHHC,type=short" \
+    "-define=column,harmonic,$harmonic,type=short" \
+    "-define=column,hHHC,$harmonic hm *,type=short" \
+    "-define=column,fHHC,dfHHC hHHC T0 / +,units=Hz" \
+    "-define=column,deltaDfMain,$deltaDfMain 1e3 *,units=Hz" \
+    "-define=column,I,$current 1e3 /,units=A" \
+    "-define=column,q,I T0 * ,units=C" \
+    "-define=column,psiHHC,dfHHC fDrive harmonic * / QLHHC * 2 * atan" \
+    "-define=column,FFHHC,St fHHC * 2 * pi * sqr -2 / exp" \
+    "-define=column,VbHHC,I RaOverQHHC * nHHC * QLHHC * psiHHC cos * FFHHC *" \
+    "-define=column,Vb1HHC,VbHHC psiHHC cos *" \
+    "-define=column,Vb2HHC,VbHHC psiHHC sin *" \
+    "-define=column,phis,U0 Vb1HHC + NCavities / Vc / acos" \
+    "-define=column,phisDeg90,phis rtod 90 +,units=deg" \
+    "-define=column,tanPsi,-1 Ra * I * phis sin * Vc / beta 1 + /" \
+    "-define=column,psi,tanPsi atan" \
+    "-define=column,delta,tanPsi -2 / Ql /" \
+    "-define=column,df,delta fDrive * chs deltaDfMain +,units=Hz" \
+    "-redefine=column,delta,df fDrive / chs" \
+    "-redefine=column,psi,delta -2 * Ql * atan" \
+    "-redefine=column,tanPsi,psi tan" \
+    "-define=column,fResonance,fDrive df +,units=Hz" \
+    "-define=column,Vbr,I Ra * 1 beta + /,units=V" \
+    "-define=column,Vb1,Vbr psi cos sqr * chs,units=V" \
+    "-define=column,Vb2,Vbr psi cos * psi sin * chs,units=V" \
+    "-define=column,Vb,Vb1 sqr Vb2 sqr + sqrt,units=V" \
+    "-define=column,phaseVb,Vb1 Vb2 atan2" \
+    "-define=column,Vgr1,Vc phis cos * Vb1 -,units=V" \
+    "-define=column,Vgr2,Vc phis sin * Vb2 -,units=V" \
+    "-define=column,theta,Vgr1 Vgr2  atan2 psi -" \
+    "-define=column,Vgr,Vgr1 psi cos / theta psi + cos /,units=V"  \
+    "-define=column,VgrAll,Vgr NCavities *,units=V" \
+    "-define=column,Pg,phis cos I Ra * Vc / 1 beta + / psi cos sqr * + sqr  phis sin I Ra * Vc / 1 beta + / psi cos * psi sin * + sqr + 1 beta + psi cos / sqr * 4 / beta / Vc sqr * Ra /,units=W" \
+    "-define=column,Pb,I Vc * phis cos *,units=W" \
+    "-define=column,Pc,Vc sqr Ra /,units=W" \
+    "-define=column,Pr,Pg Pc - Pb -,units=W" \
+    "-define=column,Vdc,VgrAll psi cos *,units=V" \
+    "-define=col,phiSync,psi theta + rtod 90 +,units=deg" \
+    "-define=col,VcCheck1,Vgr psi cos * theta psi + cos * Vbr psi cos sqr * - Vc phis cos * - Vc /" \
+    "-define=col,VcCheck2,Vgr psi cos * theta psi + sin * Vbr psi cos * psi sin * - Vc phis sin * - Vc /" \
+    | tee $output.detail \
+    | sddstranspose -pipe=in $tmpRoot.1 
+
+exec sddsxref beamLoadXref.sdds $tmpRoot.1 -pipe=out -reuse=row -match=QuantityName=OldColumnNames -take=Column \
+    | sddsconvert -pipe=in $output -rename=col,Column=ParameterValue
+

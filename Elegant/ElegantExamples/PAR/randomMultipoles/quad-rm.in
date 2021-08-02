@@ -1,0 +1,14 @@
+&perturbations
+        type = "quad",
+        SDDS_output = quad.sdds
+        kmult_output = quad.rmult        
+        effective_length = 0.23
+        bore_radius = 0.060
+        dx_pole = 1e-4
+        dy_pole = 1e-4,
+        dradius = 1e-4,
+        dx_split = 1e-4,
+        dy_split = 1e-4,
+        dphi_halves = 1e-4
+        random_number_seed = 3818238181
+&end

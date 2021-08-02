@@ -1,0 +1,9 @@
+#!/bin/bash
+
+elegant run.ele 
+
+sddsplot -column=x,y run.bun run.out -graph=dot,vary
+
+sddshist run.bun run.bhis -data=x -bins=1000
+sddshist run.out run.ohis -data=x -bins=1000
+sddsplot -column=x,frequency run.bhis run.ohis -graph=line,vary 

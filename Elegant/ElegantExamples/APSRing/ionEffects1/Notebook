@@ -1,0 +1,48 @@
+Simple example of running ion_effects in elegant. 
+J. Calvey, M. Borland (APS)
+
+aps.lte
+        Lattice file
+
+* Setup files:
+Basic.ele
+        Use to create file with twiss parameters.
+makeBunch.ele
+        Used to make an initial bunch distribution.
+
+* Ion simulation files
+gasMix.sdds
+        Simple pressure vs s file. Just have uniform pressure for
+        several species.
+ionProperties.sdds
+        Cross sections for ion production.
+ion1.ele
+        Run ion simulation for 324 uniformly spaced bunches
+
+
+=== 
+Sequence
+
+elegant Basic.ele
+        Uses aps.lte
+        Makes Basic.twi, Basic.mag, Basic.mom
+
+elegant makeBunch.ele 
+        Uses aps.lte, Basic.twi, Basic.mom
+        Makes makeBunch.out
+
+mpiexec -np <numberOfCores> Pelegant ion1.ele
+        Replace <numberOfCores> with appropriate value for your system. Up to 64 recommended for this problem.
+        Uses aps.lte, Basic.twi, gasMix.sdds, ionProperties.sdds, makeBunch.out
+        Makes
+        ion1.wp00 --- turn-by-turn parameter data for bunch 0 from WATCH element
+        ion1.wp162 --- turn-by-turn parameter data for bunch 162 from WATCH element
+        ion1.ebeam --- turn-by-turn, bunch-by-bunch data for electron beam from ion elements
+        ion1.ionDens --- turn-by-turn, bunch-by-bunch data for ions from ion elements
+
+sddsplot -column=Pass,Cy ion1.wp* -graph=line,vary 
+         Shows growth in centroid position on two bunches
+sddsplot -col=t,Cy -graph=sym,vary=subtype ion1.ebeam -order=spect -split=col=Bunch
+         Shows growth in centroid position for all bunches
+sddsplot -col=Pass,nMacroIons ion1.ionDens -graph=dot,vary
+         Shows number of macro ions vs turn

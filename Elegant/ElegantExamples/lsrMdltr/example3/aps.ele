@@ -1,0 +1,34 @@
+&run_setup
+	lattice = aps.lte
+	p_central_mev = 7e3
+	magnets = %s.mag
+        use_beamline = part
+&end 
+
+&twiss_output 
+	      filename = %s.twi
+	      matched = 1
+	      radiation_integrals = 1
+&end
+	      
+&run_control &end
+
+&bunched_beam 
+  bunch=%s.bun
+  n_particles_per_bunch = 5000
+  time_start = 0
+  emit_x = 2.5e-9, sigma_dp = 0.095e-2,
+  emit_y = 35e-12,
+  use_twiss_command_values = 1,
+  sigma_s = "(50e-15 c_mks *)"
+  dp_s_coupling = 0.0
+  enforce_rms_values[0] = 1,1,0, 
+  distribution_cutoff[0] = 5,5,8,
+  distribution_type[0] = "gaussian","gaussian","hard-edge"
+  centroid[4] = "(-1e-13 c_mks *)",
+&end
+
+&track &end
+
+
+    

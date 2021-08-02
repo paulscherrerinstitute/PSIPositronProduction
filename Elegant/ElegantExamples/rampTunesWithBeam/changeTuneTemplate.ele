@@ -1,0 +1,94 @@
+&run_setup
+        lattice = "par10h.lte",
+        p_central = 880,
+        use_beamline="par",
+        default_order=1,
+        parameters = %s.param0,
+        rootname = <rootname>
+&end
+
+&load_parameters
+        filename = <startingPoint>,
+        change_defined_values = 1
+        allow_missing_files = 1
+&end
+
+&twiss_output 
+        radiation_integrals=1,
+        output_at_each_step=1, 
+        concat_order = 1
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+	tolerance = 1e-10, n_passes = 5, n_evaluations = 1500, n_restarts = 2, verbose = 0
+        output_sparsing_factor = 100
+&end
+
+&optimization_variable
+        name = q1, item=k1, 
+        lower_limit=-2.8, upper_limit=2.8, step_size=0.001 
+&end
+&optimization_variable
+        name = q2, item=k1, 
+        lower_limit=-2.8, upper_limit=2.8, step_size=0.001 
+&end
+!&optimization_variable
+!        name = q3, item=k1, 
+!        lower_limit=-2.8, upper_limit=2.8, step_size=0.001 
+!&end
+&optimization_variable
+        name = q4, item=k1, 
+        lower_limit=-2.8, upper_limit=2.8, step_size=0.001 
+&end
+
+&optimization_term
+        term = "etax 0 1e-2 sene" &end
+&optimization_term
+        term = "betax 2 0.1 sene" &end
+&optimization_term
+        term = "betay 10 1 sene" &end
+
+&optimization_term
+        term = "nux <nuxTarget> 0.0001 sene" &end
+&optimization_term
+        term = "nuy <nuyTarget> 0.0001 sene" &end
+
+&bunched_beam n_particles_per_bunch = 1 &end
+
+&optimize summarize_setup=1 &end
+
+&run_setup
+        lattice = "par10h.lte",
+        magnets = "%s.mag",
+        p_central = 880,
+        use_beamline="par",
+        parameters = %s.param,
+        rootname = <rootname>
+        default_order=2,
+&end
+
+&load_parameters
+        filename = %s.param0,
+        change_defined_values = 1
+&end
+
+&twiss_output 
+        radiation_integrals=1,
+        matched = 1
+        concat_order = 2
+        filename = %s.twi
+&end
+
+&chromaticity
+        sextupoles = "SFH SDH",
+        change_defined_values = 1
+&end
+
+&run_control &end
+&bunched_beam &end
+&track &end

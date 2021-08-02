@@ -1,0 +1,12 @@
+&load_parameters
+	filename = update.sdds,
+	force_occurence_data  = 1
+	change_defined_values = 1
+&end
+
+&twiss_output
+	filename = update.twi
+        matched = 0
+	reference_file = ideal.twi
+	reference_element = _BEG_
+&end

@@ -1,0 +1,18 @@
+Example of minimizing chromatic amplitude functions in a simple beamline.
+M. Borland, ANL.
+
+The lattice file is lattice.lte, which is the lattice for the Linac To PAR transport
+line at APS. Some fictitious sextpoles were added in the dispersive section.
+
+List of files:
+
+lattice.lte
+        LTP lattice
+Notebook
+        This file
+run1.ele
+        elegant input file
+runScript
+        Script to run the example
+cleanUp
+        Script to clean up files

@@ -1,0 +1,240 @@
+&rpn_expression 
+expression = "
+0.1 sto T1 sto T4 
+0.076 sto lQ
+0.57800000000000007 sto L1 0.498 sto L2 
+0.57800000000000007 sto L3 
+0.192 sto LB 
+-65e-3 sto R56
+0.65 sto dZB4
+0.258 sto LCQ"
+&end
+
+&run_setup
+        lattice = chicaneOpt.lte,
+        rootname = nominal,
+        default_order = 1,
+        use_beamline = bl,
+        p_central = 352.25,
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 1e-10,
+        tolerance = 1e-16, n_passes = 10, n_evaluations = 200, 
+        n_restarts = 10
+&end
+
+!
+! 0.770294 is the measured distance from the nominal symmetric location of L3:BM4 to
+! L3:BM3.  dZ is added to this to give the total longitudinal distance between the
+! magnet centers.
+
+&optimization_term term = "R16 sqr" &end
+&optimization_term term = "R56 -65e-3 - sqr" &end
+&optimization_term term = "X sqr" &end
+&optimization_term term = "B4M2#1.Z B3M2#1.Z - 0.770294 dZB4 + - sqr" &end
+
+&optimization_variable
+        name = L34, item=L, lower_limit=0, upper_limit=4, step_size=0.01 &end
+&optimization_variable
+        name = B1, item=ANGLE, lower_limit=0, upper_limit=1, step_size = 0.01 &end
+&optimization_variable
+        name = Q1, item=K1, lower_limit=-50, upper_limit=50, step_size = 0.01 &end
+&optimization_variable
+        name = B4, item=ANGLE, lower_limit=0, upper_limit=1, step_size = 0.01 &end
+
+&optimization_covariable
+        name = B1, item=E2, equation = "B1.ANGLE" &end
+&optimization_covariable
+        name = B2, item=ANGLE, equation = "B1.ANGLE chs" &end
+&optimization_covariable
+        name = B2, item=E1, equation = "B2.ANGLE" &end
+&optimization_covariable
+        name = B3, item=ANGLE, equation = "B4.ANGLE chs" &end
+&optimization_covariable
+        name = B3, item=E2, equation = "B3.ANGLE" &end
+&optimization_covariable
+        name = B4, item=E1, equation = "B4.ANGLE" &end
+
+&optimization_covariable
+        name = B1, item=L, equation = "LB B1.ANGLE * B1.ANGLE sin /" &end
+&optimization_covariable
+        name = B2, item=L, equation = "LB B1.ANGLE * B1.ANGLE sin /" &end
+&optimization_covariable
+        name = B4, item=L, equation = "LB B4.ANGLE * B4.ANGLE sin /" &end
+&optimization_covariable
+        name = B3, item=L, equation = "LB B4.ANGLE * B4.ANGLE sin /" &end
+&optimization_covariable
+        name = LQ1, item=L, 
+        equation = 
+"B1.L B1.ANGLE / sto B1.RHO 
+ LCQ B1.ANGLE sin * B1.RHO 1 B1.ANGLE cos - * - sqr
+ LB 2 / LCQ B1.ANGLE cos * + B1.RHO B1.ANGLE sin * - sqr + sqrt lQ 2 / -
+  "
+&end
+&optimization_covariable 
+        name = L12, item=L, 
+        equation = "0.57800000000000007 B1.ANGLE cos / LQ1.L lQ + -"
+&end
+
+&optimization_covariable
+        name = LQ2, item=L, 
+        equation = 
+"B4.L B4.ANGLE / sto B4.RHO 
+ LCQ B4.ANGLE sin * B4.RHO 1 B4.ANGLE cos - * - sqr
+ LB 2 / LCQ B4.ANGLE cos * + B4.RHO B4.ANGLE sin * - sqr + sqrt lQ 2 / -
+  "
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1,
+&end
+
+&optimize summarize_setup=1 &end
+
+&save_lattice filename = nominal.new &end
+
+&run_setup
+        lattice = nominal.new,
+        rootname = nominal,
+        default_order = 1,
+        use_beamline = bl,
+        p_central = 352.25,
+        parameters = %s.param
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 1e-14,
+        tolerance = 1e-16, n_passes = 10, n_evaluations = 200, 
+        n_restarts = 10
+&end
+
+&optimization_term term = "R16 sqr" &end
+&optimization_term term = "R26 sqr" &end
+&optimization_term term = "R56 -65e-3 - sqr" &end
+&optimization_term term = "X sqr" &end
+&optimization_term term = "B4M2#1.Z B3M2#1.Z - 0.770294 dZB4 + - sqr" &end
+
+&optimization_variable
+        name = L34, item=L, lower_limit=0, upper_limit=4, step_size=0.01 &end
+&optimization_variable
+        name = B1, item=ANGLE, lower_limit=0, upper_limit=1, step_size = 0.01 &end
+&optimization_variable
+        name = Q1, item=K1, lower_limit=-50, upper_limit=50, step_size = 0.01 &end
+&optimization_variable
+        name = Q2, item=K1, lower_limit=-50, upper_limit=50, step_size = 0.01 &end
+&optimization_variable
+        name = B4, item=ANGLE, lower_limit=0, upper_limit=1, step_size = 0.01 &end
+
+&optimization_covariable
+        name = B1, item=E2, equation = "B1.ANGLE" &end
+&optimization_covariable
+        name = B2, item=ANGLE, equation = "B1.ANGLE chs" &end
+&optimization_covariable
+        name = B2, item=E1, equation = "B2.ANGLE" &end
+&optimization_covariable
+        name = B3, item=ANGLE, equation = "B4.ANGLE chs" &end
+&optimization_covariable
+        name = B3, item=E2, equation = "B3.ANGLE" &end
+&optimization_covariable
+        name = B4, item=E1, equation = "B4.ANGLE" &end
+
+&optimization_covariable
+        name = B1, item=L, equation = "LB B1.ANGLE * B1.ANGLE sin /" &end
+&optimization_covariable
+        name = B2, item=L, equation = "LB B1.ANGLE * B1.ANGLE sin /" &end
+&optimization_covariable
+        name = B4, item=L, equation = "LB B4.ANGLE * B4.ANGLE sin /" &end
+&optimization_covariable
+        name = B3, item=L, equation = "LB B4.ANGLE * B4.ANGLE sin /" &end
+&optimization_covariable
+        name = LQ1, item=L, 
+        equation = 
+"B1.L B1.ANGLE / sto B1.RHO 
+ LCQ B1.ANGLE sin * B1.RHO 1 B1.ANGLE cos - * - sqr
+ LB 2 / LCQ B1.ANGLE cos * + B1.RHO B1.ANGLE sin * - sqr + sqrt lQ 2 / -
+  "
+&end
+&optimization_covariable 
+        name = L12, item=L, 
+        equation = "0.57800000000000007 B1.ANGLE cos / LQ1.L lQ + -"
+&end
+
+&optimization_covariable
+        name = LQ2, item=L, 
+        equation = 
+"B4.L B4.ANGLE / sto B4.RHO 
+ LCQ B4.ANGLE sin * B4.RHO 1 B4.ANGLE cos - * - sqr
+ LB 2 / LCQ B4.ANGLE cos * + B4.RHO B4.ANGLE sin * - sqr + sqrt lQ 2 / -
+  "
+&end
+
+
+
+&bunched_beam
+        n_particles_per_bunch = 1,
+&end
+
+&optimize summarize_setup=1 &end
+
+&save_lattice filename = nominal.new &end
+
+&run_setup
+        lattice = nominal.new,
+        rootname = nominal,
+        default_order = 1,
+        use_beamline = bl,
+        p_central = 352.25,
+        parameters = %s.param
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	equation = "Z 3.1823795252909779 - abs",
+	mode = "minimize", method = "simplex",
+        target = 1e-14,
+        tolerance = 1e-16, n_passes = 10, n_evaluations = 200, 
+        n_restarts = 10
+&end
+
+&optimization_variable
+        name = L4, item=L, lower_limit=-4, upper_limit=4, step_size=0.01 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1,
+&end
+
+&optimize summarize_setup=1 &end
+
+&save_lattice filename = nominal.new &end
+
+&run_setup
+        lattice = nominal.new,
+        default_order = 2,
+        use_beamline = bl,
+        p_central = 352.25,
+&end
+
+&matrix_output
+        SDDS_output = "%s.mat",
+        SDDS_output_order = 2,
+&end
+
+&floor_coordinates
+        filename = "%s.flr",
+        include_vertices = 1,
+&end
+ 

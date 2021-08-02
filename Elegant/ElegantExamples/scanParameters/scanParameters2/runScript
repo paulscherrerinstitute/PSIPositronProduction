@@ -1,0 +1,20 @@
+#!/bin/csh -f
+set nonomatch
+
+elegant run.ele
+
+
+sddsxref run.out run.fin -pipe=out -leave=* -transfer=param,* \
+    | sddsconvert -pipe -retain=col,t,p \
+    | sddsprocess -pipe=in run.proc \
+    '-define=column,delta,p pCentral - pCentral /,symbol=$gd$r' \
+    "-redefine=column,dt,t Ct - 1e12 *,units=ps" \
+    "-print=parameter,PhaseLabel,%.2f%s,RF1.PHASE,RF1.PHASE.units" 
+
+sddsplot -column=dt,delta run.proc -split=page -graph=dot,vary -order=spectral -legend=parameter=PhaseLabel 
+
+set dmin=`sddscombine run.proc -pipe=out -merge | sddsprocess -pipe -process=delta,min,%sMin | sdds2stream -pipe -parameter=deltaMin`
+set dmax=`sddscombine run.proc -pipe=out -merge | sddsprocess -pipe -process=delta,max,%sMax | sdds2stream -pipe -parameter=deltaMax`
+
+sddshist run.proc run.his -data=delta -bins=100 -lowerLimit=$dmin -upperLimit=$dmax
+sddsplot -column=delta,frequency run.his -split=page -graph=line,vary -order=spectral -legend=parameter=PhaseLabel

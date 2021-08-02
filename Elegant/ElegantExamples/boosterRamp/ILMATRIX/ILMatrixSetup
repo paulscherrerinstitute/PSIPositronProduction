@@ -1,0 +1,10 @@
+#!/bin/bash
+
+sddsprocess Basic.twi -pipe=out -process=s,max,sMax -process=*eta*,first,%s0 \
+            | sddscollapse -pipe \
+            | sddsconvert -pipe -delete=col,SVN*,Stage \
+            | sddstranspose -pipe -oldColumnNames=ColumnName \
+            | sddsconvert -pipe -rename=col,Column=ParameterValue \
+            | sddsxref ILMatrix.xref -nowarning -pipe -match=ColumnName -take=* \
+            | tee ILMatrix.sdds \
+            | sddsprintout -pipe -col

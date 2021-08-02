@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm *.fin *.param *.cen *.pop *.mag *.twi

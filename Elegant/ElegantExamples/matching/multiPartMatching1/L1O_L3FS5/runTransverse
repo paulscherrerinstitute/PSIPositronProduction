@@ -1,0 +1,15 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+exec sddsanalyzebeam ../beamFile.sdds -pipe=out \
+| sddsprocess -pipe=in twiss.input \
+    -redefine=col,etax,0,units=m -redefine=col,etaxp,0 \
+    -redefine=col,etay,0,units=m -redefine=col,etayp,0 
+
+catch {exec elegant transverse.ele >& transverse.ele.log} result
+

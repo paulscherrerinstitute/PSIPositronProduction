@@ -1,0 +1,7 @@
+q1: quad,l=0.1,k1=1
+q2: quad,l=0.1,k1=-1
+q3: quad,l=0.1,k1=1
+q4: quad,l=0.1,k1=-1
+d1: drift,l=1
+mm: mark,fitpoint=1
+bl: line=(q1,d1,mm,d1,mm,q2,d1,mm,d1,mm,q3,d1,mm,d1,mm,q4,d1,mm,d1)

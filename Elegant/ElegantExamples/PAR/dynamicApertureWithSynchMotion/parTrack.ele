@@ -1,0 +1,103 @@
+! dynamic aperture vs rf voltage with errors
+
+! 
+! first, set the chromaticity to some positive values (to make it more
+! interesting) and save the lattice 
+! Also add errors and save the values
+!
+
+&run_setup
+    lattice = "parTrack.lte",
+    p_central = 880,
+    use_beamline="par",
+    ! the second-order is needed here only for the twiss computations.
+    ! the tracking is done with kick elements
+    default_order = 2,
+&end
+
+&twiss_output
+        filename = %s.twi
+        radiation_integrals = 1
+&end
+
+&chromaticity
+    sextupoles = "SDH SFH", n_iterations = 10,
+    change_defined_values = 1,
+    dnux_dp = 3,
+    dnuy_dp = 3,
+    tolerance = 0.00001
+&end
+
+&run_control &end
+
+&error_control error_log = %s.erl &end
+&error_element name=Q*, element_type=KQUAD*, item=FSE, amplitude=1e-3, bind=0 &end
+&error_element name=Q*, element_type=KQUAD*, item=TILT, amplitude=1e-3, bind=0 &end
+
+&bunched_beam &end
+
+&track &end
+
+&save_lattice filename=%s.new &end
+
+&run_setup
+    lattice = "parTrack.new",
+    p_central = 880,
+    use_beamline="par",
+    magnets = %s.mag
+    final = %s.fin,
+    ! the second-order is needed here only for the twiss computations.
+    ! the tracking is done with kick elements
+    default_order = 2,
+        parameters = %s.param
+&end
+
+&load_parameters
+        filename = %s.erl,
+        change_defined_values = 1
+        force_occurence_data = 1
+&end
+
+&rpn_load
+        filename = %s.twi
+        tag = ref
+        load_parameters = 1
+&end
+
+! put some 8-pole and 10-pole in the dipoles to make things more interesting
+
+&alter_elements name=*, type=CSBEND, item=K3, value=1e2 &end
+&alter_elements name=*, type=CSBEND, item=K4, value=1e3 &end
+
+&twiss_output
+        output_at_each_step = 0,
+        filename = %s.twi,
+        radiation_integrals = 1
+&end
+
+&run_control
+        n_indices = 1,
+        n_passes = 400
+&end
+
+&vary_element 
+        name=RF, item=VOLT, 
+        initial = 40e3, final = 400e3, index_number=0, index_limit=3
+&end
+&link_elements
+        target = RF, item = PHASE, source = RF, source_position = "same-occurence", equation = "180 ref.U0 1e6 * VOLT 2 * / dasin -" &end
+
+&find_aperture
+    output = %s.aper,
+    mode = "n-line",
+        n_lines = 11,
+    verbosity = 1,
+    xmin = -0.05,
+    xmax =  0.05,
+    ymin =  0.0,
+    ymax =  0.05,
+    nx  = 21,
+        n_splits = 2
+        split_fraction = 0.1
+&end
+

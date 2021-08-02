@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Track a grid of particles through a single period of the device with CWIGGLER element
+elegant trackCW1.ele
+
+# Process data to make kickmap
+sddsxref trackCW1.bun trackCW1.out -pipe=out -take=xp,yp,x,y -edit=column,*,ei/1/  \
+    | sddsprocess -pipe "-define=parameter,H,pCentral mev * c_mks 1e6 / /,units=T*m" \
+    '-define=col,xpFactor,xp1 H sqr mult,units=\\(T*m)$a2$n'  \
+    '-define=col,ypFactor,yp1 H sqr mult,units=\\(T*m)$a2$n' \
+    | sddssort -pipe=in kickMap.sdds -column=y,incr -column=x,incr
+
+# Track with kick map for full device
+
+elegant trackKM39.ele
+
+# For comparison, track with CWIGGLER for full device.
+
+elegant trackCW39.ele 
+
+# Compare results
+
+sddsplot -column=y,yp trackKM39.out trackCW39.out -graph=sym,vary,sub=type \
+    -legend=filename,edit=Zk%/.out//

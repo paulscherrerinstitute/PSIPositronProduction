@@ -1,0 +1,2 @@
+RF1: rfca,l=3,freq=2856e6,volt=20e6,phase=90
+BL: line=(RF1)

@@ -1,0 +1,29 @@
+! Compose PAR from regular elements plus ILMATRIX.
+! Scan tune of the ILMATRIX part
+
+&run_setup
+    lattice = "lattice.lte",
+    magnets = "%s.mag",
+    p_central = 880,
+    use_beamline="composite",
+    default_order = 2
+&end
+
+&load_parameters
+        filename = ILMatrix.sdds,
+        change_defined_values = 1
+&end
+
+&run_control
+        n_indices = 1
+        n_passes = 1024
+&end
+
+&vary_element name=RING1, item=NUX, initial=1.01, final=1.2, index_number=0, index_limit=11 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+        centroid[0] = 1e-6, 0, 1e-6
+&end
+
+&track &end

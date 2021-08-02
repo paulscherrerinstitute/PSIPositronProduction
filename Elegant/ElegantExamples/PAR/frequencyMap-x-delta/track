@@ -1,0 +1,11 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+if ![file exists parTrack.log] {
+    catch {exec elegant parTrack.ele > parTrack.log}
+}
+
+exec sddscontour -shade -xyz=x,delta,diffusionRate parTrack.fma
+
+

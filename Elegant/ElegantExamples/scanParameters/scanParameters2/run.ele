@@ -1,0 +1,30 @@
+&run_setup
+    lattice = "lattice.lte",
+    p_central_mev = 100,
+    use_beamline="bl",
+    final = %s.fin,
+    output = %s.out
+&end
+
+&run_control
+        n_indices = 1
+&end
+
+&vary_element name=RF1, item=PHASE,  index_number=0, index_limit=5,
+              initial=90, final=120 &end
+
+&bunched_beam n_particles_per_bunch = 10000
+        enforce_rms_values[0] = 1,1,1,
+        distribution_cutoff[0] = 3,3,3,
+        distribution_type[0] = "gaussian", "gaussian", "gaussian"
+        sigma_dp = 1e-2,
+        sigma_s = 5e-3,
+        emit_nx = 1e-6, beta_x = 10, alpha_x = -1,
+        emit_ny = 1e-6, beta_y = 10, alpha_y = -1,
+        symmetrize = 1
+        one_random_bunch = 1
+&end
+
+&track &end
+
+    

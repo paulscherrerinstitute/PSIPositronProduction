@@ -1,0 +1,5 @@
+Example of simulating a pepper-pot plate with emittance analysis. 
+Each hole in the pepper-pot is simulated separately so the separation of
+the beamlets is done for us.
+
+Example by M. Borland, ANL, 12/2015

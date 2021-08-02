@@ -1,0 +1,17 @@
+qf1h: quad,l=0.5,k1=1
+qf2h: quad,l=0.5,k1=1
+qf3h: quad,l=0.5,k1=1
+qf4h: quad,l=0.5,k1=1
+qf5h: quad,l=0.5,k1=1
+d1: drift,l=1
+qd1h: quad,l=0.5,k1=-1
+qd2h: quad,l=0.5,k1=-1
+qd3h: quad,l=0.5,k1=-1
+qd4h: quad,l=0.5,k1=-1
+qd5h: quad,l=0.5,k1=-1
+cell1: line=(qf1h,d1,2*qd1h,d1,qf2h)
+cell2: line=(qf2h,d1,2*qd1h,d1,qf3h)
+cell3: line=(qf3h,d1,2*qd1h,d1,qf4h)
+cell4: line=(qf4h,d1,2*qd1h,d1,qf5h)
+bl: line=(cell1,cell2,cell3,cell4)
+

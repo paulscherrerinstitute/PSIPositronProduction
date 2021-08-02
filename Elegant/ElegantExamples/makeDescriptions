@@ -1,0 +1,16 @@
+#!/bin/bash
+
+for dir in `find . -type d` ; do 
+    if [ $dir == "." ] ; then continue ; fi
+    if [ ! -e $dir/description ] ; then
+       echo "Enter description for $dir:" 
+       description=""
+       while true ; do 
+           read input
+           description="$description $input"
+           if [[ "$input" == "" ]] ; then break; fi
+       done
+       echo "$description" > $dir/description
+    fi
+done
+

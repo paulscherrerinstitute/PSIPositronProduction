@@ -1,0 +1,5 @@
+#!/bin/csh
+
+\rm run.aper run.twi step1.param step2.erl step2.param step3.erl step3.param ideal.twi run.clo
+
+

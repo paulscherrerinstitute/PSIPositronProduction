@@ -1,0 +1,5 @@
+In this example, we have a FODO line with various apertures in
+quads and drifts.  We scan the momentum offset and look at
+the acceptance using tracking.
+
+Example by M. Borland (ANL)

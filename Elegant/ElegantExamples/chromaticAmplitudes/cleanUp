@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm run1.fin run1.mag run1.new run1.param run1.twi* 

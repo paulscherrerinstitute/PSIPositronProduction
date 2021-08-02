@@ -1,0 +1,7 @@
+#!/bin/bash
+
+makeWI
+elegant imped1.ele
+elegant wake1.ele
+sddsplot -graph=dot,vary -column=t,yp wake1.out -legend=spec=wake -col=t,yp imped1.out  -legend=spec=impedance
+

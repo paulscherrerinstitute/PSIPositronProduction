@@ -1,0 +1,177 @@
+! Mult-step run with errors:
+! 1. Correct chromaticity, save sextuoples
+! 2. Set sextupoles to zero, add bend FSE and TILT errors, plus quad offsets, then corrector orbit
+!    The sextupoles are set to zero as an illustration, since this is helpful sometimes when the sextupoles
+!    are very strong.  In this case, it really doesn't matter.
+! 3. Turn sextupoles back on and load previous errors/correction, add strength errors for quads and sextupoles, touch up the orbit, tunes, and chromaticities
+! 4. Track for DA
+
+! We only simulate one seed.  To simulate more, replace all occurrences of "n_steps = 1" with "n_steps = N", where N is the number you want
+
+! Step 1
+
+&run_setup
+             p_central_mev = 450
+             lattice = par10h.lte,
+             parameters = step1.param
+&end
+
+&twiss_output
+        filename = ideal.twi,
+        matched = 1
+&end
+
+&chromaticity
+        sextupoles = "SDH SFH"
+        change_defined_values = 1  ! Ensure it gets into the .param file
+&end
+
+&run_control 
+             n_steps = 1
+&end
+
+&bunched_beam &end
+
+&track &end
+
+! Step 2
+
+&run_setup
+             p_central_mev = 450
+             lattice = par10h.lte,
+             parameters = step2.param
+&end
+
+&twiss_output
+        matched = 1
+&end
+
+&alter_elements name=S[DF]H, item=K2, value=0 &end
+
+&correct
+        mode = "orbit"
+        n_xy_cycles = 5
+        n_iterations = 4
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&error_control error_log = step2.erl &end
+&error_element name=*, element_type=CSBEN*, item=FSE, amplitude=1e-4, bind=0 &end
+&error_element name=*, element_type=CSBEN*, item=TILT, amplitude=0.25e-3, bind=0 &end
+&error_element name=*, element_type=KQUAD, item=DX, amplitude=1e-4, bind=0 &end
+&error_element name=*, element_type=KQUAD, item=DY, amplitude=1e-4, bind=0 &end
+
+&bunched_beam &end
+
+&track &end
+
+! Step 3
+
+&run_setup
+             p_central_mev = 450
+             lattice = par10h.lte,
+             parameters = step3.param
+             correction_iterations = 2
+&end
+
+&twiss_output
+        matched = 1
+        filename = %s.twi
+        output_at_each_step = 1
+&end
+
+! Set sextupoles from first step
+&load_parameters 
+                 filename = step1.param,
+                 include_item_pattern = K2
+&end
+! Set everything else (including errors and correctors) from second step
+&load_parameters 
+                 filename = step2.param,
+                 exclude_item_pattern = K2
+&end
+
+&rpn_load
+        filename = ideal.twi
+        load_parameters = 1,
+        tag = ideal
+&end
+&correct_tunes
+        tune_x = "(ideal.nux)",
+        tune_y = "(ideal.nuy)",
+        quadrupoles = "Q1 Q2"
+        n_iterations = 20
+&end
+
+&chromaticity
+        sextupoles = "SDH SFH"
+        n_iterations = 20
+&end
+
+&correct
+        mode = "orbit"
+        n_xy_cycles = 5
+        n_iterations = 4
+        prezero_correctors = 0  ! Forces use of pre-set values for correctors from step2.param
+&end
+
+&run_control 
+             n_steps = 1
+&end
+
+&error_control error_log = step3.erl &end
+&error_element name=*, element_type=KQUAD, item=FSE, amplitude=1e-2, bind=0 &end
+&error_element name=*, element_type=KSEXT, item=FSE, amplitude=1e-2, bind=0 &end
+
+&bunched_beam &end
+
+&track &end
+
+! Step 4
+
+&run_setup
+             p_central_mev = 450
+             lattice = par10h.lte,
+             use_beamline = parrf,
+&end
+
+&load_parameters 
+                 filename = step3.param,
+&end
+
+! Needed to initialize SREFFECTS
+&twiss_output
+        matched = 1
+        radiation_integrals = 1
+&end
+
+! Needed for output at each step
+&twiss_output
+        filename = %s.twi
+        matched = 1
+        output_at_each_step = 1,
+        radiation_integrals = 1
+&end
+
+&run_control
+             n_steps = 1
+             n_passes = 400
+&end
+
+&closed_orbit
+        output = %s.clo
+&end
+
+&find_aperture
+        output = %s.aper
+        mode = "n-line",
+        n_lines = 21,
+        xmin = -0.06,
+        xmax = 0.06,
+        ymax = 0.02
+        n_splits = 1,
+        split_fraction = 0.1        
+&end

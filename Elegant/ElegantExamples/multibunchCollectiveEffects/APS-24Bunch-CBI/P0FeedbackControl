@@ -1,0 +1,1913 @@
+#!/bin/sh
+# \
+  exec oagwish "$0" "$@"
+
+set auto_path [linsert $auto_path 0 /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+
+# $Log: not supported by cvs2svn $
+# Revision 1.20  2011/11/10 21:06:07  shang
+# changed default turns-number to 6 for x-plane and 4 for y-plane per CY's request.
+#
+# Revision 1.19  2011/09/28 19:08:39  shang
+# added missing "\" for new line in logMessage command.
+#
+# Revision 1.18  2011/09/27 14:44:52  shang
+# fixed a bug where the variable name should be delay-$plane instead of delay1 in logMessage when setFIR.
+#
+# Revision 1.17  2011/08/24 15:00:09  shang
+# updated contextHelps.
+#
+# Revision 1.16  2011/08/22 20:13:07  shang
+# added logMessage for setFIR
+#
+# Revision 1.15  2011/03/22 15:06:53  shang
+# fixed a bug in set FIR.
+#
+# Revision 1.14  2011/03/21 19:55:14  shang
+# modified "Load FIR" and "LoadPatternFile" button so that they no longer write waveforms to ioc, only load data into display.
+#
+# Revision 1.13  2011/03/21 18:25:48  shang
+# added reading existing injection waveform, P0 feedback delay, and gains, and computing the pattern parameters such as interval, start bucket etc from injection waveform; Added radio button for change the FIR sign when "Update FIR" button is being pressed, removed "Set -FIR" button since it is not needed after the "+/-" radio button is added.
+#
+# Revision 1.12  2011/03/01 21:46:58  shang
+# entensive changes made by CY.
+#
+# Revision 1.11  2010/10/08 22:19:09  shang
+# removed shang's private library
+#
+# Revision 1.10  2010/10/08 22:18:22  shang
+# moved the loading twiss parameters and generating FIR procedures to library.
+#
+# Revision 1.9  2009/10/22 21:07:23  shang
+# made extensive changes by CY: a)changed the default pattern b)expanded and rounded off to full ring period for multiple patterns.
+# c)added fixed value DAC control d)removed high pass filter which was not ever being used. f)added launcher of medm screen and vnc screen.
+# g) reorganized pattern generation buttons h)fixed the problem of UpdateFIR button when no file is selected, now default file is being used.
+# i)added "Set -FIR" button for reverse output polarity.
+#
+# Revision 1.8  2009/10/22 19:33:06  shang
+# fixed a bug in making filter files where the Kicker parameter instead of Pickup should be passed to the alphaKicker argument.
+#
+# Revision 1.7  2009/09/08 19:56:25  shang
+# merged CY's changes for gains and delays
+#
+# Revision 1.6  2009/08/11 15:21:01  shang
+# merge CY's changes.
+#
+# Revision 1.5  2009/07/21 17:28:24  shang
+# added x/y gain entries and "set gain" button to set x/y plane gain waveform.
+#
+# Revision 1.4  2009/05/26 22:14:07  shang
+# changed by CY
+#
+# Revision 1.3  2009/04/27 15:30:00  shang
+# CY's changes
+#
+# Revision 1.2  2009/04/22 14:37:21  shang
+# merged cy's change
+#
+# Revision 1.1  2009/04/21 18:17:48  shang
+# firt version
+#
+APSStandardSetup
+
+proc UpdateControlBits {args} {
+    set filename ""
+    APSParseArguments {filename}
+    SetStatus "update control waveform bits..."
+    set tmpRoot /tmp/[APSTmpString]
+    if [catch {exec sddsprocess $filename -redefine=col,Waveform,Waveform,type=long -pipe=out \
+                 | sddsconvert -pipe -retain=col,Index,Waveform \
+                 | sddsbinarystring -col=Waveform -pipe \
+                 | sddsprocess -pipe -edit=col,Bits,WaveformBinaryString,27d \
+                 -edit=col,HPBit,Bits,1f4d \
+                 -edit=col,IPBit,Bits,1d1f3d \
+                 -edit=col,Bit2,Bits,2d1f2d \
+                 -edit=col,Bit1,Bits,3d1f1d \
+                 -edit=col,Bit0,Bits,4d \
+                 | tee $tmpRoot.2 \
+                 | sddsprocess -pipe -scan=col,IBit2,Bit2,%ld,type=long -scan=col,IBit1,Bit1,%ld,type=long \
+                 -scan=col,IBit0,Bit0,%ld,type=long \
+                 -scan=col,HighPassFilter,HPBit,%ld,type=long -scan=col,InputProcess,IPBit,%ld,type=long \
+                 "-define=col,OutputMode,IBit2 4 * IBit1 2 * + IBit0 +,type=long" \
+                 | sddsconvert -pipe=in -retain=col,Index,HighPassFilter,InputProcess,OutputMode $tmpRoot.3 } result] {
+        return -code error $result
+    }
+    APSAddToTmpFileList -ID p0feedback -fileList "$tmpRoot.2 $tmpRoot.3"
+    global HighPassFilter InputProcess OutputMode 
+    foreach quan {HighPassFilter InputProcess OutputMode} {
+        set $quan [join [exec sdds2stream -col=$quan $tmpRoot.3]]
+    }
+    SetStatus "done."
+    update
+}
+
+proc ReadControlWaveform {args} {
+    set tmpRoot /tmp/[APSTmpString]
+    if [catch {exec cavput -list=S:P0FB:scope:gtr:arm=1 } result] {
+        return -code error $result
+    }
+    
+    if [catch {exec sddswget -pv=S:P0FB:AcqControlGetWF $tmpRoot.1} result] {
+        return -code error $result
+    }
+    
+    UpdateControlBits -filename $tmpRoot.1
+    
+    if [catch {exec cavput -list=S:P0FB:scope:gtr:arm=1 } result] {
+        return -code error $result
+    }
+    after 1000
+    global InputWaveform OutputWaveform
+    set InputWaveform [lrange [exec caget S:P0FB:scope:gtr:waveform0] 2 end]
+    set OutputWaveform [lrange [exec caget S:P0FB:scope:gtr:waveform2] 2 end]
+}
+
+proc adjustRange {args} {
+    global adjuster scopeAdjusterList
+    set direction "none"
+    set quantity ""
+    set doAllScopeAdjusters 0
+    set factor 1
+    set xHiLimit ""
+    APSParseArguments {quantity direction factor doAllScopeAdjusters xHiLimit}
+    if {$quantity==""} {
+        return -code error "adjustRange: quantity not specified."
+    }
+    if {$direction==""} {
+        return -code error "adjustRange: direction not specified."
+    }
+    
+    set w $adjuster($quantity)
+    set xmin [expr {round([$w xaxis cget -min])}]
+    set xmax [expr {round([$w xaxis cget -max])}]
+    set width [expr $xmax - $xmin]
+    set xLoLimit 0
+   # set xHiLimit 16384
+    set padding 1
+    switch $direction {
+        right  {
+            set newMin [expr $xmin + $factor * $width]
+            set newMax [expr $xmax + $factor * $width]
+            if {$newMax > $xHiLimit} {
+                set newMax $xHiLimit
+                set newMin [expr $xHiLimit - $width]
+            }
+        }
+        left {
+            set newMin [expr $xmin - $factor * $width]
+            set newMax [expr $xmax - $factor * $width]
+            if {$newMin < $xLoLimit} {
+                set newMin $xLoLimit
+                set newMax [expr $xLoLimit + $width]
+            }
+        }
+        default {
+            # do nothing
+            set newMin $xmin
+            set newMax $xmax
+        }
+    }
+    if {!$doAllScopeAdjusters } {
+        $w xaxis configure -min [expr $newMin - $padding] -max [expr $newMax - $padding]
+    } else {
+        # determine whether the widget $w is a scope adjuster
+        if {-1 < [lsearch $scopeAdjusterList $w]} {
+            foreach item $scopeAdjusterList {
+                $item xaxis configure -min [expr $newMin - $padding] -max [expr $newMax - $padding]
+            }
+        }
+    }
+}
+
+proc center {args} {
+    global adjuster scopeAdjusterList 
+    set width 432
+    set quantity ""
+    set doAllScopeAdjusters 0
+    set centerReference 216
+    APSParseArguments {quantity width doAllScopeAdjusters xHiLimit centerReference}
+    if {$quantity==""} {
+        return -code error "center: quantity not specified."
+    }
+    global x$quantity
+    set centerReference [set x$quantity]
+    set w $adjuster($quantity)
+    set xLoLimit 0
+   # set xHiLimit 16384
+    set padding 1
+    set newMin [expr $centerReference - $width/2]
+    set newMax [expr $centerReference + $width/2]
+    if {$newMax > $xHiLimit} {
+        set newMax $xHiLimit
+    }
+    if {$newMin < $xLoLimit} {
+        set newMin $xLoLimit
+    }
+    if {!$doAllScopeAdjusters} {
+        $w xaxis configure -min [expr $newMin - $padding] -max [expr $newMax - $padding]
+    } else {
+        # determine whether the widget $w is a scope adjuster or an RAM adjuster
+        if {-1 < [lsearch $scopeAdjusterList $w]} {
+            foreach item $scopeAdjusterList {
+                $item xaxis configure -min [expr $newMin - $padding] -max [expr $newMax - $padding]
+            }
+        }
+    }
+}
+
+proc SetStatus {text} {
+    global status
+    set status "$text"
+    update
+}
+
+proc DescribeSection {args} {
+    global topIndex  topTabDescList 
+    set desc [lindex $topTabDescList $topIndex]
+    if [string length $desc] {
+	SetStatus "$desc"
+    }
+}
+
+
+proc LoadControlWaveform {args} {
+    global outputPatternDir
+    global patternDir multiplets  multipletStart multipletSpacing bpmGroupMode
+    global multiplicity
+    set file [APSFileSelectDialog .sel -checkValidity 1 -listDir $outputPatternDir \
+                -title "Choose a control waveform" ]
+    SetStatus "Loading control waveform from presets..."
+    if ![string length $file] {
+        SetStatus "No file chosen"
+        return 
+    }
+    SetStatus "Loading $file..."
+    UpdateControlBits -filename $file
+    set multiplets [exec sdds2stream -para=multiplets $file ] 
+    set multipletStart [exec sdds2stream -para=multipletStart $file ] 
+    set multipletSpacing [exec sdds2stream -para=multipletSpacing $file ] 
+    set multiplicity [exec sdds2stream -para=multiplicity $file ] 
+    set bpmGroupMode [exec sdds2stream -para=bpmGroupMode $file ] 
+    SetStatus "done."
+    return
+    SetStatus "set control pvs ..."
+    if [catch {exec sddswput $file} result] {
+        SetStatus "Error in loading $file to control waveform."
+        return
+    }
+    SetStatus "done."
+}
+
+proc ReadFIRFilter {args} {
+    set plane ""
+    APSParseArguments { plane }
+    set tmpRoot /tmp/[APSTmpString]
+    if [catch {exec cavput -list=S:P0FB:Coef -list=_X_,_Y_ -list=GetWF.PROC=1 } result] {
+        return -code error $result
+    }
+    after 1000
+    if [catch {exec sddswget -pv=S:P0FB:Coef_X_GetWF,S:P0FB:Coef_Y_GetWF $tmpRoot.1} result] {
+        return -code error $result
+    }
+    global FIRXFilter FIRYFilter order-x order-y delay-x delay-y
+    if [catch {exec sddsprocess $tmpRoot.1 -pipe=out -match=par,WaveformPV=S:P0FB:Coef_${plane}_GetWF \
+                 | sdds2stream -pipe=in -col=Waveform} waveform] {
+        return -code error $waveform
+    }
+#### set order delay variables 
+    set Plane [string tolower ${plane}]
+    for {set i 0 } { $i < 32 } {incr i} {
+    	if { [lindex $waveform $i] != 0 } {
+		set delay $i
+		set delay-${Plane} $i 
+		break
+		}
+	}
+    for {set i 31 } { $i >=0 } {incr i -1} {
+    	if { [lindex $waveform $i] != 0 } {
+		set order [expr $i - $delay + 1]
+		set order-${Plane} $order 
+		break
+		}
+	}
+
+    set FIR${plane}Filter [join $waveform]
+    update
+    
+    APSAddToTmpFileList -ID p0feedback -fileList "$tmpRoot.1 $tmpRoot.2"
+}
+
+proc ReadCurrentParameters {args} {
+    global multipletStart multipletSpacing multiplets DacDelay-x DacDelay-y xGain yGain
+    SetStatus "Read current pattern parameters, delay and gain values."
+    set tmpRoot /tmp/[APSTmpString]
+    if [catch {exec sddswget -pv=S:P0FB:AcqControlGetWF -pipe=out \
+		   | sddsprocess -pipe "-define=col,Bit8,Waveform 16 mod 8 / int,type=long" \
+		   | sddsprocess -pipe=in $tmpRoot.2 -filter=col,Bit8,0.5,1.5 \
+		   -process=Index,first,Offset \
+		   -define=par,Counts,n_rows,type=long } result] {
+	return -code error "Error in reading and processing P0 waveform: $result"
+    }
+    APSAddToTmpFileList -ID p0feedback -fileList  "$tmpRoot.1 $tmpRoot.2"
+    set offset [format %.0f [exec sdds2stream -par=Offset $tmpRoot.2]]
+    set multiplets [exec sdds2stream -par=Counts $tmpRoot.2]
+    set multipletSpacing  [expr 1296/$multiplets]
+    set multipletStart [expr 3 * $offset +  $multipletSpacing * int (1060 / $multipletSpacing)]
+    if [catch {exec cavget -list=S:P0FB:P0_DelayRegX_AO -pend=30 -printErrors} DacDelay-x] {
+	return -code error "Error in reading DacDelay-x: $DacDelay-x"
+    }
+    if [catch {exec cavget -list=S:P0FB:P0_DelayRegY_AO -pend=30 -printErrors} DacDelay-y] {
+	return -code error "Error in reading DacDelay-y: $DacDelay-y"
+    }
+    #read gain
+    if [catch {exec sddswget -pv=S:P0FB:AcqGainX_GetWF -pend=30 -pipe=out \
+		   | sddsprocess -pipe -process=Waveform,first,Gain \
+		   | sdds2stream -pipe -par=Gain } xGain] {
+	return -code error "Error in reading xGain: $xGain"
+    }
+    if [catch {exec sddswget -pv=S:P0FB:AcqGainY_GetWF -pend=30 -pipe=out \
+		   | sddsprocess -pipe -process=Waveform,first,Gain \
+		   | sdds2stream -pipe -par=Gain } yGain] {
+	return -code error "Error in reading yGain: $yGain"
+    }
+    set xGain [format %.2f $xGain]
+    set yGain [format %.2f $yGain]
+    SetStatus "done."
+}
+
+proc LoadFIRFilter {args} {
+    #wait for CY to provide the presets
+    global FIRDir 
+    set file [APSFileSelectDialog .sel -checkValidity 1 \
+                -listDir $FIRDir \
+                -title "Choose a FIR filter waveform" ]
+    SetStatus "Loading FIR filter waveform from presets..."
+    if ![string length $file] {
+        SetStatus "No file chosen"
+        return
+    }
+    global FIRXFilter FIRYFilter  
+    foreach plane {X Y} {
+        if [catch {exec sddsprocess $file -pipe=out -match=par,WaveformPV=S:P0FB:Coef_${plane}_GetWF \
+                     | sdds2stream -pipe=in -col=Waveform} waveform] {
+            return -code error $waveform
+        }
+        #[its $waveform
+        set FIR${plane}Filter [join $waveform]
+    }
+     SetStatus "done."
+    return
+    SetStatus "Loading $file to FIR pv ..."
+    if [catch {exec sddswput $file} result] {
+        SetStatus "Error in loading $file to FIR filter waveform."
+        return
+    }
+    SetStatus "done."
+}
+
+proc SetControls {args} {
+    global highPassFilter-x highPassFilter-y
+    global phaseShift p0Sampling samplesPerSecond coefficient rate  
+    global DacDelay-x DacDelay-y
+    if [catch {exec cavput \
+    -list=S:P0FB:WashoutSelX_LI=${highPassFilter-x},S:P0FB:WashoutSelX_LI=${highPassFilter-y},S:P0FB:scope:gtr:perSecond=$samplesPerSecond,S:P0FB:scope:gtr:delaySelect=$rate,S:P0FB:P0_DelayRegX_AO=${DacDelay-x},S:P0FB:P0_DelayRegY_AO=${DacDelay-y},S:P0FB:pinger:P0select=$p0Sampling } result] {
+        return -code error $result
+    }
+    if [catch {exec cavget -list=S:P0FB:adcClockShift} shift] {
+        return -code error $shift
+    }
+    if {$phaseShift==$shift} {
+        return
+    }
+    if {$phaseShift<$shift} {
+        set value -1
+    } else {
+        set value 1
+    }
+    set turns [expr abs($shift-$phaseShift)]
+    for {set i 0} {$i<$turns} {incr i} {
+        if [catch {exec cavput -list=S:P0FB:CounterMphaseLO=$value} result] {
+            return -code error $result
+        }
+        after 100
+    }
+}
+
+proc ZeroPattern {args} {
+    global HighPassFilter InputProcess OutputMode 
+    set quantity ""
+    APSParseArguments {quantity}
+    set len [llength $HighPassFilter]
+    if { $quantity == "InputProcess" } {
+    set InputProcess [APSReplicateItem -item 0 -number $len ] 
+    } else {
+    set OutputMode [APSReplicateItem -item 0 -number $len ]
+    }
+    update
+
+}
+
+proc SelectAll {args} {
+    global HighPassFilter InputProcess OutputMode 
+    set quantity ""
+    APSParseArguments { quantity } 
+    set len [llength $HighPassFilter]
+    if { $quantity == "InputProcess" } {
+    set InputProcess [APSReplicateItem -item 1 -number $len ]
+    } else {
+    set OutputMode [APSReplicateItem -item 1 -number $len ]
+    }
+    update
+
+}
+
+proc WritePatternToFile {args} {
+    set filename ""
+    set set 0
+    APSParseArguments {filename set}
+    global HighPassFilter InputProcess OutputMode outputPatternFile outputPatternDir writePatternResponse
+    global patternDir multiplets  multipletStart multipletSpacing bpmGroupMode
+    global multiplicity
+    
+    if ![string length $filename] {
+        set writePatternResponse 0
+        APSDialogBox .file -name "Pattern File" -cancelCommand "set writePatternResponse cancelled" -okCommand "set writePatternResponse ok"
+        APSLabeledEntry .dir -parent .file.userFrame -label "Directory: " -width 60 -textVariable outputPatternDir
+        APSLabeledEntry .file -parent .file.userFrame -label "File: " -width 60 -textVariable outputPatternFile
+        tkwait variable writePatternResponse 
+        if {$writePatternResponse=="cancelled"} {
+            SetStatus "write control pattern to file was cancelled."
+            return
+        }
+        #if {![info exist outputPatternFile] || ![string length outputPatternFile]} {
+        #    return -code error "output pattern file not provided."
+        #}
+        set filename $outputPatternDir/$outputPatternFile
+    } 
+    if [file exist $filename] {
+        if ![APSYesNoPopUp "$filename already exist, do you want to overwrite it?"] {
+            SetStatus "$filename already exists!"
+            return
+        }
+    }
+    if [catch {exec sddsmakedataset -pipe=out \
+                 -col=InputProcess,type=short -data=[join $InputProcess ,] \
+                 -col=HighPassFilter,type=short -data=[join $HighPassFilter ,] \
+                 -col=OutputMode,type=short -data=[join $OutputMode ,] \
+                 | sddsprocess -pipe=in $filename -define=col,Index,i_row,type=long \
+                 -print=par,WaveformPV,S:P0FB:AcqControlSetWF \
+                 -print=par,ReadbackWaveformPV,S:P0FB:AcqControlGetWF \
+		 -define=par,multiplets,$multiplets,type=short \
+		 -define=para,multipletStart,$multipletStart,type=short \
+		 -define=para,multipletSpacing,$multipletSpacing,type=short \
+		 -define=para,multiplicity,$multiplicity,type=short \
+		 -print=para,bpmGroupMode,$bpmGroupMode \
+                 "-define=col,Waveform,HighPassFilter 16 * InputProcess 8 * + OutputMode +,type=long"  } result] {
+        return -code error $result
+    }
+    SetStatus "current pattern was written to $filename"
+    if $set {
+        if [catch {exec sddswput $filename } result] {
+            return -code error $result
+        }
+        SetStatus "Current pattern is loaded to control waveform -- S:P0FB:AcqControlSetWF"
+    }
+}
+
+proc SetPresetBunchPattern {args} {
+    global currentStop dwell cycles multiplicity multiplets multipletStart multipletStartMode multipletSpacing
+    global bpmGroupCurrent bpmGroupBuckets bpmGroupMode bpmGroupSum bpmGroupSumUse gapLimit
+    global ToggleScrapers multipletPattern pauseAfterBPMGroup  bunchPatternLabel
+
+    global presetBunchPatternData
+    
+    set index ""
+    APSStrictParseArguments {index}
+    
+    set bunchPatternLabel [lindex [lindex $presetBunchPatternData(Column.Label) 0] $index]
+    SetStatus "$bunchPatternLabel was selected."
+    
+    set multiplicity        [lindex [lindex $presetBunchPatternData(Column.Multiplicity) 0] $index]
+    set multiplets          [lindex [lindex $presetBunchPatternData(Column.Multiplets) 0] $index]
+    #  multipletStartMode must always follow multipletSpacing
+    #  because multipletSpacing is used in evaluating multipletStart
+    set multipletSpacing    [lindex [lindex $presetBunchPatternData(Column.MultipletSpacing) 0] $index]
+    set multipletStartMode  [lindex [lindex $presetBunchPatternData(Column.MultipletStartMode) 0] $index]
+    switch -exact $multipletStartMode {
+        Default {
+            set multipletStart      [lindex [lindex $presetBunchPatternData(Column.MultipletStart) 0] $index]
+            set gapLimit 55
+        }
+        LastInjected {
+            if [catch {exec cavget -list=Mt:SRlastInjectedBunchM}  multipletStart] {
+                return -code error "SetPreset: $multipletStart"
+            }
+            set multipletStart [expr $multipletStart + $multipletSpacing]
+            if {[expr $multipletStart >= 1296]} {
+                set multipletStart [expr $multipletStart - 1296]
+            }
+            set gapLimit 9
+        }
+    }
+    set bpmGroupCurrent     [lindex [lindex $presetBunchPatternData(Column.BpmGroupCurrent) 0] $index]
+    set bpmGroupSum         [lindex [lindex $presetBunchPatternData(Column.BpmGroupSum) 0] $index]
+    set bpmGroupSumUse      [lindex [lindex $presetBunchPatternData(Column.BpmGroupSumUse) 0] $index]
+    set bpmGroupBuckets     [lindex [lindex $presetBunchPatternData(Column.BpmGroupBuckets) 0] $index]
+    set bpmGroupMode        [lindex [lindex $presetBunchPatternData(Column.BpmGroupMode) 0] $index]
+    set pauseAfterBPMGroup  [lindex [lindex $presetBunchPatternData(Column.PauseAfterBPMGroup) 0] $index] 
+    set currentStop         [lindex [lindex $presetBunchPatternData(Column.CurrentStop) 0] $index]
+    set cycles              [lindex [lindex $presetBunchPatternData(Column.Cycles) 0] $index]
+    
+}
+
+proc GenerateMultipletPattern {} {
+    global multipletPattern multipletSpacing multipletStart
+    global generateMultipletPatternStatus multiplicity multiplets
+    global GenerateMultipletPatternGap1 GenerateMultipletPatternGap2
+    global currentStop bpmGroupCurrent GenerateMultipletMode
+    global GenerateMultipletPatternLength1
+
+    APSDialogBox .mpattern -name "Pattern Generation Dialog"  \
+      -cancelCommand "set generateMultipletPatternStatus cancel" \
+      -okCommand "set generateMultipletPatternStatus ok"
+    set w .mpattern.userFrame
+    set GenerateMultipletMode HSB
+    set GenerateMultipletPatternGap1 1600
+    set GenerateMultipletPatternLength1 100
+    APSRadioButtonFrame .mode -parent $w -label "Mode: " -variable GenerateMultipletMode \
+      -buttonList "Hybrid+SuperBunch" -valueList HSB -orientation horizontal
+    APSLabeledEntry .gap1 -parent $w -label "Gap 1 (ns, min): " -textVariable GenerateMultipletPatternGap1 \
+      -width 10
+    APSLabeledEntry .gap2 -parent $w -label "Super-bunch length (ns, max): " \
+        -textVariable GenerateMultipletPatternLength1 -width 10
+    set generateMultipletPatternStatus -1
+    update
+    tkwait variable generateMultipletPatternStatus
+    if [string compare $generateMultipletPatternStatus cancel]==0 return
+
+    set gap1Buckets [expr int($GenerateMultipletPatternGap1/1e9*351.927e6+0.5)]
+    set availableBuckets [expr int($GenerateMultipletPatternLength1/1e9*351.927e6+0.5)]
+    set nTrains 0
+    set length 0
+    while {$length<$availableBuckets} {
+        incr nTrains
+        set length [expr $nTrains*$multiplicity+($nTrains-1)*($multipletSpacing-$multiplicity)]
+    }
+    incr nTrains -1
+    if $nTrains<1 {
+        return -code error "Gaps are too large: number of available buckets less than multiplicity ($multiplicity)"
+    }
+    set pattern ""
+    set bucketsFilled 0
+    for {set i 0} {$i<$nTrains} {incr i} {
+        set pattern [concat $pattern [APSReplicateItem -item 1 -number $multiplicity]]
+        incr bucketsFilled [expr 2*$multiplicity]
+        if {$i<[expr $nTrains-1]} {
+            set pattern [concat $pattern [APSReplicateItem -item 0 -number [expr $multipletSpacing-$multiplicity]]]
+        }
+    }
+    set multipletPattern [join $pattern ""]
+    set multipletStart $gap1Buckets
+    set hgap2Buckets [expr 648-$gap1Buckets-[llength $pattern]]
+    set multipletSpacing [expr [llength $pattern]+2*$hgap2Buckets]
+    set multiplets 2
+    set multiplicity 1
+    SetStatus "Actual gaps: [expr int($multipletStart/351.927e6*1e9)]ns   [expr int(2*$hgap2Buckets/351.927e6*1e9)]ns"
+    SetStatus "$bucketsFilled filled buckets in bunch trains, [format %.2f [expr ($currentStop-$bpmGroupCurrent)/$bucketsFilled]] mA each"
+}
+
+proc UpdateMode {args} {
+    set index ""
+    APSParseArguments {index}
+    global OutputMode$index InputMode$index
+    if ![set InputMode$index] {
+        set OutputMode$index 0
+    }
+}
+set presetFile /home/helios/oagData/par/P0feedback/bunchPattern/P0FeedbackPatterns
+sdds load $presetFile presetBunchPatternData
+set presetPatternList [lindex $presetBunchPatternData(Column.Label) 0]
+set outputPatternFile ""
+proc MakeControlWidget {widget args} {
+    set parent ""
+    APSParseArguments {parent}
+    global presetPatternList bunchPattern multiplets multiplicity  multipletStart multipletSpacing multipletPattern  bpmGroupMode
+    global outputPatternFile pattern
+    set multiplets 1
+    set multiplicity 1
+    set multipletStart 1062 
+    set multipletSpacing 1296
+    APSFrame .f -parent $parent -label "Make Patterns"
+    set w $parent.f.frame
+    
+    set widgetList [APSTabFrame .tab -parent $w -label "" -labelList {PatternSelection Samples} \
+                      -width 600 -height 250]
+    set index 0
+    set w [lindex $widgetList $index]
+    set pattern presets 
+    set bpmGroupMode None 
+  #  APSLabeledEntry .dir -parent $w -label "Output dir:" -width 80 -textVariable outputPatternDir
+  #  APSLabeledEntry .file -parent $w -label "Output file:" -width 80 -textVariable outputPatternFile
+    APSRadioButtonFrame .pattern -parent $w -label "User current pattern or presets?" -buttonList {current presets} \
+      -valueList {current presets} -variable pattern -orientation horizontal \
+      -contextHelp "choose current pattern (displayed) or presets for the control waveform."
+    APSComboboxFrame .preset -parent $w -label Presets \
+      -packOption "-fill x" \
+      -textVariable bunchPattern \
+      -itemList $presetPatternList \
+      -width 80 \
+      -editable 0 \
+      -callback "SetPresetBunchPattern -index" \
+      -contextHelp "Select a preset bunch pattern for setting the values of the tcl variables that are then used to set up the injection ioc."    
+  
+    APSFrameGrid .grid -parent $w -xList {x1 x2 }
+    set w1 $w.grid.x1
+    set w2 $w.grid.x2
+    set width 15 
+    APSRadioButtonFrame .bpm -parent $w1 -label "BPM-group:" -buttonList {Yes No} \
+      -valueList {First None} -variable bpmGroupMode \
+      -orientation horizontal -contextHelp \
+      "Select whether to inject the BPM-group, and whether to do it or the multiplet train first.  The BPM-group is the group of consecutive bunches injected at bucket location 0, used to trigger the BPMs." 
+    APSLabeledEntry .number -parent $w2 -label "Number: " -width $width \
+    -textVariable multiplets \
+      -contextHelp "The number of multiplets to inject in addition to the group of consecutive bunches for the BPMs." 
+    
+    APSLabeledEntry .multiplicity -parent $w1 -label "Multiplicity: " -width $width \
+    -textVariable multiplicity -contextHelp \
+      "The number of buckets in each multiplet.  For example, entering 2 gives a train of doublets.  Ignored if the Pattern is given."
+    
+    APSLabeledEntry .multipletStart -parent $w2 -label "Start: " \
+      -width $width -textVariable multipletStart \
+      -contextHelp "The starting bucket for the series of multiplets."  
+    APSLabeledEntry .multipletSpacing -parent $w1 -label "Interval: " \
+      -width $width -textVariable multipletSpacing \
+      -contextHelp "The interval between multiplets to be filled. May be any positive integer." 
+    
+    APSLabeledEntry .multipletPattern -parent $w2 -label "Pattern:" \
+      -width $width -textVariable multipletPattern \
+      -contextHelp "An optional pattern for the multiplet train.  If this entry is given, then the Multiplicity factor is ignored.  For example, a pattern of 10101 would fill three buckets with an empty space between them."  
+    APSButton .genPattern -parent $w2.multipletPattern \
+      -size small -text G -command "GenerateMultipletPattern"
+   
+APSFrame .updateF -parent $parent.f.frame
+set w $parent.f.frame.updateF.frame 
+     APSButton .update -parent $w -text "UpdatePattern" -command \
+     "UpdatePattern" -contextHelp "update the control waveform (InputProcess, HighPassFilter and OutputMode) based on the provided bunch pattern and Samples"
+   
+    APSButton .plot -parent $w -text "PlotBunchPattern" -command "GenerateBunchPatternFile -plot 1" -contextHelp "plot selected bunch pattern."
+
+    set parent1 [lindex $widgetList 1]
+    APSFrameGrid .grid -parent $parent1 -xList {x1 x2 x3}
+    set w1 $parent1.grid.x1
+    set w2 $parent1.grid.x2
+    set w3 $parent1.grid.x3
+    APSFrame .f1 -parent $w1 -label "Output Mode"
+   # APSLabel .sample -parent $w1.f1.frame -text "Sample  ZD +D -D -V  +V  NL CL"
+    for {set index 1} {$index<=6} {incr index} {
+        global OutputMode$index
+	if {$index == 1} {
+        	set  OutputMode$index 2
+		} 
+	if {$index == 2 || $index == 4} {
+        	set  OutputMode$index 6
+		} 
+	if {$index == 3} {
+        	set  OutputMode$index 5
+		} 
+	if {$index >= 5 } {
+        	set  OutputMode$index 0
+		} 
+#        set  OutputMode$index 1
+        APSRadioButtonFrame .s$index -parent $w1.f1.frame -label "$index" -valueList {0 1 2 3 4 5 6} -variable OutputMode$index \
+          -buttonList {"ZD" "+D" "-D" "-V" "+V" "NL" "CL"}  -orientation horizontal -contextHelp "Select a clock number in output sequence.\n\
+ZD: zero output for this clock period.\n\
++D: Set the processed data to output for this clock period.\n\
+-D: Set the reverse of processed data to output for this clock period.\n\
+-V: Set a fixed value of DacHi/Lo to output for this clock period.\n\
++V: Set a fixed value of -DacHi/Lo to output for this clock period.\n\
+NL: Copy the reverse of last clock period value to output for this clock period.\n\
+CL: Copy the last clock period value to output for this clock period.\n"}
+
+    APSFrame .f2 -parent $w2 -label "Input Processing"
+    for {set index 1} {$index<=6} {incr index} {
+        global  InputMode$index 
+	if {$index == 1} {
+        	set InputMode$index 1
+		} else {
+		set InputMode$index 0
+		}
+        APSRadioButtonFrame .s$index -parent $w2.f2.frame -label "" -valueList {1 0} -variable InputMode$index \
+          -buttonList {"Enable" "Disable"}  -orientation horizontal -commandList [list "UpdateMode -index $index" "UpdateMode -index $index"] \
+	    -contextHelp "Enable/disable input sampling."
+    }
+    
+#    APSFrame .f3 -parent $w3 -label "High Pass Filter"
+    for {set index 1} {$index<=6} {incr index} {
+        global  HighPassFilterMode$index 
+        set HighPassFilterMode$index 0
+#        APSRadioButtonFrame .s$index -parent $w3.f3.frame -label "" -valueList {1 0} -variable HighPassFilterMode$index \
+#          -buttonList {"Enable" "Disable"}  -orientation horizontal
+    }
+   
+###### addButtonsHere    
+APSFrame .setPattern -parent $parent 
+set w $parent.setPattern.frame 
+    APSButton .read1 -parent $w -text "LoadPatternFile" -command "LoadControlWaveform" -contextHelp "loan control waveform from a file."
+    
+
+    APSButton .write -parent $w -text "WritePatternFile" -command "WritePatternToFile" -contextHelp "write current pattern to control waveform"
+ 
+    APSButton .read -parent $w -text "ReadPattern" -command "ReadControlWaveform"
+    APSButton .set -parent $w -text "SetPattern" -command "SetPattern" -contextHelp "load current pattern into control waveform"
+    APSButton .readp -parent $w -text "ReadPameters" -command "ReadCurrentParameters" \
+	-contextHelp "read P0 feedback waveform control (interval, start ect), dac delay and gain."
+    APSButton .readdata -parent $w -text "RefreshData" -command "ReadControlWaveform;ReadCurrentParameters;ReadFIRFilter -plane X;ReadFIRFilter -plane Y"
+    return
+    
+    for {set index 1} {$index<=6} {incr index} {
+        global InputMode$index HighPassFilterMode$index OutputMode$index
+        set InputMode$index 1
+        set HighPassFilterMode$index 0
+        set OutputMode$index 1
+        set w [lindex $widgetList $index]
+       
+        APSRadioButtonFrame .filter -parent $w -label "High Pass Filter:" -buttonList {Enable Disable} -valueList {1 0} \
+          -variable HighPassFilterMode$index -contextHelp "choose value for Bit 3: enable/disable high pass filter" -orientation horizontal
+        APSRadioButtonFrame .input -parent $w -label "Input processing:" -buttonList {Enable Disable} -valueList {1 0} \
+          -variable InputMode$index -contextHelp "choose value for Bit 4: enable/disable input processing" -orientation horizontal
+        APSRadioButtonFrame .mode -parent $w -label "DAC pattern"   -orientation horizontal  \
+          -buttonList {"Zero Output " "Normal Data " "Negate Data " "-V0" "+V0" "Negate Last " "Copy Last"} \
+          -valueList {0 1 2 3 4 5 6} -variable OutputMode$index \
+          -contextHelp "Bits 0-2 controls DAC output pattern."
+    }
+    
+ #   APSButton .update -parent $parent -text "UpatePattern" -command "Update" -contextHelp "update the control waveform (InputProcess, HighPassFilter and OutputMode) based on the provided bunch pattern and Samples"
+   # APSButton .write -parent $parent -text "WriteToFile" -command "WritePatternToFile" -contextHelp "write current pattern to control waveform"
+  #  APSButton .read -parent $parent -text "LoadFromFile" -command "LoadControlWaveform" -contextHelp "loan control waveform from a file."
+  #  APSButton .zero -parent $parent -text "ZeroAll" -command "ZeroPattern" -contextHelp "set all control bytes to 0"
+  #  APSButton .set -parent $parent -text "SetPattern" -command "SetPattern" -contextHelp "load current pattern into control waveform"
+    APSButton .plot -parent $parent -text "Plot Bunch Pattern" -command "GenerateBunchPatternFile -plot 1" -contextHelp "plot selected bunch pattern."
+    
+}
+proc SetPattern {args} {
+    set filename /tmp/[APSTmpString].pattern
+    if [catch {WritePatternToFile -filename $filename -set 1} result] {
+        return -code error $result
+    }
+}
+
+proc UpdatePattern {args} {
+    global pattern HighPassFilter InputProcess OutputMode
+    global bunchPatternLabel
+    set tmpRoot  /tmp/[APSTmpString]
+    switch $pattern {
+        presets {
+#	    if {![string length $bunchPatternLabel] } { 
+#	        return -code error "Preset file not selected"
+#		}
+            if [catch {GenerateBunchPatternFile} patternFile] {
+                return -code error "Unable to generate bunch pattern file: $patternFile"
+            }
+	    if { ![file exists $patternFile] } {
+	        SetStatus "File: $patternFile does not exist." 
+		return
+		}
+            if [catch {exec sddsprocess $patternFile $tmpRoot.1 \
+                         "-define=col,Index,Bucket 3 /,type=long" \
+                         "-define=col,Index2,Bucket 3 mod,type=long" \
+                         "-filter=col,Index2,0,0" } result] {
+                return -code error "The bucket number can not be divided by 3: $result"
+            } 
+            set rows [exec sdds2stream -rows=bar $tmpRoot.1]
+            if !$rows {
+                SetStatus "The bucket number is not multiples of 3!"
+                return
+            }
+        }
+        current { 
+            if [catch {exec sddsmakedataset -pipe=out \
+                         -col=HPBit,type=short -data=[join $HighPassFilter ,] \
+                         -col=IPBit,type=short -data=[join $InputProcess ,] \
+                         -col=Mode,type=short -data=[join $OutputMode ,] \
+                         | sddsprocess -pipe=in $tmpRoot.1 "-define=col,Index,i_row,type=long" \
+                         "-define=col,TargetCurrent,HPBit 16 * IPBit 8 * Mode +" } result] {
+                return -code error $result
+            }
+     #       set currentList [exec sdds2stream $tmpRoot.1 -col=TargetCurrent]
+     #       set indexList [exec sdds2stream $tmpRoot.1 -col=Index]
+        }
+    }
+    set currentList [exec sdds2stream $tmpRoot.1 -col=TargetCurrent]
+    set indexList [exec sdds2stream $tmpRoot.1 -col=Index]
+#    puts $currentList
+#    puts $indexList
+#    return
+    for {set index 1} {$index<=6} {incr index} {
+        global InputMode$index HighPassFilterMode$index OutputMode$index
+        foreach nm {InputMode HighPassFilterMode OutputMode} {
+            if {![info exist $nm$index] || ![string length [set $nm$index]]} {
+                return -code error "The $nm is not selected for sample$index !"
+            }
+        }
+        set data$index [expr [set HighPassFilterMode$index]*16 + [set InputMode$index]*8 + [set OutputMode$index]]
+    }
+    set valueList ""
+    set lastIndex -1  
+    for {set index 0} {$index<[llength $currentList]} {incr index} {
+        set current [lindex $currentList $index]
+        
+        if {$current!=0} {
+            #if {$lastIndex>=0} {
+            #    set diff [expr $index - $lastIndex]
+            #    if {$diff<6} {
+            #        return -code error "Error: the distance between two closet points is less than 6!"
+            #    }
+            #    set lastIndex $index
+            #}
+            #lappend valueList $data1
+            for {set i 1} {$i<=6} {incr i} {
+                lappend valueList [set data$i] 
+            }
+            set index [expr $index+5]
+        } else {
+            lappend valueList 0
+        }
+    } 
+    set indexCounts [llength $indexList] 
+    set diff [expr [llength $valueList]-$indexCounts]
+    set tail [expr $diff - 1]
+    set indexCounts [expr $indexCounts -1]
+    set list1 [lrange $valueList end-$indexCounts end-$diff]
+    set list2 [lrange $valueList end-$tail end]
+    set valueList [concat $list2 $list1]
+#    puts $indexCounts
+#    puts [llength $valueList]
+    if [catch {exec sddsmakedataset $tmpRoot.2 -col=Index,type=long -data=[join $indexList ,] \
+                 -col=Waveform,type=long -data=[join $valueList ,] \
+                 -par=WaveformPV,type=string -data=S:P0FB:AcqControlSetWF } result] {
+        return -code error $result
+    }
+    UpdateControlBits -filename $tmpRoot.2
+}
+
+proc GenerateBunchPatternFile {args} {
+    set plot 0
+    APSParseArguments {plot}
+    set tmpRoot /tmp/[APSTmpString]
+    set patternFile $tmpRoot.bunchpattern
+    global patternDir multiplets  multipletStart multipletSpacing bpmGroupMode
+    global totalBuckets
+    set totalBuckets 1296
+    set multipletStart [expr int ( $multipletStart + 0.01)]
+    if {$bpmGroupMode=="First"} {
+        set first 1
+    } else {
+        set first 0
+    }
+    foreach name {multiplets  multipletStart multipletSpacing} {
+####        if {![info exist $name] || ![string length [set $name]]} \{
+        if {![info exist $name] || ![string length [set $name]] } {
+            SetStatus "$name not provided!"
+            return
+        }
+    }
+    if { [expr int (fmod ($multipletStart, 3)+0.001)] > 0 } {
+    	SetStatus "multipleStart must be multiple of 3!"
+	return
+	}
+    if { [expr int (fmod ($multipletSpacing, 3)+0.001)] > 0 } {
+    	SetStatus "multipleSpacing must be multiple of 18!"
+#	return -code error "pattern not generated." 
+        return
+	}
+
+set count 0
+#    set multipletStartMod [expr int (fmod ($multipletStart, $multipletSpacing) +0.001 )] 
+    for {set index $multipletStart } {$index< [expr $multipletStart+$totalBuckets ] } {incr index } {
+        set indexMod [expr int (fmod ($index-$multipletStart, $multipletSpacing) + 0.001)]
+	set indexMod1 [expr int (fmod ($index, $totalBuckets)+0.01)]
+	if {$indexMod1 > [expr $totalBuckets / 2]} {
+		set indexMod1 [expr $totalBuckets - $indexMod1]
+		}
+        if {$indexMod1==0 } {
+		if { $first==1} {
+            		lappend valList 1
+			} elseif {$indexMod==0 && $count<$multiplets} {
+			lappend valList 1
+			incr count
+			} else { lappend valList 0 }
+	    } elseif {$indexMod==0 && $count < $multiplets } {
+	          if {$first==1 && $indexMod1<$multipletSpacing} { 
+		  	lappend valList 0
+			} else {
+	    			lappend valList 1
+	    			incr count
+			}
+        } else {
+            lappend valList 0
+        }
+    }
+set start1 [expr $totalBuckets - $multipletStart]    
+set end1 [expr $totalBuckets - 1]
+set start2 0
+set end2 [expr $totalBuckets -$multipletStart -1]
+set valList [concat [lrange $valList $start1 $end1] [lrange $valList $start2 $end2]]
+#    puts $valList
+##### removed some commented-out lines.
+    if [catch {exec sddsmakedataset -pipe=out -col=TargetCurrent,type=double -data=[join $valList ,]\
+                 | sddsprocess -pipe=in $patternFile -define=col,Bucket,i_row,type=long } result] {
+        return -code error $result
+    }
+    
+    if $plot {
+        if [catch {exec sddsplot $patternFile \
+                     -filter=col,TargetCurrent,0,0,! -uns=y \
+                     -col=Bucket,TargetCurrent -grap=impulse \
+                     -col=Bucket,TargetCurrent -grap=sym,subtype=2,sca=2 -leg  & \
+                 } result] {
+            return -code error "PlotBunchPattern: $result"
+        }
+    }
+    return $patternFile
+}
+
+proc MakeControlDisplayWidget {args} {
+    set parent ""
+    APSParseArguments {parent}
+    
+    global highPassFilter-x highPassFilter-y phaseShift p0Sampling samplesPerSecond
+    global coefficient rate DacDelay-x DacDelay-y xGain yGain
+    
+#    APSFrame .control -parent $parent -label "Set Control and Display \
+#    options"
+    set w $parent.control.frame
+    set highPassFilter-x 0
+    set highPassFilter-y 0
+    set phaseShift 18
+    set p0Sampling 0
+    set samplesPerSecond 0
+    set coefficient 1
+    set rate 7
+    set DacDelay-x 100 
+    set DacDelay-y 354 
+    set xGain 1.0
+    set yGain 1.0
+#    APSLabeledEntry .hFilter-x -parent $w -label "High Pass Filter (x)" -width 15 -textVariable highPassFilter-x \
+#      -contextHelp "enter 1-7 integer for high pass filter."
+#    APSLabeledEntry .hFilter-y -parent $w -label "High Pass Filter (y)" -width 15 -textVariable highPassFilter-y \
+#      -contextHelp "enter 1-7 integer for high pass filter."
+#    APSLabeledEntry .phase -parent $w -label "Clock Phase shift:" -width 15 -textVariable phaseShift \
+#      -contextHelp "Enter value for setting clock phase shift"
+#    APSLabeledEntry .samples -parent $w -label "Samples per second" -width 15 -textVariable samplesPerSecond
+#    APSLabeledEntry .factor -parent $w -label "Coefficient factor:" -width 15 -textVariable coefficient 
+#    APSRadioButtonFrame .sample -parent $w -label "PO Sampling degree:" -variable p0Sampling \
+#      -valueList {0 1} -buttonList {0 180} -orientation horizontal 
+
+#### make the widget shorter
+#     APSRadioButtonFrame .rate -parent $w -label "Rate control:" -variable rate \
+#      -buttonList {1 2 3 4 5 6 7 8} -valueList {7 6 5 4 3 2 1 0 } -contextHelp \
+#      "select the rate control: 1 - slowest, 8 -fastet" -orientation horizontal 
+#    APSButton .set -parent $w -text "Set controls"  -command "SetControls"
+    APSFrame .launchMedm -parent $parent  -label " "
+    set w $parent.launchMedm.frame
+    APSButton .launchMedm -parent $w -text "MEDM screen" -command \
+    "exec /home/helios/PAR/bin/P0FBScreen &"  -contextHelp "launch P0Feedback control medm screen."
+    APSButton .launchVnc -parent $w -text "S2 Scope" -command \
+    "exec /usr/local/bin/vnceviewer 164.54.3.214:0 &" -contextHelp "Launch vnceviewer for scope monitoring."
+    APSButton .launchVnc1 -parent $w -text "S35 Scope" -command \
+    "exec /usr/local/bin/vnceviewer  hp54832B:0 &" -contextHelp "Launch vnceviewer for scope monitoring."
+    APSFrame .f -parent $parent -label " "
+    set w $parent.f.frame
+    APSButton .p0scan -parent $w -text "P0Feedback Tuning"  -command "exec P0FBScan &" \
+        -contextHelp "bring up P0Feedback scan application for tuning P0Feedback."
+    APSButton .p0tune -parent $w -text "Get P0FB tune" -command "exec getP0FBTune -plot 1 &" \
+        -contextHelp "acquire and plot P0FB tune using getP0FBTune."
+    APSFrame .delay -parent $parent  -label "Set DAC and gains"
+    set w $parent.delay.frame 
+    APSLabeledEntry .delay-x -parent $w -label "DacDelay-x (clock):" -width 15 -textVariable DacDelay-x  \
+	-contextHelp "enter value between 0 and 511 for digital delay of Dac0 for output delay setpoint in unit of sample clockes."
+    APSLabeledEntry .delay-y -parent $w -label "DacDelay-y (clock):            " -width 15 -textVariable DacDelay-y  \
+      -contextHelp "enter value between 0 and 511 for digital delay of Dac1 for output delay setpoint in unit of sample clockes."
+    APSButton .delay -parent $w -text "Set Dac Delays" -command "SetDacDelays" -contextHelp "Set the Dac delay entry values to FPGA."
+    APSFrame .gain -parent $parent
+    set w $parent.gain.frame 
+    APSLabeledEntry .xgain -parent $w -label "X gain(0-127):" -width 15 -textVariable xGain -contextHelp "x plane gain."
+    APSLabeledEntry .ygain -parent $w -label "Y gain(0-127):                 " -width 15 -textVariable yGain -contextHelp "y plane gain."
+    APSButton .gain -parent $w -text "Set Gains" -command "SetGain" -contextHelp "set x and y plan gains."
+global xDacV yDacV
+    set xDacV 0
+    set yDacV 0
+    APSFrame .dacV -parent $parent
+    set w $parent.dacV.frame 
+    APSLabeledEntry .xgain -parent $w -label "X DacV(0-0.999):               " -width 15 -textVariable xDacV \
+	-contextHelp "x plane fixed output values."
+    APSLabeledEntry .ygain -parent $w -label "Y DacV(0-0.999):               " -width 15 -textVariable yDacV \
+	-contextHelp "y plane fixed output values"
+    APSButton .setDacV -parent $w -text "Set Dac Hi/Lo" -command "SetDacHiLo" \
+	-contextHelp "Set the fixed x/y fixed output entry values to FPGA."
+   
+}
+
+proc SetDacHiLo { args } {
+	global xDacV yDacV
+    if [catch {exec cavput \
+    -list=S:P0FB:dacHiX_AO=${xDacV},S:P0FB:dacHiY_AO=${yDacV},S:P0FB:dacLoX_AO=-${xDacV},S:P0FB:dacLoY_AO=-${yDacV} } result] {
+        return -code error $result
+    }
+}
+
+
+
+proc SetDacDelays {args} {
+    global DacDelay-x DacDelay-y
+    if [catch {exec cavput \
+    -list=S:P0FB:P0_DelayRegX_AO=${DacDelay-x},S:P0FB:P0_DelayRegY_AO=${DacDelay-y} } result] {
+        return -code error $result
+    }
+}
+proc SetGain {args} {
+    global xGain yGain
+    set tmpRoot /tmp/[APSTmpString]
+    foreach plane {x y} {
+        if [catch {exec sddsmakedataset -pipe=out \
+                     -col=Waveform,type=double -data=[join [APSReplicateItem -item [set ${plane}Gain] -number 432] ,] \
+                     | sddsprocess -pipe=in $tmpRoot.$plane \
+                     -print=par,WaveformPV,S:P0FB:AcqGain[string toupper $plane]_SetWF \
+                     -define=col,Index,i_row,type=long } result] {
+            return -code error "SetGain(1): $result"
+        }
+        if [catch {exec sddswput $tmpRoot.$plane} result] {
+            return -code error "SetGain(2): error in setting $plane plane gain: $result"
+        }
+    }
+}
+proc setDefaultLocation {args } {
+
+	global twissFile sPickup sKicker-x sKicker-y prevTwissFile-x prevTwissFile-y targetNux targetNuy
+	global defaultKicker-x defaultKicker-y defaultPickup
+        APSParseArguments {parent plane}
+	set sPickup $defaultPickup
+	set sKicker-$plane [set defaultKicker-${plane}]
+	LoadTwissParameters -plane $plane 
+    }
+proc LoadTwissParameters {args} {
+    global twissFile sPickup sKicker-x sKicker-y prevTwissFile-x prevTwissFile-y targetNux targetNuy
+##### add plane to handle x and y plane separately.
+    APSParseArguments {parent plane}
+    set tmpRoot /tmp/[APSTmpString]
+    SetStatus "Load twiss parameters ..."
+    set lastElementPickup [ eval exec sddsprocess -filter=col,s,0,$sPickup $twissFile -pipe=out \
+                              | sddsprocess -clip=0,1,invert -pipe \
+                              | sdds2stream -col=s -pipe ]
+    set nextElementPickup [ eval exec sddsprocess -filter=col,s,$sPickup,1200 $twissFile -pipe=out \
+                              | sddsprocess -clip=1,0,invert -pipe \
+                              | sdds2stream -col=s -pipe ]
+    set lastElementKicker [ eval exec sddsprocess -filter=col,s,0,[set sKicker-${plane}] $twissFile -pipe=out \
+                              | sddsprocess -clip=0,1,invert -pipe \
+                              | sdds2stream -col=s -pipe ]
+    set nextElementKicker [ eval exec sddsprocess -filter=col,s,[set sKicker-${plane}],1200 $twissFile -pipe=out \
+                              | sddsprocess -clip=1,0,invert -pipe \
+                              | sdds2stream -col=s -pipe ]
+foreach element {Pickup Kicker} {
+	set lastS [set lastElement${element}]
+	set nextS [set nextElement${element}]
+#	puts $element
+#       puts $lastS
+#	puts $nextS
+	set start [expr $lastS - 0.0001]
+	set end [expr $lastS + 0.0001]
+	set start1 [expr $nextS -0.0001]
+	set end1 [expr $nextS +0.0001]
+	if {[string match {Pickup} $element]} {
+        set sValue [set s$element]
+	} else {
+	set sValue [set s${element}-${plane}] 
+	}
+          
+	foreach param "beta${plane} alpha${plane} psi${plane}" {
+            global ${param}$element
+            set paramName "${param}${element}"
+            set lastValue [lindex [exec sddsprocess -filter=col,s,$start,$end \
+                                     $twissFile -pipe=out | sdds2stream -col=$param -pipe] 0]
+            
+            set nextValue [lindex [exec sddsprocess -filter=col,s,${start1},${end1} \
+                                     $twissFile -pipe=out | sdds2stream -col=$param -pipe] 0] 
+            set ${param}${element} [expr $lastValue + ( $nextValue -$lastValue) * ($sValue - $lastS  ) / ($nextS - $lastS ) ] 
+	}
+
+    }
+    global nux nuy
+    set nu${plane} [exec sdds2stream -para=nu${plane} $twissFile]
+    set targetNu${plane} 0.0
+    set prevTwissFile-${plane} $twissFile
+    SetStatus "done."
+}
+
+proc MakeFIRWidget {args} {
+    set plane ""
+    set parent ""
+    APSParseArguments {parent plane}
+    APSFrame .par -parent $parent -label "Twiss Parameters"
+    global twissFile FIRFile sPickup sKicker-x sKicker-y DacDelayx DacDelay-y deltaNu phase-x phase-y
+    global prevTwissFile-x prevTwissFile-y
+    global deltaNux deltaNuy targetNux targetNuy deltaNux deltaNuy FIRDir
+    global delay-x delay-y order-x order-y
+    global defaultKicker-x defaultKicker-y defaultPickup
+    global FIRFile betaxPickup betaxKicker betayPickup betayKicker alphaxPickup alphaxKicker alphayPickup alphayKicker 
+    global psixPickup psixKicker psiyPickup psiyKicker nux nuy FIRsignx FIRsigny
+    set w $parent.par.frame
+    set prevTwissFile-x "" 
+    set prevTwissFile-y ""
+    set twissFile /home/helios/PAR/feedback/generateFIR/aps_nux36nuy19_0601.twi
+    APSLabeledEntry .twiss -parent $w -width 45 -label "Twiss file:" -fileSelectButton 1 -textVariable twissFile \
+      -fileSelectPath "/home/helios/PAR/feedback/generateFIR" -contextHelp "Entry of a lattice file for filter calculation."
+#    APSButton .load -parent $w.twiss -packOption "-side right" -text "Load twiss par." -size small -command "LoadTwissParameters"
+# bind $w.twiss.entry <Enter> "LoadTwissParameters"
+#  APSLabeledEntry .dir -parent $w -width 100 -label "FIR directory:" -textVariable FIRDir -width 100
+#  APSLabeledEntry .output -parent $w -width 100 -label "FIR file:" -textVariable FIRFile
+    
+    APSFrameGrid .grid -parent $w -xList {x1 x2}
+    set w1 $w.grid.x1
+    set defaultKicker-y 4.353932e+01 
+    set defaultKicker-x 9.6535e+02 
+    set defaultPickup 7.113932e+01 
+    set sKicker-x ${defaultKicker-x}
+    set sKicker-y ${defaultKicker-y}
+    set sPickup $defaultPickup
+    set width1 41 
+    set width2 15 
+    #set order-${plane} 3
+    set order-x 6
+    set order-y 4
+    set delay-${plane} 0
+    set deltaNu 0.02
+    set targetNu${plane} 0.0 
+    set phase-x 0
+    set phase-y 0
+    APSLabeledEntry .s -parent $w1 -label \
+    "pickup location(m): " -width $width2  -textVariable sPickup \
+    -contextHelp "s pickup provides the s filter for selecting pickups from twiss file"
+    APSLabeledEntry .t -parent $w1 -label  \
+    "kicker location(m): " -width $width2 -textVariable sKicker-${plane} \
+    -contextHelp "kicker provides the location filter for selecting kickers from twiss file"
+    APSLabeledEntryFrame .x1 -parent $w1 -label  \
+    "Beta${plane} pickup(m)       " -width $width2 -variableList  beta${plane}Pickup -orientation horizontal \
+	-contextHelp "Lattice parameters at x/y pickup and kicker."
+    APSLabeledEntryFrame .x11 -parent $w1 -label \
+    "Beta${plane} kicker(m)       " -width $width2 -variableList  beta${plane}Kicker -orientation horizontal \
+	-contextHelp "Lattice parameters at x/y pickup and kicker."
+    APSLabeledEntryFrame .x2 -parent $w1 -label \
+    "alpha${plane} pickup         " -width $width2 -variableList alpha${plane}Pickup  -orientation horizontal \
+	-contextHelp "Lattice parameters at x/y pickup and kicker."
+    APSLabeledEntryFrame .x21 -parent $w1 -label \
+    "alpha${plane} kicker         " -width $width2 -variableList alpha${plane}Kicker  -orientation horizontal \
+	-contextHelp "Lattice parameters at x/y pickup and kicker."
+    APSLabeledEntryFrame .x3 -parent $w1 -label \
+    "psi${plane} pickup(rad)      " -width $width2 -variableList psi${plane}Pickup  -orientation horizontal \
+	-contextHelp "Lattice parameters at x/y pickup and kicker."
+    APSLabeledEntryFrame .x31 -parent $w1 -label \
+    "psi${plane} kicker(rad)      " -width $width2 -variableList psi${plane}Kicker -orientation horizontal \
+	-contextHelp "Lattice parameters at x/y pickup and kicker."
+    APSLabeledEntry .x4 -parent $w1 -label \
+    "${plane} tune:            " -width $width2 -textVariable nu${plane} \
+	-contextHelp "Fraction tune entry for FIR calculation, default 0 (lattice tune )."
+    APSLabeledEntry .delta1 -parent $w1 -label \
+    "target nu${plane}:(.08-.4)" -width $width2 -textVariable targetNu${plane} \
+	-contextHelp "Fraction tune entry for FIR calculation, default 0 (lattice tune )."
+    APSLabeledEntry   .order -parent $w1 -label \
+    "Order-${plane} (3-32):    " -width $width2 -textVariable order-${plane} \
+	-contextHelp "Number of turns for $plane FIR calculation."
+    APSLabeledEntry   .delay -parent $w1 -label \
+    "Delay-${plane}(0-10):     " -width $width2 -textVariable delay-${plane} \
+	-contextHelp "Always zero. Do not change."
+    APSLabeledEntry .phase -parent $w1 -label \
+        "FIR Phase adjust (degree):    " -width $width2 -textVariable phase-${plane} \
+        -contextHelp "phase change in degree."
+    set FIRsign$plane +
+    APSRadioButtonFrame .firtyep -parent $w1 -variable FIRsign$plane -valueList {+ -} -buttonList {+ -} \
+	-label "Set FIR sign:" -orientation horizontal \
+	-contextHelp "+: Calculate filter; -: Calculate filter and reverse the polarity."
+    APSButton .cal -parent $w -text "Load Twiss Parameters" -command "LoadTwissParameters -plane ${plane}" -contextHelp "Read in twiss parameters relevant for x/y plane calculation."
+    APSButton .def -parent $w -text "set default loc." -command \
+    "setDefaultLocation -plane ${plane}" -contextHelp "Return the kicker and pickup entries to default."
+###### add plane selection for updateFIR
+    APSButton .update -parent $w -text "UpdateFIR" -command "UpdateFIR \
+    -plane ${plane}" -contextHelp "perform x FIR calculation and update the plot window."
+    APSButton .readdata -parent $w -text "RefreshData" -command "ReadControlWaveform;ReadCurrentParameters;ReadFIRFilter -plane X;ReadFIRFilter -plane Y"
+    
+   # APSButton .write -parent $w -text "Generate" -command "GenerateFIRFile" -contextHelp "Generate
+   # ${plane} plane FIR filter file based the above twiss parameters."
+   # APSButton .load -parent $w -text "Load" -command "LoadFIRFilter" -contextHelp "load the FIR filter from file"
+   # APSButton .plot -parent $w -text "Plot Freq. Response" -command "PlotFreqResponse"
+    
+}
+
+proc MakeFIRFile {args} {
+    APSParseArguments {sign plane delay outputFile order deltaNu betaPickup betaKicker alphaPickup alphaKicker psiPickup psiKicker nuxy delay twissFile phase}
+    set startFreq 0
+    set endFreq 1
+    set pi 3.14159265
+    #CY does not want delay for generating FIR from twiss parameter
+#    set delay 0
+    switch $plane {
+        x -
+        y {
+            set waveformPV S:P0FB:Coef_[string toupper $plane]_SetWF
+        }
+        default {
+            return -code error "MakeFIRFile: invalid plane - $plane provided."
+        }
+    }
+    set nuxy  [expr  fmod ($nuxy, 1)] 
+    set deltaPsi [expr $psiKicker - $psiPickup]
+    if { $deltaPsi < 0 } { set deltaPsi [expr $deltaPsi + 2 * $pi * $nuxy] }
+    set deltaPsi [expr $deltaPsi + 2 * $pi * $delay * $nuxy ]
+    set T11 [expr sqrt($betaKicker/$betaPickup)*(cos($deltaPsi)+$alphaPickup*sin($deltaPsi))]
+    set T12 [expr sqrt($betaKicker*$betaPickup)*sin($deltaPsi)]
+    set T21 [ expr ($alphaPickup - $alphaKicker)/sqrt($betaKicker*$betaPickup)*cos($deltaPsi)-(1+$alphaPickup*$alphaKicker)/sqrt($betaPickup*$betaKicker)*sin($deltaPsi)]
+    set T22 [expr sqrt($betaPickup/$betaKicker)*(cos($deltaPsi)-$alphaKicker*sin($deltaPsi))]
+    set m11 0
+    set m12 0
+    set m13 0 
+    set m21 0
+    set m22 0
+    set m23 0
+    set m31 0
+    set m32 0
+    set m33 0 
+    set b1 ""
+    set b2 ""
+    set b3 ""
+    
+    for {set i 0} { $i<$order} {incr i} {
+        set phi [ expr 2*$pi*$nuxy*$i]
+        set si [expr sin($phi)]
+        set ci [expr cos($phi)]
+        set m11 [expr $m11 + ($ci-$alphaPickup*$si)*($ci-$alphaPickup*$si)]
+        set m12 [expr $m12 -($ci-$alphaPickup*$si)*($betaPickup*$si)]
+        set m13 [expr $m13 + ($ci-$alphaPickup*$si)]
+        set m22 [expr $m22 + ($betaPickup*$si)*($betaPickup*$si)]
+        set m23 [expr $m23-($betaPickup*$si)]
+        set m33 [expr $m33 + 1]
+        # next to calculated each coeffients for PU samples.
+        # the coeffients are stored in 2 arrays
+        lappend b1 [expr $ci-$alphaPickup*$si]
+        lappend b2 [expr -$betaPickup*$si];
+        lappend b3 1
+    }
+    
+    if [catch {exec sddsmakedataset $outputFile.mat \
+                 -col=m1,type=double -data=$m11,$m12,$m13 \
+                 -col=m2,type=double -data=$m12,$m22,$m23 \
+                 -col=m3,type=double -data=$m13,$m23,$m33 } result] {
+        return -code error "MakeFIRFile(error1): $result"
+    }
+    exec cp $outputFile.mat $outputFile.Mi.mat
+    if [catch {exec sddsmatrixop $outputFile.Mi.mat -push=$outputFile.mat -invert} result] {
+        return -code error "MakeFIRFile(error2): $result"
+    } 
+    
+    set lists [exec sddsprintout "-col=(doubleColumn*)" -notitle -noLabels $outputFile.Mi.mat]
+    
+    set m11 [lindex $lists 0]
+    set m12 [lindex $lists 1]
+    set m13 [lindex $lists 2]
+    set m21 [lindex $lists 3]
+    set m22 [lindex $lists 4]
+    set m23 [lindex $lists 5]
+    #the waveform has 32
+    for {set i 0} {$i < $delay } {incr i} {
+	lappend c1 0 
+	lappend c2 0 
+    }
+    set angle [expr $phase/180.0 * $pi]
+    for {set i 0} { $i < [expr 32 -$delay] } {incr i } {
+        if {$i<$order} {
+            set a1 [expr $m11 * [lindex $b1 $i] + $m12 * [lindex $b2 $i] + $m13 * [lindex $b3 $i]]
+            set a2 [expr $m12 * [lindex $b1 $i] + $m22 * [lindex $b2 $i] + $m23 * [lindex $b3 $i]]
+            
+            set c1x [expr $T11 * $a1  + $T12 * $a2]
+            set c2x [expr $T21 * $a1  + $T22 * $a2]
+        } else {
+            set c1x 0
+            set c2x 0
+        }
+        lappend c1 $c1x
+        lappend c2 $c2x
+        set c3x [expr (1.0 + $alphaKicker*$alphaKicker)/$betaKicker * sin($angle) * $c1x + (cos($angle) - $alphaKicker * sin($angle)) * $c2x]
+        lappend c3 $c3x
+    }
+
+    if [catch {exec sddsmakedataset -pipe=out -col=h,type=double -data=[join $c3 , ] \
+                 | sddsprocess -pipe=in $outputFile  \
+                 -print=par,plane,$plane \
+                 -print=par,twissFile,$twissFile \
+                 -print=par,WaveformPV,$waveformPV \
+                 -define=col,Index,i_row,type=long \
+                 -define=para,nu,$nuxy,type=double \
+                 -define=para,order,$order,type=long \
+                 -define=para,delay,$delay,type=long,units=turn \
+                 -define=para,betaKicker,$betaKicker \
+                 -define=para,betaPickup,$betaPickup \
+                 -define=para,alphaKicker,$alphaKicker \
+                 -define=para,alphaPickup,$alphaPickup \
+                 -define=para,psiKicker,$psiKicker \
+                 -define=para,psiPickup,$psiPickup \
+                 -define=para,deltaNu,$deltaNu \
+                 "-define=col,hAbs,h abs" \
+                 "-process=hAbs,maximum,hMax"  \
+                 "-redefine=col,Waveform,h hMax /" } result] {
+        return -code error "MakeFIRFile(error3): $result"
+    }
+   # puts $outputFile-phase 
+    if [catch {exec sddsmakedataset -pipe=out -col=h,type=double -data=[join $c2 , ] \
+                 | sddsprocess -pipe=in $outputFile-angle \
+                 -print=par,plane,$plane \
+                 -print=par,twissFile,$twissFile \
+                 -print=par,WaveformPV,$waveformPV \
+                 -define=col,Index,i_row,type=long \
+                 -define=para,nu,$nuxy,type=double \
+                 -define=para,order,$order,type=long \
+                 -define=para,delay,$delay,type=long,units=turn \
+                 -define=para,betaKicker,$betaKicker \
+                 -define=para,betaPickup,$betaPickup \
+                 -define=para,alphaKicker,$alphaKicker \
+                 -define=para,alphaPickup,$alphaPickup \
+                 -define=para,psiKicker,$psiKicker \
+                 -define=para,psiPickup,$psiPickup \
+                 -define=para,deltaNu,$deltaNu \
+                 "-define=col,hAbs,h abs" \
+                 "-process=hAbs,maximum,hMax"  \
+                 "-redefine=col,Waveform,h hMax /" } result] {
+        return -code error "MakeFIRFile(error3): $result"
+    }
+    ####### added position for test
+   # puts ${outputFile}-position
+    if [catch {exec sddsmakedataset -pipe=out -col=h,type=double -data=[join $c1 , ] \
+                 | sddsprocess -pipe=in ${outputFile}-position  \
+		   -print=par,FIRsign,$sign \
+		   -print=par,plane,$plane \
+		   -print=par,twissFile,$twissFile \
+		   -print=par,WaveformPV,$waveformPV \
+		   -define=col,Index,i_row,type=long \
+		   -define=para,nu,$nuxy,type=double \
+		   -define=para,order,$order,type=long \
+		   -define=para,delay,$delay,type=long,units=turn \
+		   -define=para,betaKicker,$betaKicker \
+		   -define=para,betaPickup,$betaPickup \
+		   -define=para,alphaKicker,$alphaKicker \
+		   -define=para,alphaPickup,$alphaPickup \
+		   -define=para,psiKicker,$psiKicker \
+		   -define=para,psiPickup,$psiPickup \
+		   -define=para,deltaNu,$deltaNu \
+		   "-define=col,hAbs,h abs" \
+		   "-process=hAbs,maximum,hMax"  \
+		   "-redefine=col,Waveform,h hMax /" } result] {
+        return -code error "MakeFIRFile(error30): $result"
+    }
+    if {$sign=="-"} {
+	if [catch {exec sddsprocess $outputFile $outputFile.1 -now "-redefine=col,Waveform,Waveform -1.0 *" } result] {
+	    return -code error "MakeFIRFile(error31) Error in change FIR sign: $result"
+	}
+	exec mv $outputFile.1 $outputFile
+    }
+}
+
+proc UpdateFIR {args} {
+    set plane ""
+    APSParseArguments { plane }
+    
+    global FIRFile betaxPickup betaxKicker betayPickup betayKicker alphaxPickup alphaxKicker alphayPickup alphayKicker 
+    global psixPickup psixKicker psiyPickup psiyKicker nux nuy twissFile
+    global prevTwissFile-x prevTwissFile-y DacDelay-x DacDelay-y deltaNu targetNux targetNuy
+    global order-x delay-x order-y delay-y FIRsignx FIRsigny phase-x phase-y
+    global deltaNux deltaNuy FIRDir  
+    if { [set order-${plane}] < 3 } {
+    	return -code error "order must be > 3"
+	}
+#puts "[set prevTwissFile-${plane}],$twissFile,[string compare [set prevTwissFile-${plane}] $twissFile],[info exist [set prevTwissFile-${plane}]]"
+    if {[string compare [set prevTwissFile-${plane}] $twissFile]!=0} {
+        LoadTwissParameters -plane ${plane} 
+    }
+    
+    set filename /tmp/[APSTmpString]
+    
+    global FIRXFilter FIRYFilter
+    SetStatus "Generating FIR file...."
+    ##### adjust psix psiy nux nuy for targetNux targetNuy 
+    if { [set targetNu${plane}] != 0.0 } {
+	set nu${plane}0 [set nu${plane}] 
+	set nu${plane} [expr int ([ set nu${plane}0]) + \
+	fmod ([set targetNu${plane}],1)]
+	set deltaNu${plane} [expr [set nu${plane}] - [set nu${plane}0] ]
+	set nuRatio [expr [set nu${plane}]/ [set nu${plane}0] ]
+	set psi${plane}Pickup [expr [set psi${plane}Pickup] * $nuRatio]
+	set psi${plane}Kicker [expr [set psi${plane}Kicker] * $nuRatio]
+    }
+    set sign [set FIRsign$plane]
+    if [catch {MakeFIRFile -phase [set phase-$plane]  \
+		   -sign $sign \
+		   -twissFile $twissFile \
+		   -outputFile $filename.$plane -plane $plane \
+		   -order [set order-${plane}] -delay \
+		   [set delay-${plane}] -nuxy [set nu$plane] \
+		   -betaPickup [set beta${plane}Pickup] -betaKicker [set beta${plane}Kicker] \
+		   -alphaPickup [set alpha${plane}Pickup] -alphaKicker [set alpha${plane}Kicker] \
+		   -psiPickup [set psi${plane}Pickup] -psiKicker [set psi${plane}Kicker] \
+		   -deltaNu $deltaNu } result ] {
+	return -code error "Error(1 -- generateFIRFile): $result"
+    }
+    
+    set FIR[string toupper $plane]Filter [join [exec sdds2stream -col=Waveform $filename.$plane]]
+    set order-${plane} [exec sdds2stream -para=order ${filename}.$plane]
+    
+    #file delete -force $filename.${plane} 
+    SetStatus "done."
+}
+
+proc SetFIR {args} {
+    set plane ""
+    APSParseArguments {plane}
+    set plane [string tolower $plane]
+    global FIRsign$plane env twissFile 
+    global  sPickup sKicker-x sKicker-y sKicker twissFile deltaNu nux nuy  
+    global DacDelay-x DacDelay-y
+    global order-x order-y delay-x delay-y
+    global betaxPickup betayPickup alphaxPickup alphayPickup psixPickup psiyPickup
+    global betaxKicker betayKicker alphaxKicker alphayKicker psixKicker psiyKicker
+    
+    set sign [set FIRsign$plane]
+    set filename /tmp/[APSTmpString]
+    if [catch {SaveFIRToFile -filename $filename -plane $plane} result] {
+        return -code error $result
+    }
+    
+    SetStatus "Set $plane  FIR filter..."
+    set coord [string tolower $plane]
+    set plane [string tolower $plane]
+    if [catch {exec logMessage -sourceId=P0FeedbackFIRAudit \
+		   -tag=Application P0FeedbackControl \
+		   -tag=User $env(USER) \
+		   -tag=Host $env(HOST) \
+		   -tag=Action SetFIR \
+		   -tag=plane $plane \
+		   -tag=TwissFile $twissFile \
+		   -tag=sPickup $sPickup \
+		   -tag=sKicker [set sKicker-${plane}] \
+		   -tag=betaPickup [set beta${coord}Pickup] \
+		   -tag=betaKicker [set beta${coord}Kicker] \
+		   -tag=alphaPickup [set alpha${coord}Pickup] \
+		   -tag=alphaKicker [set alpha${coord}Kicker] \
+		   -tag=psiPickup [set psi${coord}Pickup] \
+		   -tag=psiKicker [set psi${coord}Kicker] \
+		   -tag=delay [set delay-$plane]  \
+		   -tag=order [set order-${plane}] \
+		   -tag=deltaNu $deltaNu \
+		   -tag=nu [set nu$coord] } result] {
+	return -code error "Error in logging setFIR parameters: $result"
+    }
+		   
+    if [catch {exec sddswput $filename.$plane} result] {
+        return -code error $result
+    }
+    if {$plane == "x"} {
+    	ReadFIRFilter -plane X
+    } else {
+    	ReadFIRFilter -plane Y
+    }
+    SetStatus "done."
+}
+
+proc SaveFIRToFile {args} {
+    set filename ""
+    set plane ""
+    APSParseArguments {filename plane}
+    global FIRDir FIRFile dialogResponse FIRXFilter FIRYFilter
+    global sPickup sKicker-x sKicker-y sKicker twissFile deltaNu nux nuy  
+    global DacDelay-x DacDelay-y
+    global order-x order-y delay-x delay-y
+    global betaxPickup betayPickup alphaxPickup alphayPickup psixPickup psiyPickup
+    global betaxKicker betayKicker alphaxKicker alphayKicker psixKicker psiyKicker
+    
+    set plane [string tolower $plane]
+    set Plane [string toupper $plane]
+    if ![string length $filename] {
+        set dialogResponse 0
+        set FIRFile [file tail \
+	[file root $twissFile]]-order[set order-$plane]-delay[set delay-$plane]-nu${plane}[format \
+	{%6.4f} [expr fmod ([set nu${plane}],1) ]]
+        APSDialogBox .fir -name "FIR File" -cancelCommand "set dialogResponse cancelled" -okCommand "set dialogResponse ok"
+        APSLabeledEntry .dir -parent .fir.userFrame -label "Directory: " -width 60 -textVariable FIRDir
+        APSLabeledEntry .file -parent .fir.userFrame -label "File: " -width 60 -textVariable FIRFile
+        tkwait variable dialogResponse
+         if {$dialogResponse=="cancelled"} {
+             SetStatus "write FIR to file was cancelled."
+            return
+        }
+        set filename $FIRDir/$FIRFile
+    }
+    if [file exist $filename.$plane] {
+        if ![APSYesNoPopUp "$filename already exist, do you want to overwrite it?"] {
+            SetStatus "$filename already exists!"
+            return
+        }
+    }
+    set status "Save $plane FIR filter to $filename.$plane ..."
+    set coord $plane
+    set pv S:P0FB:Coef_${Plane}_SetWF
+    set dataList ""
+    set delay1 0
+    for {set i 0} {$i<32} {incr i} {
+        set data [lindex [set FIR${Plane}Filter] $i]
+        if {$data!=0} {
+            set delay1 $i
+            break
+        }
+    }
+  #  if {$delay1==0} {
+        set dataList [set FIR${Plane}Filter]
+   # } else {
+   #     set zeroList [APSReplicateItem -item 0 -number $delay1]
+   #     set dataList [concat [lrange [set FIR${Plane}Filter] $delay1 end] $zeroList]
+   # }
+   
+    if [catch {exec sddsmakedataset -pipe=out -col=Waveform,type=double -data=[join $dataList ,] \
+                 | sddsprocess -pipe=in $filename.$plane -define=col,Index,i_row,type=long \
+                 -print=par,plane,$coord \
+                 -print=par,twissFile,$twissFile \
+                 -print=par,WaveformPV,$pv \
+                 -define=par,sPickup,$sPickup \
+		 -define=par,sKicker,[set sKicker-${plane}] \
+                 -define=par,betaPickup,[set beta${coord}Pickup] -define=par,betaKicker,[set beta${coord}Kicker] \
+                 -define=par,alphaPickup,[set alpha${coord}Pickup] -define=par,alphaKicker,[set alpha${coord}Kicker] \
+                 -define=par,psiPickup,[set psi${coord}Pickup] -define=par,psiKicker,[set psi${coord}Kicker] \
+                 -define=par,delay,$delay1,type=long,units=turn \
+                 -define=par,order,[set order-${plane}],type=long -define=par,deltaNu,$deltaNu -define=par,nu,[set nu$coord] \
+             } result] {
+        return -code error $result
+    }
+    SetStatus "done"
+}
+
+### set delay 0 
+### set gain 1
+proc LoadFIRFromFile {args} {
+    set plane ""
+    APSParseArguments {plane}
+    set Plane [string toupper $plane]
+    set plane [string tolower $plane]
+    global FIRDir FIRXFilter FIRYFilter 
+    set file [APSFileSelectDialog .sel -checkValidity 1 -pattern *.$plane \
+                -listDir $FIRDir \
+                -title "Choose a FIR filter waveform" ]
+    if ![string length $file] {
+        SetStatus "No file chosen"
+        return
+    }
+    global dialogResponse gain delay-x delay-y order-x order-y 
+#    set dialogResponse 0
+#    APSDialogBox .fir -name "Load FIR" -cancelCommand "set dialogResponse cancelled" -okCommand "set dialogResponse ok"
+#    APSLabeledEntry .dir -parent .fir.userFrame -label "Delay: " -width 60 -textVariable delay
+#    APSLabeledEntry .file -parent .fir.userFrame -label "gain: " -width 60 -textVariable gain
+#    tkwait variable dialogResponse
+#    if {$dialogResponse=="cancelled"} {
+#        SetStatus "load FIR was cancelled."
+#        return
+#    }
+    
+    SetStatus "loading FIR from $file ..."
+###    set tmpRoot /tmp/[APSTmpString]
+###    if [catch {exec sddsprocess $file $tmpRoot.1 "-redefine=col,Waveform,Waveform $gain *"}  result] {
+###        return -code error $result
+###    }
+###    set waveform [join [exec sdds2stream -col=Waveform $tmpRoot.1]]
+    set waveform [join [exec sdds2stream -col=Waveform $file]]
+    set len [llength $waveform]
+    if {$len<32} {
+        set zeros [APSReplicateItem -item 0 -number [expr 32-$len]]
+        set FIR${Plane}Filter [concat $waveform $zeros]
+    } else {
+        set FIR${Plane}Filter $waveform
+    }
+
+###    if {$delay>0} {
+###        set zeros [APSReplicateItem -item 0 -number $delay]
+###        set FIR${Plane}Filter [concat $zeros [lrange [set FIR${Plane}Filter] 0 [expr 32-$delay-1]]]
+###        update
+###    }
+    foreach name {Pickup Kicker} {
+        foreach item {beta alpha psi} {
+            global ${item}${plane}$name
+            if [catch {exec sdds2stream -par=${item}$name $file} result] {
+            } else {
+                set ${item}${plane}$name $result
+            }
+        }
+    }
+    global nu$plane
+    if [catch {exec sdds2stream -par=nu $file} result] {
+       return -code error $result
+    } else {
+        set nu$plane $result
+    }
+    global sPickup sKicker deltaNu twissFile  
+    foreach name {order sPickup sKicker deltaNu twissFile delay} {
+        if [catch {exec sdds2stream -page=1 $file -par=$name} result] {
+       return -code error $result
+        } else {
+            set $name $result
+        }
+    }
+    set order-${plane} $order
+    set delay-${plane} $delay
+    
+}
+
+proc PlotFreqResponse {args} {
+    set plane ""
+    APSParseArguments {plane}
+
+    set Plane [string toupper $plane]
+    set plane [string tolower $plane]
+    
+    set filename /tmp/freqResp[APSTmpString]
+    if [catch {SaveFIRToFile -filename $filename -plane $plane} result] {
+        return -code error $result
+    }
+    set startFreq 0
+    set endFreq 1
+    set pi 3.14159265
+    set tmpRoot /tmp/[APSTmpString]
+    if [catch {exec  sddssequence -define=f -sequence=begin=0,end=1,number=10000 -pipe=out \
+                 | sddsprocess -pipe=in $tmpRoot.1 -define=col,realH,0  -define=col,imagH,0  } result] {
+        return -code error $result
+    }
+    
+    if { [catch { set hList [exec sdds2stream -col=Waveform $filename.$plane] } result ] } {
+    	return -code error $result 
+	}
+    if [catch {exec sdds2stream -par=nu $filename.$plane} nu] {
+        set nu 0
+    }
+
+set total [llength $hList]
+for {set i [expr $total-1] } { $i > 0 } {incr i -1} {
+	if { [lindex $hList $i] != 0 } {
+		set order1 [expr $i +1]
+		break
+	   }
+    }
+
+    set fracNu [expr fmod( $nu, 1)]
+    set nu$plane $nu
+    if [catch {exec sdds2stream -par=order $filename.$plane} order] {
+        set order [llength $hList]
+    }
+    set n 0
+    
+    foreach h $hList {
+        if {$n<$order1} {
+                if [catch {exec sddsprocess $tmpRoot.1 -nowarnings  \
+                             "-redefine=col,realH,realH 2 pi * $n * f * cos $h * +" \
+                             "-redefine=col,imagH,imagH 2 pi * $n * f * sin $h * +" } result] {
+                    return -code error "PlotFreqResponse1: $result"
+                }
+            } else {
+                break
+            }
+        incr n
+    }
+    if [catch {exec sddsprocess $tmpRoot.1 -nowarnings -reprint=par,Plane,$plane \
+                 "-redefine=par,nu,$fracNu" \
+                 "-reprint=par,Description,$plane plane frequency response" \
+                 "-redefine=col,amplitudeH,realH 2 pow imagH 2 pow + sqrt" \
+                 "-redefine=col,phaseH,realH imagH atan2 pi / 180 *,units=Deg" } result] {
+        return -code error "PlotFreqResponse2: $result"
+    }
+   
+    set ampMax [exec sddsprocess \
+	    -process=amplitudeH,maximum,ampMax $tmpRoot.1 -pipe=out \
+	    | sdds2stream -para=ampMax -pipe]
+    exec sddsplot "-col=f,(amplitudeH)" -sep  -leg $tmpRoot.1 -grap=dot,vary \
+      "-title=@Description" \
+      -axes=x \
+      -drawline=x0value=$fracNu,y0value=0,x1value=$fracNu,y1value=$ampMax,linetype=1 \
+      "-col=f,(phaseH)" -sep  -leg $tmpRoot.1 -grap=line,vary \
+      "-title=@Description" \
+      -axes=x \
+      -drawline=x0value=$fracNu,y0value=-180,x1value=$fracNu,y1value=180,linetype=1 \
+      -layout=1,2 &  
+}
+
+
+package require rpn
+
+set CVSRevisionAuthor "\$Revision: 1.21 $ \$Author: shang $"
+
+APSApplication . -name "P0FeedbackControl" \
+  -version $CVSRevisionAuthor \
+  -overview "P0 Feedback review and control"
+
+set status ""
+APSScrolledStatus .status -parent .userFrame -textVariable status -width 150 \
+    -height 5 -packOption "-fill both -expand true" 
+
+set width 1350
+set height 500 
+set heightForButtons 160
+set adjusterHeight [expr $height - $heightForButtons]
+set doAllScopeAdjusters 1
+set topLabelList {"InputProcess" "OutputMode" "Set Pattern & Control" "FIR-X" "FIR-Y"}
+set topTabDescList {"Pattern of sampled buckets." "Outptu mode setting for each sampled bucket." "Define Sampled buckets and other system parameters." "Define, save and load FIR filter for x plane." "Define, save and load FIR filter for y plane."}
+set topIndex -1
+APSFrame .control -parent .userFrame -label ""
+set widgetList [APSTabFrame .ram -parent .userFrame.control.frame -label "" \
+                                -labelList "InputProcess OutputMode \
+				Set\\ Pattern\\ &\\ Control FIR-X FIR-Y" \
+                                -width $width \
+                                -height $height \
+                                -frameIndexVariable topIndex \
+                                -commandList [APSReplicateItem -item DescribeSection -number 5] ]
+ReadControlWaveform
+set index 0
+foreach quantity {InputProcess  OutputMode} {
+    set w [lindex $widgetList $index]
+    set x${quantity} 0
+    set y${quantity} [lindex [set $quantity] [set x${quantity}]]
+    
+    APSFrame .adjuster -parent $w \
+      -packOption "-side top -fill both -expand true" 
+    APSFrame .controls -parent $w \
+      -packOption "-side top -fill both -expand true" 
+    APSWaveformAdjuster .widget${quantity} \
+      -parent $w.adjuster.frame \
+      -static 0 \
+      -height $adjusterHeight \
+      -showPrevious 1 \
+      -waveformVariable $quantity \
+      -handleSpacing 1 \
+      -selectedXCoordVar x${quantity} \
+      -selectedYCoordVar y${quantity} \
+      -packOption "-side top -fill both -expand true"  \
+      -contextHelp "$quantity control"
+
+     APSButton .panLeft -parent  $w.controls.frame -text "<-"  \
+      -command "adjustRange -quantity $quantity -direction left -doAllScopeAdjusters \$doAllScopeAdjusters -xHiLimit [llength [set $quantity]]" \
+      -packOption "-side left" \
+      -contextHelp "This button pans the zoom window left" \
+      -fastClick 1
+
+    APSButton .panLeftHalf -parent  $w.controls.frame -text "<-1/2"  \
+      -command "adjustRange -quantity $quantity -direction left -factor 0.5 -doAllScopeAdjusters \$doAllScopeAdjusters -xHiLimit [llength [set $quantity]]" \
+      -packOption "-side left" \
+      -contextHelp "This button pans the zoom window left one-half screen" \
+      -fastClick 1
+
+    APSButton .adjustRange -parent  $w.controls.frame -text "center-by-x-coord"  \
+      -command "center -quantity $quantity -doAllScopeAdjusters \$doAllScopeAdjusters -xHiLimit [llength [set $quantity]] -width 432 -centerReference 200" \
+      -packOption "-side left" \
+      -contextHelp "Make all adjuster the same range as this one" \
+      -fastClick 1
+
+    APSButton .panRightHalf -parent  $w.controls.frame -text "1/2->"  \
+      -command "adjustRange -quantity $quantity -direction right -factor 0.5 -doAllScopeAdjusters \$doAllScopeAdjusters -xHiLimit [llength [set $quantity]]" \
+      -packOption "-side left" \
+      -contextHelp "This button pans the zoom window right one-half screen" \
+      -fastClick 1
+
+    APSButton .panRight -parent  $w.controls.frame -text "->"  \
+      -command "adjustRange -quantity $quantity -direction right -doAllScopeAdjusters \$doAllScopeAdjusters -xHiLimit [llength [set $quantity]]" \
+      -packOption "-side left" \
+      -contextHelp "This button pans the zoom window right" \
+      -fastClick 1
+
+    set adjuster($quantity) $w.adjuster.frame.widget${quantity}.graph
+    lappend scopeAdjusterList $w.adjuster.frame.widget${quantity}.graph
+  
+    APSButton .read1 -parent $w.controls.frame -text "LoadPattrnFile" -command "LoadControlWaveform" -contextHelp "loan control waveform from a file into script memory."
+
+    APSButton .write -parent $w.controls.frame -text "WritePattrnFile" -command "WritePatternToFile" -contextHelp "write current pattern waveform to a file"
+ 
+    APSButton .zero -parent $w.controls.frame -text "ZeroAll" -command \
+    "ZeroPattern -quantity $quantity" -contextHelp "zero out all the pattern values."
+    APSButton .all -parent $w.controls.frame -text "SelectAll" -command \
+    "SelectAll -quantity $quantity" -contextHelp "select all buckets"
+    APSButton .read -parent $w.controls.frame -text "ReadPattrn" -command "ReadControlWaveform" -contextHelp "read the control pattern in the FPGA to script memory."
+    APSButton .set -parent $w.controls.frame -text "SetPattrn" -command "SetPattern" -contextHelp "load the current pattern in script memory to FPGA."
+   APSButton .readdata -parent $w.controls.frame -text "RefreshData" -command "ReadControlWaveform;ReadCurrentParameters;ReadFIRFilter -plane X;ReadFIRFilter -plane Y"
+  #  APSButton .set -parent $w.controls.frame -text "Load" -command "LoadControlWaveform" 
+    incr index
+}
+
+
+set w1 [lindex $widgetList $index ]
+APSFrameGrid .grid -parent $w1 -label "" -xList {x1 x2}
+MakeControlWidget .f3 -parent $w1.grid.x1 
+MakeControlDisplayWidget -parent $w1.grid.x2 
+incr index
+
+ReadFIRFilter -plane X
+ReadFIRFilter -plane Y
+
+#set tabList [APSTabFrame .tab1 -parent .userFrame -label "" -labelList {FIR_Filter FIR_Files} \
+#               -width 1000 -height 400]
+
+#APSFrameGrid .grid -parent .userFrame -xList {x1 x2 x3}
+#set w1 .userFrame.grid.x1
+#set w2 .userFrame.grid.x2
+#set w3 .userFrame.grid.x3
+set w1 [lindex $widgetList $index]
+incr index
+set w2 [lindex $widgetList $index]
+
+#APSFrame .fir -parent .userFrame.grid.x1 -label "FIR X"
+#set xyList [APSTabFrame .xyfir -parent $w1 -label "" -labelList {x y} -width 250 -height 350]
+APSFrameGrid .grid -parent $w1 -label "" -xList {x2 x1}
+set w $w1.grid.x2
+MakeFIRWidget -parent $w1.grid.x2 -plane x 
+
+###foreach plane {X Y} index {1 2} {
+###foreach plane {X} index {1} {
+set plane "X"
+set index 1
+    set quantity FIR${plane}Filter
+    set x${quantity} 0
+    set y${quantity} [lindex [set $quantity] [set x${quantity}]]
+    #set w [lindex $xyList $index]
+    set w $w1.grid.x$index
+    
+    APSFrame .adjuster -parent $w -label "$plane plane FIR filter" \
+      -packOption "-side top -fill both -expand true" 
+    APSFrame .controls -parent $w \
+      -packOption "-side top -fill both -expand true"
+    APSWaveformAdjuster .widget${quantity} \
+      -parent $w.adjuster.frame \
+      -static 0 \
+      -height $adjusterHeight \
+      -showPrevious 1 \
+      -waveformVariable $quantity \
+      -handleSpacing 1 \
+      -selectedXCoordVar x${quantity} \
+      -selectedYCoordVar y${quantity} \
+      -packOption "-side top -fill both -expand true"  \
+      -contextHelp "$quantity control" -width 500
+    
+    APSButton .load -parent $w.controls.frame -text "LoadFile" -command "LoadFIRFromFile -plane $plane" -contextHelp "load the FIR filter from file into script memory"
+    APSButton .write -parent $w.controls.frame -text "WriteFile" -command "SaveFIRToFile -plane $plane" -contextHelp "Write xy/ FIR filter in script memory to file."
+    APSButton .read -parent $w.controls.frame -text "Read FIR" -command "ReadFIRFilter -plane $plane" -contextHelp "Read x/y FIR from FPGA into script memory."
+    APSButton .set -parent $w.controls.frame -text "Set FIR" -command "SetFIR -plane $plane" -contextHelp "Set x/y FIR filter in script memory to FPGA"
+    APSButton .plot -parent $w.controls.frame -text "PlotFreq.Resp." -command "PlotFreqResponse -plane $plane" \
+      -contextHelp "Plot amplitude and phase response of the current filter."
+     
+###}
+
+APSFrameGrid .grid -parent $w2 -label "" -xList {x1 x2}
+set w $w2.grid.x1
+MakeFIRWidget -parent $w2.grid.x1 -plane y 
+foreach plane {Y} index {2} {
+    set quantity FIR${plane}Filter
+    set x${quantity} 0
+    set y${quantity} [lindex [set $quantity] [set x${quantity}]]
+    #set w [lindex $xyList $index]
+    set w $w2.grid.x$index
+    
+    APSFrame .adjuster -parent $w -label "$plane plane FIR filter" \
+      -packOption "-side top -fill both -expand true" 
+    APSFrame .controls -parent $w \
+      -packOption "-side top -fill both -expand true" 
+    APSWaveformAdjuster .widget${quantity} \
+      -parent $w.adjuster.frame \
+      -static 0 \
+      -height $adjusterHeight \
+      -showPrevious 1 \
+      -waveformVariable $quantity \
+      -handleSpacing 1 \
+      -selectedXCoordVar x${quantity} \
+      -selectedYCoordVar y${quantity} \
+      -packOption "-side top -fill both -expand true"  \
+      -contextHelp "$quantity control"
+    
+    APSButton .load -parent $w.controls.frame -text "LoadFile" -command "LoadFIRFromFile -plane $plane" -contextHelp "load the FIR filter from file"
+    APSButton .write -parent $w.controls.frame -text "WriteFile" -command "SaveFIRToFile -plane $plane" -contextHelp "Generate x and y plane FIR filter file based the above twiss parameters."
+    APSButton .read -parent $w.controls.frame -text "Read FIR" -command "ReadFIRFilter -plane $plane"
+    APSButton .set -parent $w.controls.frame -text "Set FIR" -command "SetFIR -plane $plane" -contextHelp "set current (or negative of current) FIR from the GUI to PV"
+    APSButton .plot -parent $w.controls.frame -text "Freq. Resp." -command "PlotFreqResponse -plane $plane"
+     
+}
+
+#MakeFIRWidget -parent [lindex $tabList 1]
+
+
+###############
+
+set outputPatternDir /home/helios/oagData/par/P0feedback/patternFiles
+set FIRDir /home/helios/oagData/par/P0feedback/FIRFiles
+
+if [catch {ReadCurrentParameters } result] {
+    SetStatus "$result"
+    bell
+    SetStatus "Error occurred while reading waveform, you may need restore the P0Feedback waveforms from SCR, or set a bucket control pattern manually with UpdatePattern+SetPattern command, then press ReadPattern button in InputProcess panel."
+}
+
+

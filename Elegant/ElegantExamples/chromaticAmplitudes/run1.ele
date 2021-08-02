@@ -1,0 +1,65 @@
+&run_setup
+        lattice = lattice.lte,
+        p_central_mev = 1e3
+        final = %s.fin
+        parameters = %s.param
+&end
+
+&twiss_output
+        matched = 0
+        concat_order = 2
+        filename = %s.twi0
+    beta_x = 5.54673, alpha_x =  1.67146,
+    beta_y = 5.73409, alpha_y = -1.74977
+&end
+
+&run_control
+&end
+
+&optimization_setup
+        method = simplex, mode = minimize,
+        n_evaluations = 1500,
+        n_passes = 3,
+        n_restarts = 3,
+        log_file = /dev/tty
+        verbose = 0
+        tolerance = 1e-12
+        target = 1e-12
+&end
+
+!! Want Wx<0.01
+&optimization_term term ="dbetax/dp betax / sqr  alphax betax / dbetax/dp * dalphax/dp - sqr + sqrt  0.01  1e-6 segt" &end
+!! Want Wy<0.01
+&optimization_term term ="dbetay/dp betay / sqr  alphay betay / dbetay/dp * dalphay/dp - sqr + sqrt  0.01  1e-6 segt" &end
+
+&optimization_variable name = S1, item = K2, lower_limit=-1e14, upper_limit=1e14, step_size=1e11 &end
+&optimization_variable name = S2, item = K2, lower_limit=-1e14, upper_limit=1e14, step_size=1e11 &end
+&optimization_variable name = S3, item = K2, lower_limit=-1e14, upper_limit=1e14, step_size=1e11 &end
+&optimization_variable name = S4, item = K2, lower_limit=-1e14, upper_limit=1e14, step_size=1e11 &end
+&optimization_variable name = S5, item = K2, lower_limit=-1e14, upper_limit=1e14, step_size=1e11 &end
+
+&bunched_beam &end
+
+&optimize &end
+
+&save_lattice filename = %s.new &end
+
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 1e3
+        magnets = %s.mag
+&end
+
+&load_parameters
+        filename = %s.param,
+        change_defined_values = 1
+&end
+
+&twiss_output
+        matched = 0
+        concat_order = 2
+        filename = %s.twi
+    beta_x = 5.54673, alpha_x =  1.67146,
+    beta_y = 5.73409, alpha_y = -1.74977
+&end
+

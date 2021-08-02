@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Delete all the results files
+\rm *.done *.mag *.param *.started *.twi *.clo *.fin* *.fma* frequencyMapFit.* *.dtf* 

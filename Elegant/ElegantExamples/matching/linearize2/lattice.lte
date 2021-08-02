@@ -1,0 +1,10 @@
+B1: sben,l=0.1,angle=0.1,k1=10
+S1: sext,l=0.1
+S2: sext,l=0.1
+S3: sext,l=0.1
+D1: drift,l=0.25
+rc: remcor,with=6
+out: watch,filename="%s.out",mode="coord"
+res: watch,filename="%s.res",mode="coord"
+BLD: line=(B1,D1,S1,D1,S2,D1,S3,D1,B1,out,RC,res)
+BL: line=(B1,D1,S1,D1,S2,D1,S3,D1,B1,RC)

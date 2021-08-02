@@ -1,0 +1,103 @@
+#!/bin/sh
+# \
+exec tclsh "$0" "$@"
+
+set usage {usage: runBeamU <rootname>}
+if [llength $argv]!=1 {
+    return -code error "$usage"
+}
+set rootname [lindex $argv 0]
+
+set queueAvailable 0
+
+set input $rootname.sdds
+puts stderr "input is $input"
+
+if [string compare [exec sddscheck $input] "ok"]!=0 {
+    return -code error "$input: [exec sddscheck $input]"
+}
+puts stderr "file is ok"
+
+set columnList [exec sddsquery -column $input]
+foreach column $columnList {
+    set ${column}Data [exec sdds2stream -column=$column $input]
+}
+
+set numStarted 0
+set numDone 0
+
+set number [llength [set ${column}Data]]
+for {set i 0} {$i<$number} {incr i} {
+    if [file exists $rootname-$i.done] {
+	puts stderr "Already done: $rootname-$i"
+	continue
+    }	
+    puts stderr "Working on $i"
+    set macroList ""
+    foreach column $columnList {
+	set $column [lindex [set ${column}Data] $i]
+	lappend macroList $column=[set $column]
+    }
+
+    # make the longitudinal DF
+    set c_mks 2.997924580000000e+08
+    set nEdge 4.0
+    set nCenter 10.0
+    set edgeSigma 10.0
+    set St [expr $edgeSigma*$modWavelength/$c_mks]
+    set flat [expr $nCenter*$edgeSigma*$modWavelength/$c_mks]
+    puts stderr "St = $St"
+    # 20 bins per wavelength
+    set lscBins [expr ($nCenter+2*$nEdge)*20*$edgeSigma]
+
+    # charge to give desired mean current during the main part of the pulse
+    set charge [expr $current*($nCenter + sqrt(2*3.141))*$St]
+    puts stdout "Charge= $charge"
+    set p [expr 5.5/0.510999060000000]
+    foreach item {charge lscBins p} {
+	lappend macroList $item=[set $item]
+    }
+    set hLength [expr ($nCenter+2.0*$nEdge)/2.0]
+    if ![file exists $rootname-$i.input] {
+	puts stderr "Making input for $i"
+	exec sddssequence -pipe=out -define=z,type=double \
+	    -sequence=begin=-$hLength,end=$hLength,number=[expr $lscBins*50] \
+	    | sddsprocess -pipe=in $rootname-$i-DF.sdds \
+	    "-define=param,FTBnd,$nCenter 2 /" \
+	    "-define=parameter,omega,2 pi * $modWavelength / c_mks *" \
+	    "-define=col,t,$St z *,units=s" \
+	    "-define=col,profileFactor,z abs FTBnd - 0 > ? pop sqr -2 / exp : 1 $ " \
+	    "-define=col,modulationFactor,t omega * cos $modAmplitude * 1 + " \
+	    "-define=col,mgDF,profileFactor modulationFactor *" \
+	    "-define=col,gDF,z sqr -2 / exp" 
+	puts stderr "Creating distribution"
+	exec sddssampledist -pipe=out -samples=$Np \
+	    -columns=indep=t,df=mgDF,haltonRadix=2,datafile=$rootname-$i-DF.sdds \
+	    -columns=indep=z,df=gDF,haltonRadix=5,datafile=$rootname-$i-DF.sdds,output=x,units=m,factor=0.5e-3 \
+	    -columns=indep=z,df=gDF,haltonRadix=11,datafile=$rootname-$i-DF.sdds,output=xp,factor=1e-12 \
+	    -columns=indep=z,df=gDF,haltonRadix=7,datafile=$rootname-$i-DF.sdds,output=y,units=m,factor=0.5e-3 \
+	    -columns=indep=z,df=gDF,haltonRadix=13,datafile=$rootname-$i-DF.sdds,output=yp,factor=1e-12 \
+	    | sddsprocess -pipe=in $rootname-$i.input \
+            "-define=column,p,$p" 
+        exec sddshist ${rootname}-$i.input ${rootname}-$i.this -data=t -bins=$lscBins
+    }
+    set fid [open $rootname-$i.job w]
+    if $queueAvailable  {
+	puts $fid "cd [pwd]"
+	puts $fid "elegant LSCTemplate.ele -macro=rootname=$rootname-$i,[join $macroList ,] 1> $rootname-$i.log 2>&1"
+	puts $fid "rm -f $rootname-$i.input"
+	close $fid
+	exec chmod +x $rootname-$i.job
+	puts stderr "Submitting elegant"
+	catch {exec csub $rootname-$i.job} result
+	puts stderr "$result"
+    } else {
+	puts $fid "\#!/bin/csh -f"
+	puts $fid "cd [pwd]"
+	puts $fid "elegant LSCTemplate.ele -macro=rootname=$rootname-$i,[join $macroList ,] | tee $rootname-$i.log"
+	puts $fid "rm -f $rootname-$i.input"
+	close $fid
+	exec chmod +x $rootname-$i.job
+	puts stderr "Run script: $rootname-$i.job"
+    }
+}

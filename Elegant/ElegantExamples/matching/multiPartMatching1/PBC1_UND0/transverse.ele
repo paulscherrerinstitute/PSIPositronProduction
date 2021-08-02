@@ -1,0 +1,365 @@
+! Match the undulator period solution
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "UNDCELLS",
+        p_central = <p1>,
+        final = cell.fin,
+        parameters = cell.paramOpt,
+        always_change_p0 = 0
+        concat_order = 1,
+        search_path = ". .."
+&end
+
+&twiss_output
+        matched = 1,
+        output_at_each_step = 1,
+&end
+
+&alter_elements name=UND?M, type=MARK, item=FITPOINT, value=1 &end
+&alter_elements name=LU:Q*, type=QUAD, item=K1, value=<UNDQK1> &end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 1e-6,
+        tolerance = 1e-10, n_passes = 3, n_evaluations = 400, 
+        n_restarts = 5,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 30
+&end
+
+&optimization_term term = "R11 R22 + 2 / abs 0.99 1e-6 segt" &end
+
+&optimization_term term = "ave.betax ave.betay - sqr 20 *" &end
+
+&optimization_term term = "UND1M#1.betax betax - sqr" &end
+&optimization_term term = "UND1M#1.betay betay - sqr" &end
+
+&optimization_term term = "UND2M#1.betax betax - sqr" &end
+&optimization_term term = "UND2M#1.betay betay - sqr" &end
+
+&optimization_term term = "UND3M#1.betax betax - sqr" &end
+&optimization_term term = "UND3M#1.betay betay - sqr" &end
+
+&optimization_term term = "UND4M#1.betax betax - sqr" &end
+&optimization_term term = "UND4M#1.betay betay - sqr" &end
+
+&optimization_term term = "UND5M#1.betax betax - sqr" &end
+&optimization_term term = "UND5M#1.betay betay - sqr" &end
+
+&optimization_term term = "UND6M#1.betax betax - sqr" &end
+&optimization_term term = "UND6M#1.betay betay - sqr" &end
+
+&optimization_term term = "UND7M#1.betax betax - sqr" &end
+&optimization_term term = "UND7M#1.betay betay - sqr" &end
+
+&optimization_variable
+        name = LU:Q0, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q1, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q2, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q3, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q4, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q5, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q6, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q7, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+&save_lattice filename = cell.new &end
+
+! Evaluate undulator periodic solution
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "UNDCELLS",
+        p_central = <p1>,
+        parameters = cell.param,
+        concat_order = 1,
+        magnets = cell.mag,
+        search_path = ". .."
+&end
+
+&load_parameters filename = cell.paramOpt, change_defined_values = 1 &end
+
+&twiss_output
+        matched = 1,
+        output_at_each_step = 1,
+        filename = cell.twi
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&track &end
+
+&save_lattice filename = cell.new &end
+
+&subprocess command = "sddsconvert cell.param -delete=column,ElementOcc*" &end
+
+! Match from undulator to the dump
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "UNDToDump"
+        p_central = <p1>,
+        final = todump.fin,
+        parameters = todump.paramOpt,
+        concat_order = 1,
+        search_path = ". .."
+&end
+
+&twiss_output
+        matched = 0,
+        output_at_each_step = 1,
+        reference_file = cell.twi,
+        reference_element = _BEG_,
+&end
+
+&load_parameters filename = cell.param, change_defined_values = 1 &end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = .001,
+        tolerance = 1e-10, n_passes = 3, n_evaluations = 400, 
+        n_restarts = 5,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 30
+&end
+
+&optimization_term term = "max.betax 50 0.0001 segt" &end
+&optimization_term term = "max.betay 50 0.0001 segt" &end
+&optimization_term term = "betay etay sqr / 1e6 *" &end
+
+&optimization_variable
+        name = LU:Q8, item=K1, lower_limit = 0, upper_limit=30, step_size = 0.1 &end
+&optimization_variable
+        name = LU:Q9, item=K1, lower_limit = -30, upper_limit=0, step_size = 0.1 &end
+&optimization_variable
+        name = LS:Q3, item=K1, lower_limit = 0, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = LS:Q4, item=K1, lower_limit = -15, upper_limit=0, step_size = 0.1 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+&save_lattice filename = todump.new &end
+
+! Evaluate solution from undulator to dump
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "UNDToDump"
+        p_central = <p1>,
+        parameters = todump.param,
+        concat_order = 1,
+        magnets = todump.mag,
+        search_path = ". .."
+&end
+
+&load_parameters filename = todump.paramOpt, change_defined_values = 1 &end
+
+&twiss_output
+        matched = 0,
+        reference_file = cell.twi,
+        reference_element = _BEG_,
+        filename = todump.twi
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&track &end
+
+&save_lattice filename = todump.new &end
+
+&subprocess command = "sddsconvert todump.param -delete=column,ElementOcc*" &end
+
+&rpn_load
+        filename = "cell.twi",
+        tag = cell
+&end
+
+! Match from PAR bypass to undulator
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "PBTOU",
+        p_central = <p1>,
+        final = transverse.finOpt,
+        parameters = transverse.paramOpt,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = quadDefault.param
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+&load_parameters
+        filename = todump.param,
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+        
+&twiss_output
+        matched = 0,
+        beta_x = 9.6, beta_y = 9.6,
+        alpha_x = 1, alpha_y = 1,
+        output_at_each_step = 1,
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 1e-4,
+        tolerance = 1e-6, n_passes = 3, n_evaluations = 400, 
+        n_restarts = 120,
+        log_file = /dev/tty, 
+        verbose = 0,
+        output_sparsing_factor = 30
+&end
+
+&optimization_term term = "max.betax 50 .01 segt" &end
+&optimization_term term = "max.betay 50 .01 segt" &end
+&optimization_term term = "betax cell.betax 0.0001 sene " &end
+&optimization_term term = "betay cell.betay 0.0001 sene " &end
+&optimization_term term = "alphax cell.alphax 0.0001 sene " &end
+&optimization_term term = "alphay cell.alphay 0.0001 sene " &end
+&optimization_term term = "PTBQ6M#1.betax 35 .1 segt" &end
+&optimization_term term = "PTBQ6M#1.betay 35 .1 segt" &end
+&optimization_term term = "PTBQ7M#1.betax 35 .1 segt" &end
+&optimization_term term = "PTBQ7M#1.betay 35 .1 segt" &end
+&optimization_term term = "PTBQ8M#1.betax 35 .1 segt" &end
+&optimization_term term = "PTBQ8M#1.betay 35 .1 segt" &end
+&optimization_term term = "PTBQ9M#1.betax 35 .1 segt" &end
+&optimization_term term = "PTBQ9M#1.betay 35 .1 segt" &end
+&optimization_term term = "BBQ5M#1.betax 45 .1 segt" &end
+&optimization_term term = "BBQ5M#1.betay 45 .1 segt" &end
+&optimization_term term = "BBQ6M#1.betax 35 .1 segt" &end
+&optimization_term term = "BBQ6M#1.betay 35 .1 segt" &end
+&optimization_term term = "LAQ1M#1.betax 35 .1 segt" &end
+&optimization_term term = "LAQ1M#1.betay 35 .1 segt" &end
+&optimization_term term = "LAQ2M#1.betax 35 .1 segt" &end
+&optimization_term term = "LAQ2M#1.betay 35 .1 segt" &end
+&optimization_term term = "LSQ1M#1.betax 35 .1 segt" &end
+&optimization_term term = "LSQ1M#1.betay 35 .1 segt" &end
+&optimization_term term = "LSQ2M#1.betax 35 .1 segt" &end
+&optimization_term term = "LSQ2M#1.betay 35 .1 segt" &end
+
+!&optimization_variable
+!        name = PB:Q3, item=K1, lower_limit = 0, upper_limit=15, step_size = 0.1 &end
+!&optimization_variable
+!        name = PB:Q4, item=K1, lower_limit = -15, upper_limit=0, step_size = 0.1 &end
+&optimization_variable
+        name = BB:QE1, item=K1, lower_limit=0, upper_limit=15, step_size = 0.1 &end
+&optimization_variable 
+        name = BB:QE2, item=K1, lower_limit=-15, upper_limit=0, step_size = 0.1 &end
+&optimization_variable
+        name = BB:Q1, item=K1, lower_limit=0, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = BB:Q5, item=K1, lower_limit=0, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = BB:Q6, item=K1, lower_limit=-15, upper_limit=0, step_size = 0.1 &end
+&optimization_variable
+        name = LA:Q1, item=K1, lower_limit=0, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = LA:Q2, item=K1, lower_limit=-15, upper_limit=0, step_size = 0.1 &end
+&optimization_variable
+        name = LS:Q1, item=K1, lower_limit=0, upper_limit=15, step_size = 0.1 &end
+&optimization_variable
+        name = LS:Q2, item=K1, lower_limit=-15, upper_limit=0, step_size = 0.1 &end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+ 
+&optimize summarize_setup=1 &end
+
+! Evaluate solution
+
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 1,
+        use_beamline = "PBTHRUU",
+        p_central = <p1>,
+        final = transverse.fin,
+        parameters = transverse.param,
+        magnets = transverse.mag,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters filename = todump.param, change_defined_values = 1 &end
+&load_parameters
+        filename = transverse.paramOpt
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&floor_coordinates
+        filename = transverse.flr,
+        magnet_centers = 1
+&end
+
+&twiss_output
+        matched = 0,
+        beta_x = 9.6, beta_y = 9.6,
+        alpha_x = 1, alpha_y = 1,
+        filename = transverse.twi
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&bunched_beam &end
+
+&track &end
+
+&save_lattice filename = transverse.new &end

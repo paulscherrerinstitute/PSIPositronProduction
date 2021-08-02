@@ -1,0 +1,6 @@
+#!/bin/bash
+
+elegant run1.ele
+echo "****************"
+sddsprintout run1.twi0 -title="Before optimization" -parameter=dbeta?/dp -parameter=dalpha?/dp
+sddsprintout run1.twi -title="After optimization" -parameter=dbeta?/dp -parameter=dalpha?/dp

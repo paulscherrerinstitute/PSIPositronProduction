@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm imped1.out wake1.out wake.sdds impedance.sdds 

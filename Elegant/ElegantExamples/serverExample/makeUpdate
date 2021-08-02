@@ -1,0 +1,18 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+# Make update file---this would be replaced by something
+# that draws data from the control system. Here, we just
+# add some differential errors with 1% rms cut off at 2 sigma
+
+set usage "makeUpdate"
+
+exec sddsmakedataset -pipe=out \
+    -column=ElementName,type=string \
+    -data=QF1H,QF2H,QF3H,QF4H,QF5H \
+    -column=ElementParameter,type=string \
+    -data=FSE,FSE,FSE,FSE,FSE \
+    | sddsprocess -pipe=in update.sdds \
+    "-define=column,ParameterValue,2 grndl 100 /"
+

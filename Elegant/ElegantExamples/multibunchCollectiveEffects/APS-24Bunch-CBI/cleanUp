@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Delete all results
+
+\rm run-*mA-*
+\rm *.twi* *.mag *.done ILMatrix.sdds SREffects.sdds *.?fb [xy]fb.param 

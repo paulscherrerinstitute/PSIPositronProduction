@@ -1,0 +1,83 @@
+!f:\data\3pole\last-varsion\in opa\sr0-3polev01-7.opa
+
+!opa to elegant export
+
+!----- table of elements ----------------------------------------------------
+
+d_id    : drift, l = 3.510760
+d12     : drift, l = 0.180000
+d13     : drift, l = 0.200000
+d14     : drift, l = 0.180000
+d15     : drift, l = 0.300000
+d21     : drift, l = 0.280000
+d22     : drift, l = 0.180000
+d23     : drift, l = 0.180000
+d24     : drift, l = 0.280000
+d25     : drift, l = 0.220000
+d26     : drift, l = 0.320000
+d31     : drift, l = 0.300000
+d32     : drift, l = 0.220000
+d33     : drift, l = 0.180000
+d34     : drift, l = 0.300000
+d35     : drift, l = 0.180000
+d_3p    : drift, l = 0.460000
+ds1     : drift, l = 1.700000
+ds2     : drift, l = 0.500000
+ds3     : drift, l = 0.31076
+d_3p1   : drift, l = 0.1554
+d_3p2   : drift, l = 0.1554
+
+
+Q11: KQUAD,L=0.2,K1=3.743451633197924,N_KICKS=20
+Q12: KQUAD,L=0.2,K1=-1.710663017653979,N_KICKS=20
+Q22: KQUAD,L=0.2,K1=3.98875803205347,N_KICKS=20
+Q31: KQUAD,L=0.2,K1=3.294198388626155,N_KICKS=20
+Q32: KQUAD,L=0.2,K1=3.330838,N_KICKS=20
+
+
+be1     : CSBEN,N_KICKS=20,EDGE_ORDER=1,INTEGRATION_ORDER=4,ISR=0,SYNCH_RAD=1, l = 0.969230, angle = 0.054978, k1 = -0.702600,&
+          e1 = 0.027489, e2 = 0.027489
+be2     : CSBEN,N_KICKS=20,EDGE_ORDER=1,INTEGRATION_ORDER=4,ISR=0,SYNCH_RAD=1, l = 1.200000, angle = 0.068068, k1 = -0.702600,&
+          e1 = 0.034034, e2 = 0.034034
+bl1     : csbend, l = 0.400000, angle = 0.022689, k1 = -0.742600,&
+          e1 = 0.011345, e2 = 0.011345
+bh      : csbend, l = 0.120000, angle = 0.022689, k1 = 0.000000,&
+          e1 = 0.011345, e2 = 0.011345
+
+
+
+"S1A:S1": KSEXT,L=0.065,K2=114.8973846051824,N_KICKS=10
+"S1A:S2": KSEXT,L=0.065,K2=-146.8652899359073,N_KICKS=10
+"S1A:S3": KSEXT,L=0.125,K2=-142.907220651673,N_KICKS=10
+"S1A:S4": KSEXT,L=0.125,K2=216.6047497226113,N_KICKS=10
+"S1A:S5": KSEXT,L=0.125,K2=-143.975869429345,N_KICKS=10
+"S1A:S6": KSEXT,L=0.125,K2=-144.5081200303062,N_KICKS=10
+"S1A:S7": KSEXT,L=0.125,K2=219.7424169418436,N_KICKS=10
+"S1A:S8": KSEXT,L=0.125,K2=-143.6980553647766,N_KICKS=10
+
+
+COR:  KICKER
+BPM: MONI
+
+mal: malign
+!----- table of segments ----------------------------------------------------
+block1     : line=(d_id,BPM, S1A:S1,COR,S1A:S1, d12, q11, d13, S1A:S2,S1A:S2, d14, q12, d15)
+block2     : line=(d21, S1A:S3,COR,S1A:S3, d22, q22,BPM, d23)
+block3     : line=(S1A:S4,S1A:S4, d24, q31, d25, S1A:S5,S1A:S5,BPM, d26)
+block4     : line=(d31, S1A:S6,COR,S1A:S6, d32, q31, d33, S1A:S7,S1A:S7)
+block5     : line=(d34, q32, d35, S1A:S8,COR,S1A:S8,BPM, d_3p)
+block6     : line=(d_3p,BPM,S1A:S5,COR,S1A:S5, d35, q32, d34)
+unit1      : line=(block3, be2, block4)
+unit2      : line=(block5, be2, block6)
+match      : line=(block1, be1, block2)
+cell       : line=(match, unit1, unit2, -unit1, -match)
+ring       : line= (20*cell)
+malin: malign,on_pass=0
+ringm       : line= (malin,ring)
+AP: RCOL,X_MAX=0.2
+w1: watch,filename="%s.w1r",mode="centroid"
+ringw: line=(malin,w1,ring)
+rf: rfca, volt=1.5e6, freq="c_mks 5.28e2 / 176 *", phase="180 5.33e-1 3.0 / dasin -"
+sr: sreffects,qexcitation=0
+ringrf: line=(malin,rf,AP,ring)
+

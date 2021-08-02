@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ $# -ne 1 ] ; then
+    echo "Usage: ILMatrixSetup <rootname>"
+    exit 1
+fi
+
+sddscollapse $1.twi -pipe=out \
+    | sddsconvert -pipe -retain=col,Jx,Jy,Jdelta,ex0,U0,Sdelta0,pCentral \
+    | sddsprocess -pipe "-define=col,dDelta,U0 pCentral mev * / chs" \
+    | sddstranspose -pipe -oldColumnNames=ColumnName \
+    | sddsconvert -pipe -rename=col,Column=ParameterValue \
+    | sddsxref SREffects.xref -nowarning -pipe -match=ColumnName -take=* \
+    | tee SREffects.param \
+    | sddsprintout -pipe -col
+

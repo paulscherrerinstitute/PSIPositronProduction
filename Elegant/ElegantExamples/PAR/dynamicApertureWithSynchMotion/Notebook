@@ -1,0 +1,4 @@
+Example of dynamic aperture with synchrotron motion and radiation damping.
+
+We insert two fictitious rf cavities at high dispersion locations and vary the rf voltage.
+The phase is adjusted to fulfill the condition V*sin(phi) = U0.

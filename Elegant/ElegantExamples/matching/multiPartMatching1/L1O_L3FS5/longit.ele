@@ -1,0 +1,91 @@
+&run_setup
+        lattice = lattice.lte,
+        default_order = 1,
+        use_beamline = "L1OtoL3FS2",
+        expand_for = beamFile.sdds,
+        final = %s.finOpt,
+        parameters = %s.paramOpt,
+        always_change_p0 = 1,
+        concat_order = 1
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = quadDefault.param
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&alter_elements name=L2CELL1, item=VOLT, value=<L2Cell1Volt> &end
+&alter_elements name=L2CELL*, item=PHASE, value=<L2Phase> &end
+&alter_elements name=Q, item=TOTAL, value=<Charge> &end
+
+&run_control
+        n_steps = 1
+&end
+
+&optimization_setup
+	mode = "minimize", method = "simplex",
+        target = 1e-2,
+        tolerance = 1e-3, n_passes = 5, n_evaluations = 200, 
+        n_restarts = 3
+&end
+
+&optimization_term term = "pCentral mev * <pTarget> - 0 .001 sene" &end
+&optimization_term term = ".9 Transmission .0001 segt" &end
+
+&optimization_variable
+        name = l2cell1, item=VOLT, lower_limit=1, upper_limit=6e6, step_size = 1e3 &end
+
+&optimization_covariable
+        name = l2cell2, item=volt, equation="L2CELL1.VOLT 2 *" &end
+&optimization_covariable
+        name = l2cell4, item=volt, equation="L2CELL1.VOLT 4 *" &end
+&optimization_covariable
+        name = l2cell8, item=volt, equation="L2CELL1.VOLT 8 *" &end
+&optimization_covariable
+        name = l2cell16, item=volt, equation="L2CELL1.VOLT 16 *" &end
+
+&optimization_covariable
+        name = l2cell14, item=volt, equation="L2CELL1.VOLT 14 *" &end
+&optimization_covariable
+        name = l2cell12, item=volt, equation="L2CELL1.VOLT 12 *" &end
+
+&bunched_beam
+&end
+ 
+&optimize summarize_setup=1 &end
+
+&run_setup
+        lattice = lattice.lte,
+        default_order = 1,
+        use_beamline = "L1OtoL3FS2",
+        expand_for = beamFile.sdds,
+        final = %s.fin,
+        output = %s.out,
+        parameters = %s.param,
+        always_change_p0 = 1
+        centroid = %s.cen,
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename = "%s.paramOpt",
+        change_defined_values = 1
+&end
+
+&matrix_output
+        SDDS_output = %s-chicane.mat,
+        start_from = L2AS4END
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&bunched_beam
+&end
+ 
+&track &end
+

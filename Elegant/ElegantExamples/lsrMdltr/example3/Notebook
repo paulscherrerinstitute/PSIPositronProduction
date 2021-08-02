@@ -1,0 +1,9 @@
+Example of a laser-slicing simulation for APS
+M. Borland, ANL
+
+aps.ele
+aps.lte
+example_50fsFwhmProfile.sdds
+
+elegant aps.ele 
+sddsplot -col=t,p aps-??.w1 -graph=dot -sep -same  -mode=x=meancenter

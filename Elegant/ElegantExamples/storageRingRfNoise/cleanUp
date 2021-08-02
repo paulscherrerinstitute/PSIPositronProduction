@@ -1,0 +1,2 @@
+#!/bin/bash
+\rm *.twi *.new *.wpar *.bun *.mag ILMatrix.sdds SREffects.sdds

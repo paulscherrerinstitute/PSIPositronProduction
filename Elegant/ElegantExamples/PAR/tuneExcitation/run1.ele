@@ -1,0 +1,31 @@
+&run_setup
+        lattice = parTrack.lte,
+        p_central_mev = 450
+&end
+
+&twiss_output
+        matched = 1
+        radiation_integrals = 1
+&end
+
+&rf_setup
+        harmonic = 1
+        total_voltage = 40e3
+&end
+
+&modulate_elements
+        name = MAL,
+        item = DXP,
+        filename = drive.sdds,
+        time_column = "t",
+        amplitude_column = "xDrive",
+        differential = 0
+&end
+
+&run_control
+        n_passes = "(2 20 pow)"
+&end
+
+&bunched_beam &end
+
+&track &end

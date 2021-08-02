@@ -1,0 +1,62 @@
+Example of performing DA vs momentum offset tracking when the lattice has strong sextupoles that
+make the orbit difficult to correct.
+
+This example assumes the use of a computing cluster. In the APS context, Pelegant runs are submitted
+with the command csubPelegant. Users will need to modify the scripts prepCase, run4dDA, and run6dDA
+to use their local job submission method.
+
+M. Borland, 2019
+
+===
+
+The approach is to break the problem into four runs for each random error set
+Run 1:
+   a. Generate and save errors
+   b. Correct orbit and save correctors while ramping sextupoles from 0 to full strength. This alows
+   convergence in the presence of strong lattice perturbations from orbit in the sextupoles.
+   The orbit correction is done with SR turned off, on the assumption that in the real machine, we'll
+   remove the decay vs s when we set the BPM offsets. Similarly, we use fixed_length=0 on the assumption
+   that the rf frequency will be adjusted to remove any DC offset.
+
+Run 2:
+   Track to get tunes vs momentum offset, with errors and corrections.
+   Note that because of coupling (which is not corrected here) this may fail for the x plane in particular, depending
+   on the seed.
+
+Run 3:
+   Turn on SR and track one turn to get the path-length of the orbit, so rf cavity frequency can be set more precisely.
+   We do this because the orbit length may differ from the ideal length due to the non-zero orbit and decay of
+   energy from SR.
+
+Run 4 (series):
+   Scan momentum offset in a script. For each value, load errors and corrections. Performing tracking to get the DA.
+   a. Use 4D tracking with no rf and no SR
+   b. Use 6D tracking with rf and classical SR.
+
+===
+
+Sequence
+
+!! Make a reference run with no errors. 
+elegant reference.ele 
+plotTwiss -rootname reference
+sddsplot -column=delta,nu? reference.dtf -graph=sym,vary=subtype
+
+!! Run errors/correction/basic analysis for 2 cases (two different seed values)
+!! This runs steps 1 through 3 above
+prepCase 1
+prepCase 2
+
+!! Run 4d DA (no rf, fixed momentum offset) for two cases
+!! This is step 4a above
+run4dDA 1
+run4dDA 2
+
+!! Run 6d DA (includes rf) for two cases
+!! This is step 4b above
+run6dDA 1
+run6dDA 2
+
+!! Post-process DA runs
+postProcDA
+

@@ -1,0 +1,52 @@
+&run_setup
+        p_central_mev = 5
+        lattice = lattice.lte
+        rootname = transverse2-1
+        magnets = %s.mag
+        default_order = 1
+        use_beamline = PART1
+&end
+
+&load_parameters
+        filename = transverse1.param,
+        change_defined_values = 1
+        allow_missing_elements = 1        
+&end
+
+&run_control
+&end
+
+&twiss_output
+        matched = 0
+        beta_x = 1
+        beta_y = 1
+        filename = %s.twi
+&end
+
+&run_setup
+        p_central = 60
+        lattice = lattice.lte
+        rootname = transverse2-2
+        magnets = %s.mag
+        default_order = 1
+        use_beamline = PART2
+&end
+
+&load_parameters
+        filename = transverse1.param,
+        change_defined_values = 1
+        allow_missing_elements = 1        
+&end
+
+&run_control
+&end
+
+&twiss_output
+        matched = 0
+        beta_x = 5,
+        beta_y = 2,
+        alpha_x = -1,
+        alpha_y = 1
+        filename = %s.twi
+&end
+

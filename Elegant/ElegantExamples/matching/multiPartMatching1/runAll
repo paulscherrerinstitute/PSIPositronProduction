@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Example of multi-part matching. 
+# This example is for the LEUTL system, starting at the exit of the photoinjector (30 MeV)
+# and ending at the exit of the undlator at 457 Mev
+# M. Borland, ANL
+
+# Make the undulator matrix for 457 MeV
+\rm und.matrix
+makeUndMatrix -output und.matrix -energy 457
+
+# Set up chicane for maximum asymmetry and R56=-65mm
+cd chicane
+matchChicane -dZB4 0.65 -R56 -65e-3 -rootname nominal
+cd ..
+
+# Match L2 to chicane for 150 MeV
+
+cd L1O_L3FS5
+cleanUp
+runLongit -charge 1e-9 -momentum 150
+runTransverse
+cd ..
+
+# Match chicane to PAR bypass 
+cd L3FS5_PBC1
+cleanUp
+runLongit 
+runTransverse
+cd ..
+
+# Match beamline through end of undulator
+cd PBC1_UND0
+cleanUp
+runCase
+cd ..
+
+# Evaluate the full thing and track
+cd fullSystem
+elegant run.ele
+cd ..

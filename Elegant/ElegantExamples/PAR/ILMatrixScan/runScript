@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Compute twiss parameters
+elegant twiss.ele
+
+# Generate file ILMatrix.sdds to configure ILMATRIX
+ILMatrixSetup 
+
+# Track while varying ILMATRIX NUX value
+elegant track.ele
+
+# Take FFT and display x tune spectra
+
+sddsfft track.w1 track.fft -col=Pass,Cx 
+sddsplot -col=f,FFTCx track.fft -split=page -graph=line,vary -order=spect

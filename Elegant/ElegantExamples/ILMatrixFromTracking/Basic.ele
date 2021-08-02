@@ -1,0 +1,52 @@
+&transmute_elements
+	name = *, type = WATCH, new_type = MARK
+&end
+&transmute_elements
+	name = *, type = TFBDRIVER, new_type = MARK
+&end
+&transmute_elements
+	name = *, type = TFBPICKUP, new_type = MARK
+&end
+
+&semaphores &end
+
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = RING,
+        p_central_mev = 6e3,
+	default_order = 2,
+        magnets = %s.mag,
+	parameters = %s.param
+&end
+
+&twiss_output
+        filename = "%s.twi",
+        concat_order = 2,
+        radiation_integrals = 1,
+        higher_order_chromaticity = 0,
+        chromatic_tune_spread_half_range = 0.015,
+        output_at_each_step = 1
+        compute_driving_terms = 0
+&end
+
+!&correct_tunes
+!	quadrupoles = "S*Q[13] S*Q2",
+!	tune_x = 36.16,
+!	tune_y = 19.22,
+!	change_defined_values = 1
+!&end
+!
+!&chromaticity
+!	sextupoles = "S*S3 S*S4"
+!	dnux_dp = 5
+!	dnuy_dp = 5
+!	change_defined_values = 1
+!&end
+
+&run_control 
+&end
+
+&bunched_beam &end
+
+&track &end
+

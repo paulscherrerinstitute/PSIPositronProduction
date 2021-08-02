@@ -1,0 +1,13 @@
+Example of tracking to get tune shift with amplitude
+M. Borland, ANL, 2013
+
+In this example, track a set of particles distributed in x(0) and then figure out after the
+fact what the amplitude and tune of each is. Suitable for parallel tracking, but postprocessing
+is more involved.
+
+parTrack.ele     command input file
+parTrack.lte     lattice input file
+
+process1         Processes parTrack.w1 to get horizontal tune vs amplitude using NAFF
+process2         Similar, but performs FFT and makes a waterfall plot
+plot2            Makes some plots after running process1, process2

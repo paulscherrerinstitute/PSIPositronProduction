@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# This can be modified to make custom distributions.
+# Here, we use the following:
+# Time:   Linearly ramped
+# Energy: Gaussian
+# x-y:    round
+# xp-yp:  round
+
+sddssequence -pipe=out -define=t,type=double -sequence=begin=-2e-12,end=2e-12,n=100 \
+  | sddsprocess -pipe=in tDist.sdds \
+  "-define=col,D,t -2e-12 - 2e12 * 1 +"
+sddsplot -column=t,D tDist.sdds
+
+sddssequence -pipe=out -define=R,type=double -seq=begin=0,end=2e-3,n=100 \
+  | sddsprocess -pipe=in rDist.sdds \
+  "-define=col,D,R"
+
+sddssampledist -pipe=out -samples=10000 \
+  -column=indep=t,df=D,output=t,units=ps,datafile=tDist.sdds \
+  -gaussian=column=p,mean=1000,sigma=2 \
+  -column=indep=R,df=D,output=r,units=m,datafile=rDist.sdds \
+  -column=indep=R,df=D,output=rp,units=m,datafile=rDist.sdds \
+  -uniform=column=theta1,minimum=0,maximum=`rpnl 2 pi mult` \
+  -uniform=column=theta2,minimum=0,maximum=`rpnl 2 pi mult` \
+  | sddsprocess -pipe=in dist.sdds \
+  "-define=col,x,r theta1 cos *,units=m" \
+  "-define=col,y,r theta1 sin *,units=m" \
+  "-define=col,xp,rp theta2 cos *,units=" \
+  "-define=col,yp,rp theta2 sin *,units=" 
+
+sddsplot -layout=2,2 -sep \
+  -column=t,p dist.sdds -graph=dot \
+  -column=x,y dist.sdds -graph=dot \
+  -column=xp,yp dist.sdds -graph=dot \
+  -column=x,xp dist.sdds -graph=dot 

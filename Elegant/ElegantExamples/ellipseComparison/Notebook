@@ -1,0 +1,8 @@
+Example of comparing beam ellipse from tracking to ellipse implied by the twiss parameters.
+M. Borland, ANL
+
+# First, run elegant
+% elegant run.ele
+
+# Second, prepare ellipse file and make the plot
+% ./overlayPlot

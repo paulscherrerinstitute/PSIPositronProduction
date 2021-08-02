@@ -1,0 +1,49 @@
+SDDS1
+&column name=ColumnName type=string &end
+&column name=ElementParameter type=string &end
+&column name=ElementName type=string &end
+&column name=LatexSymbol type=string &end
+&column name=LatexOrder type=float &end
+&data mode=ascii no_row_counts=1 &end
+betax0           BETAX           RING1 "$\\beta_{x,0}$" 100
+dbetax/dp        BETAX1M         RING1 "$\partial_\\delta \\beta_x$" 101
+betay0           BETAY           RING1 "$\\beta_{y,0}$" 102
+dbetay/dp        BETAY1M         RING1 "$\partial_\\delta \\beta_y$" 103
+alphax0          ALPHAX          RING1 "$\\alpha_{x,0}$"  104
+dalphax/dp       ALPHAX1M        RING1 "$\partial_\\delta \\alpha_x$" 105
+alphay0          ALPHAY          RING1 "$\\alpha_{y,0}$" 106
+dalphay/dp       ALPHAY1M        RING1 "$\partial_\\delta \\alpha_y$" 107
+etax0            ETAX            RING1 "$\\eta_{x,0}$" 108
+xCurvature       ETAX1          RING1 "$\\eta_{x,1}$" 109
+etaxp0           ETAPX           RING1 "$\\eta^\prime_{x,0}$" 110
+xpCurvature      ETAPX1         RING1 "$\\eta^\prime_{x,1}$" 111
+etay0            ETAY            RING1 "$\\eta_{y,0}$" 112
+yCurvature       ETAY1          RING1 "$\\eta_{y,1}$" 113
+etayp0           ETAPY           RING1 "$\\eta^\prime_{y,0}$" 114
+ypCurvature      ETAPY1         RING1 "$\\eta^\prime_{y,1}$" 115
+nux              NUX             RING1 "$\\nu_x$" 1
+dnux/dp          NUX1M           RING1 "$\partial_\\delta \\nu_x$" 2
+dnux/dp2         NUX2M           RING1 "$\partial^2_\\delta \\nu_x$" 3
+dnux/dp3         NUX3M           RING1 "$\partial^3_\\delta \\nu_x$" 4
+nuy              NUY             RING1 "$\\nu_y$" 5
+dnuy/dp          NUY1M           RING1 "$\partial_\\delta \\nu_y$" 6
+dnuy/dp2         NUY2M           RING1 "$\partial^2_\\delta \\nu_y$" 7
+dnuy/dp3         NUY3M           RING1 "$\partial^3_\\delta \\nu_y$" 8
+sMax             L               RING1 "$C$" 300
+alphac           ALPHAC          RING1 "$\\alpha_c$" 301
+alphac2          ALPHAC2         RING1 "$\\alpha_{c,2}$" 302
+""               DS1AX          RING1 "$\\partial_{A_x} s$" 303
+""               DS2AX          RING1 "$\\partial^2_{A_x} s$" 304
+""               DS1AY          RING1 "$\\partial_{A_y} s$" 305
+""               DS1AX1AY       RING1 "$\\partial_{A_x}\partial_{A_y} s$" 306
+""               DS2AY          RING1 "$\\partial^2_{A_y} s$" 307
+dnux/dAx	 NUX1AX		 RING1 "$\partial_{A_x} \\nu_x$" 200
+dnux/dAy	 NUX1AY		 RING1 "$\partial_{A_y} \\nu_x$" 201
+dnuy/dAx	 NUY1AX		 RING1 "$\partial_{A_x} \\nu_y$" 202
+dnuy/dAy	 NUY1AY		 RING1 "$\partial_{A_y} \\nu_y$" 203
+""               NUX2AX         RING1 "$\\partial^2_{A_x} \\nu_x$" 204
+""               NUX1AX1AY      RING1 "$\\partial_{A_x}\\partial_{A_y} \\nu_x$" 205
+""               NUX2AY         RING1 "$\\partial^2_{A_y} \\nu_x$" 206
+""               NUY2AX         RING1 "$\\partial^2_{A_x} \\nu_y$" 207
+""               NUY1AX1AY      RING1 "$\\partial_{A_x}\\partial_{A_y} \\nu_y$" 208
+""               NUY2AY         RING1 "$\\partial^2_{A_y} \\nu_y$" 209

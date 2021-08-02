@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ $# != 1 ] ; then
+   echo "usage: fitSlopes <quadrupole#>"
+   echo "<quadrupole#> is 1, 2, 3, ..., 10"
+   exit 1
+fi
+n=$1
+
+for exten in cen fin ; do 
+    if [ ! -e scan-Q$n.$exten ] ; then
+        echo "Didn't find scan-Q$n.$exten. Did you run scanQuad $n ?"
+        exit 1
+    fi
+done
+
+root=scan-Q$n
+
+sddscollapse $root.fin $root.finc
+
+sddsprocess $root.cen -pipe=out -match=col,ElementType=*MON* -match=col,ElementName=*V* -define=col,SimStep,Step,type=long \
+    -convert=column,Cy,mm,m,1e3 \
+    | sddscombine -pipe -merge \
+    | sddssort -pipe -column=ElementName -col=SimStep \
+    | sddsbreak -pipe -change=ElementName \
+    | sddsprocess -pipe -process=ElementName,first,BpmName \
+    | sddsxref $root.finc -pipe -reuse=page -take=LTP:Q${n}.K1 \
+    | sddsprocess -pipe -process=LTP:Q${n}.K1,ave,%sAve -define=col,deltaK1,"LTP:Q${n}.K1 LTP:Q${n}.K1Ave / 1 - 100 *",units=%,symbol='$gD$rK$b1$n' \
+    | sddspfit -pipe=in $root.fit -copyParameters -terms=2 -column=deltaK1,Cy 
+
+sddsplot -split=page -groupby=page -separate=page -topline=@BpmName \
+    -legend -ylabel='Position \(mm)' \
+    -column=deltaK1,Cy -graph=sym,scale=2 $root.fit \
+    -column=deltaK1,CyFit $root.fit \
+    -title=@sddspfitLabel
+
+sddsplot -device=lpng,onwhite,template=scan-Q$n-%ld.png \
+    -split=page -groupby=page -separate=page -topline=@BpmName \
+    -legend -ylabel='Position \(mm)' \
+    -column=deltaK1,Cy -graph=sym,scale=2 $root.fit \
+    -column=deltaK1,CyFit $root.fit \
+    -title=@sddspfitLabel
+
+

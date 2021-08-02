@@ -1,0 +1,11 @@
+d0: drift
+genbeam: line=(d0)
+
+q: charge,total=1e-9
+trw: trwake,inputfile="wake.sdds",tcolumn="t",WyColumn="W",WxColumn="W",n_bins=0,interpolate=1
+bltrw: line=(q,trw)
+
+trimp: ztransverse,inputFile="impedance.sdds",freqColumn="f",ZxReal="RealFFTW",ZxImag="ImagFFTW",&
+       ZyReal="RealFFTW",ZyImag="ImagFFTW",interpolate=1
+bltrimp: line=(q,trimp)
+

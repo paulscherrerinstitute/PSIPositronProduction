@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Compute twiss parameters and rf settings
+elegant twiss.ele
+
+# Generate file ILMatrix.sdds to configure ILMATRIX
+ILMatrixSetup 
+
+# Generate file SREffects.sdds to configure SREFFECTS
+SREffectsSetup
+
+# Include rf data into the twiss file so we can easily load it
+# into tracking run
+sddsxref twiss.twi twiss.rf -leave=* -transfer=param,*
+
+# Track with impedance (4 cores)
+/usr/lib64/mpich/bin/mpiexec -np 4 Pelegant track.ele
+
+sddsplot -layout=1,2 -join=x -col=Pass,Sdelta -col=Pass,St track.w1 -sep=1
+sddsplot -col=dt,p -graph=dot -split=page -sep=page -same track.w2 -title=@Pass

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ $# -ne 1 ] ; then
+   echo "usage: runCase <caseNumber>"
+   exit 1
+fi
+
+caseNumber=`echo $1 | awk '{printf("%03d\n", $1)}'`
+if [ -e correct_$caseNumber.started ] ; then
+   echo "case number in use: $caseNumber"
+   exit 1
+fi
+
+# Use nanoseconds portion of time to generate a seed
+seed=`date +%N`
+sddsmakedataset correct_$caseNumber.sdds \
+    -column=Seed,type=long -data=$seed \
+    -column=CaseNumber,type=long -data=$1
+
+# Perform correction while ramping up sextupoles
+# - Number of steps for sextupole ramp
+rampSteps=11
+# - Run elegant
+elegant correctTemplate.ele -macro=rootname=correct_$caseNumber,seed=$seed,rampSteps=$rampSteps
+# - Keep the last page of the parameter file only
+sddsconvert correct_$caseNumber.param -frompage=$rampSteps
+\rm correct_$caseNumber.param~
+
+# Track one turn on the closed orbit with SR
+elegant oneTurnTemplate.ele -macro=configuration=correct_$caseNumber,rootname=oneTurn_$caseNumber,seed=$seed
+
+# Compute tune vs momentum
+# This command is local to APS clusters. Replace with your local command or use elegant/Pelegant directly
+csubPelegant -cores 32 -input dtfTemplate.ele -walltime 1:00:00 -force 1 \
+    -arguments -macro=configuration=correct_$caseNumber,rootname=dtf_$caseNumber,seed=$seed
+

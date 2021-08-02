@@ -1,0 +1,9 @@
+#!/bin/bash
+
+\rm daTrack.esl
+elasticScatteringLifetimeDetailed -aperture daTrack.aper -name Clipped -twiss daTrack.twi -output daTrack.esl -sPeriodic 30.667 -pressure pressure.sdds
+sddsprintout -parameter=*Ave daTrack.esl
+
+\rm lmaTrack.bsl
+bremsstrahlungLifetimeDetailed -aperture lmaTrack.mmap  -name "" -output lmaTrack.bsl -sPeriodic 30.667 -pressure pressure.sdds
+sddsprintout -parameter=*Ave lmaTrack.bsl

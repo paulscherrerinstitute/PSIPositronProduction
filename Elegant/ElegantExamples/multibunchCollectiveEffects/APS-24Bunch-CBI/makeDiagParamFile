@@ -1,0 +1,41 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set particles 100000
+set bunches 48
+set output ""
+set usage {usage: makeDiagParamFile -output <filename> -particles <#/bunch>(100000) -bunches <#>(48)}
+set args $argv
+if {[APSStrictParseArguments {output particles bunches}] || ![string length $output] || [expr $particles<1] || [expr $bunches<1]} {
+    return -code error "$usage"
+}
+
+if [file exists $output] {
+    puts stderr "In use: $output"
+    exit 1
+}
+
+for {set bunch 0} {$bunch<$bunches} {incr bunch} {
+    set start [expr $bunch*$particles+1]
+    set end [expr $start+$particles-1]
+    lappend elementNameList [format WP%02d $bunch] [format WP%02d $bunch]
+    lappend parameterNameList START_PID END_PID 
+    lappend valueList $start $end 
+    lappend elementNameList [format H%02d $bunch] [format H%02d $bunch]
+    lappend parameterNameList START_PID END_PID 
+    lappend valueList $start $end 
+}
+
+exec sddsmakedataset $output \
+    -column=ElementName,type=string -data=[join $elementNameList ,] \
+    -column=ElementParameter,type=string -data=[join $parameterNameList ,] \
+    -column=ParameterValue,type=double -data=[join $valueList ,]
+
+# Local Variables:
+# mode: tcl
+# End:

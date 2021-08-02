@@ -1,0 +1,5 @@
+#!/bin/bash
+
+elegant run.ele 
+plotTwiss -fileRoot run
+sddsplot -col=s,S[xy] run.sig -unsup=y -graph=line,vary -col=s,Profile run.mag -overlay=xmode=norm,yfact=0.04

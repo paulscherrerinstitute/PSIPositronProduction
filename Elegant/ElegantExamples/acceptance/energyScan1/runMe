@@ -1,0 +1,10 @@
+#!/bin/csh -f
+
+set nonomatch
+
+elegant run.ele
+
+sddsplot -parameter=MALIN.DP,Transmission run.fin -graph=sym 
+sddsplot -column=s,Particles run.cen -split=page -graph=line,vary -order=spectral
+sddsplot -column=x,xp run.acc -split=page -sep=page -graph=dot -samescales
+sddsplot -column=x,y run.los -split=page -sep=page -graph=dot -samescales

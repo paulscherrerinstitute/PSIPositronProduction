@@ -1,0 +1,4 @@
+#!/bin/csh
+
+\rm *.erl *.twi *.param *.fin  *.beta*Terms
+

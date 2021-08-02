@@ -1,0 +1,7 @@
+Example of computing off-momentum twiss parameters vs s.
+M. Borland, ANL
+
+To run:
+% elegant run.ele
+% processScan
+

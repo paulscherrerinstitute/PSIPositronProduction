@@ -1,0 +1,18 @@
+! An elegant run for the booster, lattice 1.
+! 1. Tracks a Booster brunch with RF turned on
+! 2. The momentum and RF are rampped
+
+&run_setup
+    lattice = "booster.lte",                 
+    use_beamline = "boost",
+    p_central_mev = 450,
+    magnets = "%s.mag",
+    default_order = 2,
+    tracking_updates = 0
+&end
+
+&twiss_output
+    filename = "%s.twi"
+    radiation_integrals = 1
+&end
+

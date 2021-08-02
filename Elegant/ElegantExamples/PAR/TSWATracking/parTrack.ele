@@ -1,0 +1,25 @@
+&run_setup
+    lattice = "parTrack.lte",
+    p_central = 880,
+    use_beamline="par",
+&end
+
+&twiss_output
+        filename = %s.twi
+&end
+
+&run_control
+        n_passes = 4096
+&end
+
+&bunched_beam 
+              ! Use 12 cores, 20 particles per working core
+              n_particles_per_bunch = "(12 1 - 20 *)",
+              beta_x = 1e9
+              emit_x = 0.4e-12
+              distribution_type[0] = "line"
+              centroid[0] = "(0.4e-12 1e9 * sqrt)",
+&end
+
+
+&track &end

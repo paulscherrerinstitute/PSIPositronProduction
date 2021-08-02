@@ -1,0 +1,4 @@
+#!/bin/bash
+
+\rm ILMatrix.sdds SREffects.sdds track.w* twiss.param* twiss.rf* *.twi* *.mag
+

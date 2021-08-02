@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm *.cen *.log *.fin* *.out longit*.param *.flr *.mag *.paramOpt* transverse.param *.twi  twiss.input longit-chicane.mat

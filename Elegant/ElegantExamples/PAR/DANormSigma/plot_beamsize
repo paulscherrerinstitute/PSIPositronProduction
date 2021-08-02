@@ -1,0 +1,39 @@
+#!/bin/csh
+set nonomatch
+if ("$2" == "") then
+        echo "usage: plot_beamsize <rootname> <coupling> <plot-options>"
+        echo "  script expects <rootname>.twi and <rootname>.mag to exist"
+        exit
+        endif
+set root = $1
+set coupling = $2
+if (! -e $root.twi) then
+    set root = $1:r
+    if (! -e $root.twi) then
+        echo "twiss file not found"
+        exit 1
+    endif
+endif    
+
+sddsprocess $1.twi $1.bs \
+    "-define=parameter,kappa,$coupling" \
+    "-define=param,ex,ex0 kappa 1 Jx / + /" \
+    "-define=param,ey,ex kappa *" \
+    '-define=col,Sx,betax ex * etax Sdelta0 * sqr + sqrt 1e6 *,symbol=$gs$r$bx$n,units=$gm$rm' \
+    '-define=col,Sy,betay ey * etay Sdelta0 * sqr + sqrt 1e6 *,symbol=$gs$r$by$n,units=$gm$rm' \
+    '-define=col,Sxp,1 alphax sqr + betax / ex * etaxp Sdelta0 * sqr + sqrt 1e6 *,symbol=$gs$r\047$bx$n,units=$gm$rrad' \
+    '-define=col,Syp,1 alphay sqr + betay / ey * etayp Sdelta0 * sqr + sqrt 1e6 *,symbol=$gs$r\047$by$n,units=$gm$rrad' 
+
+sddsplot "-title=`pwd`/$1   "'$ge$r$by0$n/$ge$r$bx0$n\\='"$2" \
+        $3 $4 $5 $6 $7 $8 $9 \
+        -column=s,Sx -legend=ysymbol -unsup=y \
+        $1.bs -graphic=line,type=1 \
+        -column=s,Sy -legend=ysymbol -unsup=y \
+        $1.bs -graphic=line,type=2 -end \
+        -column=s,Sxp -legend=ysymbol -unsup=y \
+        $1.bs -graphic=line,type=1 \
+        -column=s,Syp -legend=ysymbol -unsup=y \
+        $1.bs -graphic=line,type=2 -end \
+	-column=s,Profile $root.mag -overlay=xmode=norm,yfactor=0.04 -omnipresent
+
+

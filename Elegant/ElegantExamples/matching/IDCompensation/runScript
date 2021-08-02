@@ -1,0 +1,12 @@
+#!/bin/bash
+
+elegant run.ele
+
+sddsplot -groupby=names -sep=names -unsup=y -grap=line,vary \
+         -column=s,beta? -col=s,etax run-0.twi -legend=spec=NoID \
+         -column=s,beta? -col=s,etax run-1.twi -legend=spec=UnCompID
+
+sddsplot -groupby=names -sep=names -unsup=y -grap=line,vary \
+         -column=s,beta? -col=s,etax run-0.twi -legend=spec=NoID \
+         -column=s,beta? -col=s,etax run-2.twi -legend=spec=CompID
+         

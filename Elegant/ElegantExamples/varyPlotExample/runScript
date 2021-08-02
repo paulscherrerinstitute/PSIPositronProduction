@@ -1,0 +1,15 @@
+#!/bin/bash 
+
+mpiexec -np 6 Pelegant run.ele 
+
+# Transfer all parameters from run.fin. Ignore column data
+sddsxref run.sig run.fin run.sig-new "-transfer=param,*" "-leave=*"
+
+# Create a string parameter "Label1" that has the value of some varied 
+# quantity printed into it. In this example, I assume the varied quantity is Q4.K1
+
+sddsprocess run.sig-new "-print=parameter,Label1,Q4: %g",Q4.K1
+\rm run.sig-new~
+
+# Plot the data, splitting the pages up, giving them legends that are extracted from  the parameter Label1, and varying the color.
+sddsplot -column=s,Sx run.sig-new -split=page -legend=param=Label1 -graph=line,vary 

@@ -1,0 +1,17 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+set sections 8
+set p1 [exec sddsprocess ../L1O_L3FS5/longit.cen -pipe=out -clip=0,1,invert | sdds2stream -pipe -col=pCentral]
+set E1 [expr $p1*0.511]
+set E2 [exec sdds2stream ../und.sdds -col=Energy]
+set Cell1Volt [expr ($E2-$E1)/86e-6/$sections]
+
+file delete -force longit.log
+catch {exec elegant longit.ele -macro=Cell1Volt=$Cell1Volt,ETarget=$E2,p1=$p1 \
+        >& longit.log } result

@@ -1,0 +1,39 @@
+&run_setup
+        lattice = "lattice.lte",
+        default_order = 2,
+        use_beamline = "L1OThruUnd",
+        expand_for = beamFile.sdds,
+        final = %s.fin,
+        parameters = %s.param,
+        magnets = %s.mag,
+        centroid = %s.cen
+        output = %s.out,
+        sigma = %s.sig,
+        always_change_p0 = 1,
+        search_path = ". .."
+&end
+
+&load_parameters
+        filename_list = "../L1O_L3FS5/transverse.param ../L3FS5_PBC1/transverse.param ../PBC1_UND0/transverse.param",
+        change_defined_values = 1,
+        allow_missing_parameters = 1,
+        allow_missing_elements = 1
+&end
+
+&twiss_output
+        matched = 0,
+        reference_file = ../L1O_L3FS5/twiss.input,
+        filename = %s.twi
+&end
+
+&floor_coordinates
+        filename = %s.flr
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&sdds_beam input = beamFile.sdds &end
+
+&track &end

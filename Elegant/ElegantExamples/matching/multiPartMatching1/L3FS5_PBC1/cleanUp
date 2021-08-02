@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm *.log *.fin* longit*.param *.mag *.paramOpt* transverse.param *.twi* 

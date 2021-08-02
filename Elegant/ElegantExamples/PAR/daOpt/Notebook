@@ -1,0 +1,7 @@
+Example of DA optimization. M. Borland, ANL, 2017
+
+!! Run the optimization
+% elegant run.ele
+!! Plot initial and final DA
+% sddsplot -column=x,y run.da? -graph=line,vary
+

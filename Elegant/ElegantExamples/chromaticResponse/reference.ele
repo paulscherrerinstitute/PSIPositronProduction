@@ -1,0 +1,21 @@
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        use_beamline = L1OTOPAR,
+        expand_for = beamFile.sdds,
+        centroid = %s.cen
+        always_change_p0 = 1,
+&end
+
+&run_control
+        n_steps = 1
+        first_is_fiducial = 1
+        reset_rf_for_each_step = 0
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1
+&end
+
+&track &end
+        

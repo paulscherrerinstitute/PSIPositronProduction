@@ -1,0 +1,28 @@
+Example of using scripts elasticScatteringLifetime and bremsstrahlungLifetime to compute gas lifetime.
+M. Borland, 8/2016
+
+================
+
+parTrack.lte
+        PAR lattice file
+
+daTrack.ele
+        Simple DA tracking run
+        Need DA for the elastic gas scattering lifetime
+
+lmaTrack.ele
+        Simple LMA tracking run
+        Need LMA for the bremsstrahlung lifetime
+
+run
+        Script to run DA and LMA
+        Usage: run <#ofCores>
+        Use 'run 1' for serial version
+        Use, e.g., 'run 4' for 4-core parallel execution
+
+process
+        Processes outputs
+        
+cleanUp
+        Cleans up files
+

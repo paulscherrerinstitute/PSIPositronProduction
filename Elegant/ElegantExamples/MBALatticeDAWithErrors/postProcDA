@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Make a parameter in the .aper files that gives the momentum offset in percent
+for file in dynap*.done ; do
+    root=${file/.done/}
+    moffset=`editstring $root -edit=2Z_`
+    sddsprocess $root.aper -redefine=parameter,momentumOffset,"$moffset 1e2 /",units=% \
+    -reprint=parameter,Label1,'$gd$r:%.2f%%',momentumOffset
+done
+
+# Make plots of all DA contours for a given seed
+for leader in dynap*_*_0.done ; do 
+    root=${leader/_0.done/}
+    echo "Combining ${root}_* ..."
+    sddscombine ${root}_*.aper -pipe=out \
+	| sddssort -pipe=in -parameter=momentumOffset $root.aper
+#    sddsplot -column=xClipped,yClipped $root.aper -filename -graph=line,vary -split=page -legend=param=Label1 -order=spectral
+done
+
+# Perform statistics over all seeds
+for type in 4d 6d ; do 
+    list1=""
+    for leader in dynap${type}_000_*.done ; do 
+	moffset=`editstring $leader -edit=2Z_%/.done//`
+	sddscombine dynap${type}_*_$moffset.aper -pipe=out \
+	    | sddsprocess -pipe \
+	    "-define=col,r,x sqr y sqr + sqrt,units=m" \
+	    "-define=col,angle,x y atan2" \
+	    "-define=col,index,i_row,type=short" \
+	    | sddscombine -pipe -merge \
+	    | sddssort -pipe -column=index,incr \
+	    | sddsbreak -pipe -change=index \
+	    | sddsprocess -pipe -process=angle,first,%s \
+	    -process=r,min,rMin -process=r,max,rMax -process=r,median,rMedian \
+	    | sddscollapse -pipe \
+	    | sddsprocess -pipe=in dynap${type}_$moffset.aper \
+	    "-define=col,x%s,r%s angle cos * 1e3 *,units=mm,select=rM*,edit=d" \
+	    "-define=col,y%s,r%s angle sin * 1e3 *,units=mm,select=rM*,edit=d" \
+	    -redefine=parameter,momentumOffset,"$moffset 1e2 /",units=% \
+	    -reprint=parameter,Label1,'$gd$r'":%.2f%%  $type tracking",momentumOffset
+	list1="$list1 dynap${type}_$moffset.aper "
+    done
+    sddscombine $list1 -pipe=out \
+	| sddssort -pipe=in dynap${type}.aper -parameter=momentumOffset
+    \rm $list1
+    
+    sddsplot -graph=line,vary -title=@Label1 \
+	-group=page -sep=page -split=page -legend=edit=d \
+	-xlabel="x (mm)" -ylabel="y (mm)" \
+	-column=xMin,yMin dynap${type}.aper \
+	-column=xMedian,yMedian dynap${type}.aper \
+	-column=xMax,yMax dynap${type}.aper
+done

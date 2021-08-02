@@ -1,0 +1,44 @@
+&run_setup
+	lattice = aps.lte,
+	use_beamline = RING_ILM10,
+	p_central_mev = 7e3,
+	default_order = 2,
+&end
+
+&insert_elements
+        name=ion*,
+        element_def = "IE1: ionEffects"
+&end
+
+&rpn_load
+        filename = Basic.twi
+        tag = ref        
+&end
+
+&run_control 
+	n_steps = 1,
+        n_passes = 1000
+&end
+
+&ion_effects
+        pressure_profile = "gasMix.sdds",
+        ion_properties = "ionProperties.sdds",
+        field_calculation_method = "gaussian",
+        verbosity = 3,
+	macro_ions = 1,
+	x_span = 0.011,
+	y_span = 0.011,
+        beam_output = %s.ebeam,
+        ion_density_output = %s.ionDens,
+&end
+
+! Set up for 324-bunch beam
+&sdds_beam
+        input = makeBunch.out,
+        n_duplicates = 323,
+        duplicate_stagger[4] = "(ref.s c_mks / 324 /)"
+        use_bunched_mode = 1
+&end
+
+&track &end
+

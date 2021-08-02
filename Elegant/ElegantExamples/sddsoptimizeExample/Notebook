@@ -1,0 +1,32 @@
+Simple example of running an optimization using sddsoptimize. M. Borland, ANL
+
+In this example, we vary a strength fudge factor for a set of quadrupoles in the
+PTB transport line in order to attempt to match measured H and V response matrices.
+
+Files:
+ptb.lte
+        Lattice file
+standard-H.sdds
+        Experimentally-measured horizontal response matrix
+standard-V.sdds
+        Experimentally-measured vertical response matrix
+standard_quadUniform.ele
+        Elegant command file that computes the response matrices after fudging all the 
+        quad strengths by a given factor
+quadUniformVarFile.sdds
+        Input file for sddsoptimize, specifying the optimization variables (there's only one)
+quadUniformRunScript
+        Script to run the simulation for a single trial value
+quadUniformMeasScript
+        Script to "measure" the result of the last-run simulation, returning (to stdout) a
+        number that is to be minimized. In this case, the number is just the mean-squared
+        error between the experimental and simulated response matrix.
+
+Command to run
+sddsoptimize -measScript=quadUniformMeasScript -varScript=quadUniformRunScript -varFile=quadUniformVarFile.sdds \
+             -simplex=eval=100,cycles=3,restart=1 -logFile=optim1.log -restart=optim1.restart  -verbose
+
+Command to compare results to experiment
+sddsplot -graph=sym,vary=subtype,fill -groupby=names -sep=names -same=global \
+         -column=s,*:* standard-[HV].sddscal -legend=spec=Experiment \
+         -column=s,*:* standard_quadUniform.[hv]rm -legend=spec=Matched 

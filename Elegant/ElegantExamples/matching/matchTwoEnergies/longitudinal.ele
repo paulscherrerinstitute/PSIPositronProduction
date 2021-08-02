@@ -1,0 +1,71 @@
+! Match the beam energy 
+
+&run_setup
+        p_central_mev = 5
+        lattice = lattice.lte
+        final = %s.fin
+        parameters = %s.param
+        default_order = 1
+&end
+
+&run_control
+&end
+
+&twiss_output
+        output_at_each_step = 1
+        matched = 0
+        beta_x = 1
+        beta_y = 1
+&end
+
+&optimization_setup
+        method = "simplex",
+        mode = "minimize",
+        tolerance = 1e-14,
+        target = 1e-6,
+        n_evaluations = 1500,
+        n_passes = 3,
+        n_restarts = 2,
+        output_sparsing_factor = 100
+&end
+
+&optimization_term
+        term = "MATCH1#1.pCentral mev * 150 1e-3 sene" &end
+&optimization_term
+        term = "MATCH2#1.pCentral mev * 150 1e-3 sene" &end
+
+&optimization_variable
+        name = L1, item = VOLT, lower_limit = 0, upper_limit = 100e6, step_size = 100 &end
+&optimization_variable
+        name = L2, item = VOLT, lower_limit = 0, upper_limit = 100e6, step_size = 100 &end
+
+&bunched_beam &end
+
+&optimize &end
+
+&run_setup
+        p_central_mev = 5
+        lattice = lattice.lte
+        centroid = %s.cen,
+        default_order = 1
+&end
+
+&load_parameters
+        filename = %s.param,
+        change_defined_values = 1
+&end
+
+&twiss_output
+        matched = 0
+        beta_x = 1
+        beta_y = 1
+&end
+
+&run_control
+&end
+
+&bunched_beam &end
+
+&track &end
+
+

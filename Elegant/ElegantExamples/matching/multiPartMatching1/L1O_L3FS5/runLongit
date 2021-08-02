@@ -1,0 +1,27 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+set usage {runLongit -charge <C> -momentum <MeV>}
+set charge 1e-9
+set momentum 150
+set args $argv
+APSStrictParseArguments {charge momentum }
+if {$charge<=0} {
+    return -code error "usage: $usage"
+}
+
+set momentum0 [exec sddsprocess ../beamFile.sdds -pipe=out -process=p,ave,pAve \
+    | sdds2stream -pipe=in -parameter=pAve]
+set L2Cell1Volt [expr ($momentum-$momentum0*0.511)*1e6/4.0/86.0]
+
+catch {exec elegant longit.ele \
+    -macro=Charge=$charge,L2Cell1Volt=$L2Cell1Volt,L2Phase=90,pTarget=$momentum \
+    >& longit.ele.log } \
+    result
+
+

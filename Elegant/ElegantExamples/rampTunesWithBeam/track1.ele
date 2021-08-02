@@ -1,0 +1,50 @@
+&run_setup
+    lattice = "par10h.lte",
+    magnets = "%s.mag",
+    p_central = 880,
+    use_beamline="parw",
+    magnets = %s.mag
+&end
+
+&twiss_output filename = "%s.twi", statistics=1, radiation_integrals=1,
+        concat_order = 2, &end
+
+&rf_setup
+        harmonic = 1
+        bucket_half_height = 0.03
+&end
+
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=1 &end
+&alter_elements name=*, type=CSBEND, item=ISR, value=1 &end
+
+&modulate_elements
+        name = Q1, item = K1, filename = rampProgram.sdds, time_column = t, amplitude_column = Q1.K1, differential = 0 &end
+&modulate_elements
+        name = Q2, item = K1, filename = rampProgram.sdds, time_column = t, amplitude_column = Q2.K1, differential = 0 &end
+&modulate_elements
+        name = Q4, item = K1, filename = rampProgram.sdds, time_column = t, amplitude_column = Q4.K1, differential = 0 &end
+&modulate_elements
+        name = SFH, item = K2, filename = rampProgram.sdds, time_column = t, amplitude_column = SFH.K2, differential = 0 &end
+&modulate_elements
+        name = SDH, item = K2, filename = rampProgram.sdds, time_column = t, amplitude_column = SDH.K2, differential = 0 &end
+
+&run_control 
+             n_passes = 1000000
+&end
+
+&error_control error_log = %s.erl &end
+&error_element name=Q*, item=TILT, amplitude=1e-3, bind=0 &end
+
+&bunched_beam 
+              n_particles_per_bunch = 1000
+              emit_x = 0.37e-6,
+              use_twiss_command_values = 1,
+              sigma_dp = "(Sdelta0)",
+              sigma_s = "(Sz0)"
+              enforce_rms_values[0] = 3*1
+              distribution_cutoff[0] = 3*3,
+              centroid[0] = 1e-4, 0, 1e-4, 0
+&end
+
+&track &end
+

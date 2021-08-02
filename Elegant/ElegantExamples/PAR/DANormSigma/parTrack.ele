@@ -1,0 +1,68 @@
+&run_setup
+    lattice = "parTrack.lte",
+    p_central = 880,
+    use_beamline="par",
+    ! the second-order is needed here only for the twiss computations.
+    ! the tracking is done with kick elements
+    default_order = 2,
+&end
+
+&chromaticity
+    sextupoles = "SDH SFH", n_iterations = 10,
+    change_defined_values = 1,
+    dnux_dp = 3,
+    dnuy_dp = 3,
+    tolerance = 0.00001
+&end
+
+&run_control &end
+
+&bunched_beam &end
+
+&track &end
+
+&save_lattice filename=%s.new &end
+
+&run_setup
+    lattice = "parTrack.new",
+    p_central = 880,
+    use_beamline="par",
+    magnets = %s.mag
+    final = %s.fin,
+    ! the second-order is needed here only for the twiss computations.
+    ! the tracking is done with kick elements
+    default_order = 2,
+&end
+
+! put some 8-pole and 10-pole in the dipoles to make things more interesting
+
+&alter_elements name=*, type=CSBEND, item=K3, value=1e2 &end
+&alter_elements name=*, type=CSBEND, item=K4, value=1e3 &end
+
+&twiss_output
+        output_at_each_step = 1,
+        filename = %s.twi,
+        radiation_integrals = 1
+&end
+
+&run_control
+        n_passes = 400
+&end
+
+&error_control &end
+&error_element name=*, element_type=KQUAD, item=TILT, amplitude=1e-4 &end
+
+&find_aperture
+    output = %s.aper,
+    mode = "n-line",
+    n_lines = 21,
+    verbosity = 1,
+    xmin = -0.05,
+    xmax =  0.05,
+    ymin =  0.0,
+    ymax =  0.05,
+    nx  = 21,
+    n_splits = 2
+    split_fraction = 0.1
+&end
+

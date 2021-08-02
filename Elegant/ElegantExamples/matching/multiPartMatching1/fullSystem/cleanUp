@@ -1,0 +1,5 @@
+#!/bin/bash 
+
+\rm *.cen *.out *.sig *.twi *.mag *.param *.flr *.fin
+
+

@@ -1,0 +1,48 @@
+&transmute_elements
+	name = *, type = WATCH, new_type = MARK
+&end
+&transmute_elements
+	name = *, type = TFBDRIVER, new_type = MARK
+&end
+&transmute_elements
+	name = *, type = TFBPICKUP, new_type = MARK
+&end
+
+&semaphores &end
+
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = RING,
+	p_central_mev = 6.0e3,
+        final = %s.fin,
+        tracking_updates = 1
+&end
+
+! Load the quadrupoles with adjusted tunes
+&load_parameters
+	filename = Basic.param,
+	change_defined_values = 1,
+	include_name_pattern = "*:Q[123]"
+	include_item_pattern = K1
+&end
+
+&twiss_output
+	matched = 1	
+&end
+
+&run_control
+        n_indices = 1
+&end
+
+
+&vary_element name=MALIN, item=DP, initial=-0.01, final=0.01, index_number=0, index_limit=21 &end
+
+&closed_orbit
+        output = %s.clo
+&end
+
+&bunched_beam &end
+
+&track
+        center_on_orbit = 1
+&end

@@ -1,0 +1,13 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+if ![file exists parTrack.log] {
+    catch {exec elegant parTrack.ele > parTrack.log}
+}
+
+# plot DA
+exec sddsplot -split=page -separate=page -groupby=page -same=global -layout=1,3 \
+    -column=x,y parTrack.aper -graph=symbol,type=0 -title=@RF.VOLT &
+
+

@@ -1,0 +1,24 @@
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 450
+        output = %s.out
+        use_beamline = BL0
+&end
+
+&run_control &end
+
+&bunched_beam
+        n_particles_per_bunch = 100
+        distribution_type[0] = "gaussian", "gaussian", "hard-edge",
+        distribution_cutoff[0] = 2, 2, 1,
+        sigma_s = "(15e-9 c_mks *)"
+        sigma_dp = 0.1e-2,
+        emit_nx = 20e-6,
+        emit_ny = 20e-6,
+        beta_x = 2,
+        beta_y = 10
+        centroid[0] = -15e-3 ! Not sure what the right value is 
+&end
+
+&track &end
+

@@ -1,0 +1,33 @@
+&run_setup
+	lattice = lattice.lte,
+	p_central_mev = 1e3
+	final = %s.fin
+	output = %s.out
+&end
+
+&run_control
+	! Run 3000 bunches at 2856 MHz
+	n_steps = 3000,
+	bunch_frequency = 2856e6,
+	! Use consistent external clock throughout
+	reset_rf_for_each_step = 0
+	first_is_fiducial = 1,
+&end
+
+&bunched_beam
+	n_particles_per_bunch = 1000,
+	! 0.1% rms momentum spread
+	sigma_dp = 0.001,
+	! 5ps rms bunch duration
+	sigma_s = "(5e-12 c_mks *)",
+	! uniform distribution
+	distribution_cutoff[0] = 3*2,
+	distribution_type[0] = 3*"gaussian",
+	! Offset by 0.1 mm in x
+	centroid[0] = 1e-4
+	one_random_bunch = 0
+	bunch = %s.bun
+&end
+
+&track &end
+

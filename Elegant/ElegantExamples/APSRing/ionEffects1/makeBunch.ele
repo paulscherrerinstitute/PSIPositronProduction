@@ -1,0 +1,34 @@
+&run_setup
+	lattice = aps.lte,
+	use_beamline = GB,
+	p_central_mev = 7e3,
+        output = %s.out
+&end
+
+&run_control 
+	n_steps = 1,
+&end
+
+&rpn_load
+        filename = Basic.twi
+        tag = "ref"
+&end
+&rpn_load
+        filename = Basic.mom,
+        tag = ref
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1000
+        beta_x = "(ref.betax)",
+        eta_x = "(ref.etax)",
+        beta_y = "(ref.betay)",
+        sigma_s = "(ref.s5)",
+        sigma_dp = "(ref.s6)",
+        emit_x = 2480e-12,
+        emit_y = 32e-12,
+        enforce_rms_values[0] = 3*3,
+&end
+
+&track &end
+

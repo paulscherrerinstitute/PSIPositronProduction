@@ -1,0 +1,3 @@
+#!/bin/bash
+
+\rm *.wc *.mag *.param *.vrm *.hrm full*.twi *.flr *.sig 

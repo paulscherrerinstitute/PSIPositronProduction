@@ -1,0 +1,49 @@
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        use_beamline = LThruU,
+        expand_for = beamFile.sdds,
+        sigma = %s.sig,
+        parameters = %s.param,
+        always_change_p0 = 1,
+        magnets = %s.mag
+&end
+
+&insert_elements
+        name = *, type = QUAD,
+        element_def = "WT: WATCH,FILENAME=\"%s-%04ld.wc\",MODE=\"coord\""
+&end
+
+&floor_coordinates
+        filename = %s.flr,
+        include_vertices = 1,
+!        magnet_centers = 1
+&end
+
+&twiss_output
+        matched = 0,
+        filename = %s.twi,
+        reference_file = transverse.twi,
+        reference_element = _BEG_
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&correct
+        n_xy_cycles = 1,
+        n_iterations = 1
+&end
+
+&correction_matrix_output
+        response[0] = %s.hrm, %s.vrm,
+        BnL_units = 1,
+&end
+
+&sdds_beam
+        input =  beamFile.sdds,
+&end
+
+&track &end
+        

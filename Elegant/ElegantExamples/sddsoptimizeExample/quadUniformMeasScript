@@ -1,0 +1,47 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+#
+# This script evaluates how well the simulated lattice response matrices agree
+# with the measured ones.
+#
+# In this case, the -tagList and -valueList options are ignored.
+#
+
+set usage {usage: quadUniformMeasScript -tagList <string> -valueList <string>}
+set tagList ""
+set valueList ""       
+set args $argv
+if {[APSStrictParseArguments {tagList valueList }]} {
+    return -code error "$usage"
+}
+
+set lattice standard
+set hvalue \
+  [exec sddsxref ${lattice}-H.sddscal ${lattice}_quadUniform.hrm -pipe=out -match=BPMName \
+     -take=PTB:H* -edit=col,PTB:H*,ei/0/ \
+     | sddsprocess -pipe "-define=column,deltaSqr%s,%s  %s0 - sqr,select=PTB:H?" \
+     | sddsprocess -pipe -process=delta*,sum,%sSum \
+     | sddscollapse -pipe \
+     | sddsrowstats -pipe -sum=deltaSqrSum,*Sum \
+     | sdds2stream -pipe -column=deltaSqrSum]
+
+set vvalue \
+  [exec sddsxref ${lattice}-V.sddscal ${lattice}_quadUniform.vrm -pipe=out -match=BPMName \
+     -take=PTB:V* -edit=col,PTB:V*,ei/0/ \
+     | sddsprocess -pipe "-define=column,deltaSqr%s,%s  %s0 - sqr,select=PTB:V?" \
+     | sddsprocess -pipe -process=delta*,sum,%sSum \
+     | sddscollapse -pipe \
+     | sddsrowstats -pipe -sum=deltaSqrSum,*Sum \
+     | sdds2stream -pipe -column=deltaSqrSum]
+
+set value [expr $hvalue+$vvalue]
+puts stdout "$value"
+
+
+

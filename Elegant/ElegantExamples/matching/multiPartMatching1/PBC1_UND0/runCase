@@ -1,0 +1,22 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+set usage {usage: runCase}
+
+set pRef [exec sdds2stream -parameter=pCentral ../L3FS5_PBC1/transverse.fin]
+set energy [expr $pRef*0.511]
+puts stderr "Energy is $energy MeV"
+
+set K1L [exec sdds2stream -colum=K1L ../und.sdds]
+set UNDQK1 [expr $K1L/2.0/0.05]
+puts stderr "Undulator quad K1 starts at $UNDQK1"
+
+catch {exec elegant transverse.ele -macro=p1=$pRef,UNDQK1=$UNDQK1} result
+puts stdout "$result"
+
+

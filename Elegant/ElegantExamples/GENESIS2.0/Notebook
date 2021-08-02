@@ -1,0 +1,16 @@
+Example of running SDDS-compliant GENESIS 1.3 with output from elegant for LCLS.
+
+Files are mostly from Y. C. Chae (ANL/APS, chae@aps.anl.gov)
+The LCLS beam file (LCLS0.out) is from elegant, using the July 2003 LCLS lattice.
+
+To run:
+% elegant2genesis LCLS0.out LCLS0.beamfile -reverseOrder -chargeParameter=Charge \
+  -slices=130 
+% GENESIS
+LCLS0.gin
+LCLS0.gout
+Y
+
+
+
+

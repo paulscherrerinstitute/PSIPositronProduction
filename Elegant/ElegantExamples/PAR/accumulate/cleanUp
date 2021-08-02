@@ -1,0 +1,4 @@
+#!/bin/bash
+
+\rm bunch.out newbunch.out run1-add.in run1-add.out run1.out run1.log run1.w1 run1.w2  run1.done
+

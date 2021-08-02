@@ -1,0 +1,52 @@
+Example of using tracking to set up ILMATRIX.
+M. Borland, 2/23/2016.
+
+====
+Description of files
+
+lattice.lte
+        Sample lattice file (present APS)
+
+Basic.ele
+	Adjust the tunes and chromaticities, find lattice parameters.
+
+closedOrbit.ele
+        Find closed orbit vs momentum offset
+
+frequencyMap.ele
+        Tunes and path-length vs (x, y)
+
+tuneFootprint.ele
+        Tunes vs momentum offset
+
+ILMatrixFromFmap
+ILMatrix.xref
+        Analyzes results from all the elegant runs and makes
+        ILMatrix.sdds, which can be loaded into elegant
+        The ILMATRIX element is assumed to be named RING1
+
+makeTable
+ILMatrixTable.tex
+        Makes a latex table and converts to PDF.
+
+====
+Sequence of operations.
+
+elegant Basic.ele
+
+elegant closedOrbit.ele
+
+!! <cores> is the number of cores to use. For this case, up to 4096 (64x64) based on
+!! the values of nx and ny in frequencyMap.ele
+mpiexec -np <cores> Pelegant frequencyMap.ele
+
+!! <cores> is the number of cores to use. For this example, up to 128 based on the
+!! value of ndelta in tuneFootprint.ele
+mpiexec -np <cores> Pelegant tuneFootprint.ele
+
+ILMatrixFromFmap
+
+sddsprintout -column ILMatrix.sdds
+
+makeTable
+!! View ILMatrixTable.pdf with a PDF viewer

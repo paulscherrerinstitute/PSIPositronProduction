@@ -1,0 +1,11 @@
+#!/bin/bash
+
+sddscollapse run0.twi -pipe=out \
+    | sddsconvert -pipe -delete=col,Stage -retain=col,Jx,Jy,Jdelta,ex0,U0,Sdelta0,pCentral \
+    | sddsprocess -pipe "-define=col,dDelta,U0 pCentral mev * / chs" \
+    | sddstranspose -pipe -oldColumnNames=ColumnName \
+    | sddsconvert -pipe -rename=col,Column=ParameterValue \
+    | sddsxref SREffects.xref -nowarning -pipe -match=ColumnName -take=* \
+    | tee SREffects.sdds \
+    | sddsprintout -pipe -col
+

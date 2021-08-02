@@ -1,0 +1,119 @@
+!! Compute lattice functions w/o ID
+
+&run_setup
+   lattice = "apsKick.lte",
+   use_beamline = "CELL0",
+   p_central_mev = 7e3,
+   default_order = 2,
+   semaphore_file = "%s.done",
+&end
+
+&twiss_output
+        filename = %s-0.twi,
+        matched = 1
+&end
+
+!! Demonstrate mismatch with ID
+
+&run_setup
+   lattice = "apsKick.lte",
+   use_beamline = "CELL",
+   p_central_mev = 7e3,
+   default_order = 2,
+   semaphore_file = "%s.done",
+&end
+
+&twiss_output
+        filename = %s-1.twi,
+        matched = 0
+        reference_file = run-0.twi
+&end
+
+!! Match tunes and lattice functions with ID
+
+&run_setup
+   lattice = "apsKick.lte",
+   use_beamline = "CELL",
+   p_central_mev = 7e3,
+   default_order = 2,
+   semaphore_file = "%s.done",
+   final = %s.finOpt
+   parameters = %s.paramOpt
+   default_order = 1 ! For improved speed
+&end
+
+&rpn_load
+        filename = run-0.twi,
+        tag = ref
+&end
+&rpn_load
+        filename = run-0.twi,
+        tag = ref
+        load_parameters = 1
+&end
+
+&twiss_output
+        output_at_each_step = 1,
+        matched = 0,
+        reference_file = run-0.twi,
+        concat_order = 1 ! For improved speed
+&end
+
+&optimization_setup
+        method = simplex, mode = minimize,
+        n_evaluations = 1500
+        n_passes = 3
+        target = 1e-12
+        tolerance = 1e-14
+&end
+
+&optimization_variable name=S2A:Q1, item=K1, lower_limit=-0.9, upper_limit=0.0, step_size=1e-3 &end
+&optimization_variable name=S2A:Q2, item=K1, lower_limit=0.0, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable name=S2A:Q3, item=K1, lower_limit=-0.9, upper_limit=0.0, step_size=1e-3 &end
+&optimization_variable name=S2A:Q4, item=K1, lower_limit=-0.9, upper_limit=0.0, step_size=1e-3 &end
+
+&optimization_variable name=S3B:Q1, item=K1, lower_limit=-0.9, upper_limit=0.0, step_size=1e-3 &end
+&optimization_variable name=S3B:Q2, item=K1, lower_limit=0.0, upper_limit=0.9, step_size=1e-3 &end
+&optimization_variable name=S3B:Q3, item=K1, lower_limit=-0.9, upper_limit=0.0, step_size=1e-3 &end
+&optimization_variable name=S3B:Q4, item=K1, lower_limit=-0.9, upper_limit=0.0, step_size=1e-3 &end
+
+&optimization_term
+        term = "ref.betax betax / 1 1e-4 sene" &end
+&optimization_term
+        term = "ref.etax etax / 1 1e-4 sene" &end
+&optimization_term
+        term = "ref.betay betay / 1 1e-4 sene" &end
+&optimization_term
+        term = "alphax 0 1e-4 sene" &end
+&optimization_term
+        term = "etaxp 0 1e-4 sene" &end
+&optimization_term
+        term = "alphay 0 1e-4 sene" &end
+        
+&optimization_term
+        term = "ref.nux nux 1e-3 sene" &end
+&optimization_term
+        term = "ref.nuy nuy 1e-3 sene" &end
+
+&run_control &end
+
+&bunched_beam &end
+
+&optimize &end
+
+&save_lattice filename = %s.new &end
+
+!! Demonstrate improvement with matching
+
+&run_setup
+   lattice = "run.new",
+   use_beamline = "CELL",
+   p_central_mev = 7e3,
+   default_order = 2,
+   semaphore_file = "%s.done",
+&end
+
+&twiss_output
+        filename = %s-2.twi,
+        matched = 1
+&end

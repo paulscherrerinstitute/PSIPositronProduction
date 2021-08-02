@@ -1,0 +1,1 @@
+ Example of using the program sddsoptimize to optimize the results of elegant simulations. In this example, we vary a strength fudge factor for a set of quadrupoles in a transport line in order to attempt to match measured H and V response matrices. 

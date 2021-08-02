@@ -1,0 +1,47 @@
+! Linac for first beam
+l1: rfca,change_p0=1,volt=20e6,l=3.0,phase=90,end1_focus=1,end2_focus=1
+d1: drift,l=0.5
+! Quads seen only by first beam
+q11: kquad,k1=1,l=0.25
+q12: kquad,k1=-1,l=0.25
+q13: kquad,k1=1,l=0.25
+q14: kquad,k1=-1,l=0.25
+! Common quadrupoles--use BORE and B instead of K1
+qc1: kquad,bore=0.02,B=0.0,l=0.25
+qc2: kquad,bore=0.02,B=0.0,l=0.25
+qc3: kquad,bore=0.02,B=0.0,l=0.25
+qc4: kquad,bore=0.02,B=0.0,l=0.25
+qc5: kquad,bore=0.02,B=0.0,l=0.25
+qc6: kquad,bore=0.02,B=0.0,l=0.25
+qc7: kquad,bore=0.02,B=0.0,l=0.25
+qc8: kquad,bore=0.02,B=0.0,l=0.25
+match1: mark,fitpoint=1
+linac1: line=(l1,qc1,d1,qc2,&
+       l1,d1,qc3,d1,qc4,&
+       l1,d1,qc5,d1,qc6,&
+       l1,d1,qc7,d1,qc8,d1,match1)
+part1: line=(q11,d1,q12,d1,q13,d1,q14,d1,linac1)
+
+! Linac for second beam
+l2: rfca,change_p0=1,volt=15e6,l=3.0,phase=90
+! Quads seen only by second beam
+q21: kquad,k1=1,l=0.25
+q22: kquad,k1=-1,l=0.25
+q23: kquad,k1=1,l=0.25
+q24: kquad,k1=-1,l=0.25
+match2: mark,fitpoint=1
+! Same as linac1, but the RFCA elements are different to allow
+! a different accelerating gradient
+linac2: line=(l2,qc1,d1,qc2,&
+       l2,d1,qc3,d1,qc4,&
+       l2,d1,qc5,d1,qc6,&
+       l2,d1,qc7,d1,qc8,d1,match2)
+
+part2: line=(q21,d1,q22,d1,q23,d1,q24,d1,linac2)
+
+! Reset energy and twiss parameters
+en1: energy,central_momentum=60
+en2: energy,match_particles=1
+tw: twiss,beta_x=5,beta_y=2,alpha_x=-1,alpha_y=1
+
+bl: line=(part1,en1,en2,tw,part2)

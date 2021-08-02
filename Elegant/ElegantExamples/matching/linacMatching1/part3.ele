@@ -1,0 +1,112 @@
+! Try to make beta functions uniform throughout the L4 and L5 sections
+
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        ! Beamline is from L3FS5 to the exit of the linac
+        use_beamline = L3FS5TOL5O,
+        p_central = "{sddsprocess part2.twi -pipe=out -clip=0,1,invert | sdds2stream -pipe -column=pCentral0}",
+        always_change_p0 = 1,
+        final = %s.fin
+        parameters = %s.param
+&end
+
+! This command sets up Twiss parameter computation, using as it's starting
+! point some values stored in a previous simulation output. One can also give
+! the values explicitly using the beta_x, beta_y, alpha_x, etc. parameters
+
+&twiss_output
+        matched = 0,
+        output_at_each_step = 1,
+        reference_file = part2.twi,
+&end
+
+&optimization_setup
+        mode = "minimize", method = "simplex",
+        n_restarts = 3,
+        n_evaluations = 1500, n_passes = 3,
+        log_file = /dev/tty,
+        verbose = 0
+&end
+
+! Constraints at focusing quads
+&optimization_term
+        term = "L4:QM4M#1.betax L4:QM6M#1.betax / 1 .01 sene" &end
+&optimization_term
+        term = "L4:QM4M#1.betax L5:QM1M#1.betax / 1 .01 sene" &end
+&optimization_term
+        term = "L4:QM4M#1.betax L5:QM3M#1.betax / 1 .01 sene" &end
+
+! Constraints at defocusing quads
+&optimization_term
+        term = "L4:QM5M#1.betay L4:QM7M#1.betay / 1 .01 sene" &end
+&optimization_term
+        term = "L4:QM5M#1.betay L5:QM2M#1.betay / 1 .01 sene" &end
+&optimization_term
+        term = "L4:QM5M#1.betay L5:QM4M#1.betay / 1 .01 sene" &end
+
+&optimization_variable
+        name = L4:QM1, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L4:QM2, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L4:QM3, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L4:QM4, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L4:QM5, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L4:QM6, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L4:QM7, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+
+&optimization_variable
+        name = L5:QM1, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L5:QM2, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+&optimization_variable
+        name = L5:QM3, item = K1, lower_limit=-2e9, upper_limit=2e9, step_size=1e6 &end
+
+&run_control
+&end
+
+&bunched_beam
+&end
+
+&optimize &end
+
+! Evaluate the solution we just found
+
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        use_beamline = LINAC,
+        expand_for = beamFile.sdds,
+        always_change_p0 = 1,
+        magnets = %s.mag
+&end
+
+! Load the K1 values from the solutions found previously and just now
+
+&load_parameters
+        filename = part1.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+&load_parameters
+        filename = part2.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+&load_parameters
+        filename = part3.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+
+&twiss_output
+        matched = 0,
+        filename = %s.twi,
+        reference_file = beamFile.sdds.twi,
+        reference_element = _BEG_
+&end

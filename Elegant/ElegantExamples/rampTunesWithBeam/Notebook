@@ -1,0 +1,22 @@
+Example of ramping tunes while tracking beam. In this case, we ramp the tunes across the difference coupling resonance.
+Example by M. Borland, ANL.
+
+par10h.lte --- Lattice file
+run0.ele --- Simple run to test lattice file.
+
+runScan, changeTuneTemplate.ele,  collateSettings  --- Scripts and template file to match the quadrupoles along a 
+line that crosses the difference resonance. After running runScan, run collateSettings to produce the ramp file rampProgram.sdds
+
+track0.ele --- Tracking without ramp
+track1.ele --- Tracking with ramp
+
+To view data as the job runs, use
+sddsplot "-device=motif,-movie true -keep 1" -repeat -col=Pass,'(ex,ey,Sdelta,St)' -layout=2,2 -sep track1.w1 
+
+To view the tunes, use
+sddsbreak track1.w1 -pipe=out -rowlimit=1024 \
+| sddsprocess -pipe -process=Pass,first,Pass \
+| sddsnaff -pipe -nowarn -term=freq=1 -column=Pass -pair=Cx,Cxp -pair=Cy,Cyp \
+| sddsexpand -pipe | sddscollapse -pipe=in tunes.sdds
+
+sddsplot -col=Pass,CxFrequency -col=Pass,CyFrequency tunes.sdds  -graph=sym,vary=subtype -legend

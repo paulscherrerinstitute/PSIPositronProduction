@@ -1,0 +1,47 @@
+&run_setup
+    lattice = "lattice.lte",
+    magnets = "%s.mag",
+    p_central = 880,
+    use_beamline="ringz"
+&end
+
+&load_parameters
+        filename_list = "ILMatrix.sdds SREffects.sdds",
+        change_defined_values = 1
+&end
+&load_parameters
+        filename_list = "twiss.param",
+        change_defined_values = 1,
+	include_type_pattern = RFCA
+&end
+
+&rpn_load
+	filename = twiss.twi
+	tag = ref
+&end
+&rpn_load
+	filename = twiss.twi
+	load_parameters = 1
+	tag = ref
+&end
+
+&twiss_output
+	matched = 1
+&end
+
+&run_control
+        n_passes = 10000
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 10000,
+	emit_x = "(ref.ex0)",
+	beta_x = "(ref.betax)"
+	beta_y = "(ref.betay)"
+	sigma_dp = "(ref.Sdelta0)",
+	sigma_s = "(ref.Sz0)"
+	distribution_type[0] = 3*"gaussian",
+	distribution_cutoff[0] = 3*3
+&end
+
+&track &end

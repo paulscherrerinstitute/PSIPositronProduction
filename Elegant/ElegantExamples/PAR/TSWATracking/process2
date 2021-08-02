@@ -1,0 +1,25 @@
+#!/bin/bash
+
+betax0=`sddsprocess parTrack.twi -pipe=out -process=betax,first,betax0 | sdds2stream -pipe -param=betax0`
+
+sddsprocess parTrack.w1 -pipe=out -define=col,Turn,"i_page 1 -",type=long \
+            | sddscombine -pipe -merge \
+            | sddssort -pipe -col=particleID -col=Turn \
+            | sddsbreak -pipe -change=particleID \
+            | tee parTrack.w1a \
+            | sddsprocess -pipe -test=param,"n_rows 500 >" \
+            -process=x,first,x0 \
+            | sddsfft -pipe -col=Turn,x -suppress -window \
+            | tee parTrack.w1a.fft \
+            | sddspeakfind -pipe -column=FFTx \
+            | sddssort -pipe -column=FFTx,decr \
+            | sddsprocess -pipe -clip=1,0,invert \
+            | sddsexpand -pipe \
+            | sddscollapse -pipe \
+            | sddsprocess -pipe -define=col,Jx,"x0 sqr 2 / $betax0 /",units=m \
+            | sddsconvert -pipe -rename=col,f=nux \
+            | sddspfit -pipe=in parTrack.fft.fit -column=Jx,nux -terms=4 
+
+sddscontour -shade -waterfall=parameter=x0,indep=f,color=FFTx parTrack.w1a.fft -log=1e-6
+
+sddsplot -col=Jx,nux parTrack.fft.fit -graph=sym,fill,scale=2 -col=Jx,nuxFit parTrack.naff.fit -graph=line,type=1

@@ -1,0 +1,77 @@
+#!/bin/csh -f
+
+# Make 101 error sets. The first has zero for all errors, so we get a clean
+# fiducialization. 
+# In this example, we use some SDDS tools to make the error sets. There's really
+# no reason to do this for such simple distributions, since elegant's internal
+# error generation could do this. More complex distributions could be created
+# using sddssampledist.
+
+set ncases = 101
+
+# Make some error values for DT
+sddssequence -pipe=out -define=Step,type=long -sequence=begin=1,end=$ncases,delta=1 \
+    | sddsprocess -pipe=in dt.param \
+        "-define=col,ParameterValue,i_row 0 == ? 0 : 1e-13 2 grndl * $ " \
+        "-print=column,ElementName,MALIN" \
+        "-print=column,ElementParameter,DT" \
+        "-define=column,ElementOccurence,1,type=long" \
+        "-print=column,ParameterMode,Differential"
+
+# Make error values for the 30 LINA10 instances
+sddssequence -pipe=out -define=ElementOccurence,type=long -sequence=begin=1,end=30,delta=1 -repeat=$ncases \
+    | sddsbreak -pipe -rowlimit=30 \
+    | sddsprocess -pipe=in LINA10-phase.param \
+        "-define=col,Step,i_page,type=long" \
+        "-define=col,ParameterValue,i_page 1 == ? 0 : 0.1 2 grndl * $ " \
+        "-print=column,ElementName,LINA10" \
+        "-print=column,ElementParameter,PHASE" \
+        "-print=column,ParameterMode,Differential"
+sddssequence -pipe=out -define=ElementOccurence,type=long -sequence=begin=1,end=30,delta=1  -repeat=$ncases \
+    | sddsbreak -pipe -rowlimit=30 \
+    | sddsprocess -pipe=in LINA10-voltage.param \
+        "-define=col,Step,i_page,type=long" \
+        "-define=col,ParameterValue,i_page 1 == ? 0 : 0.1e-3 2 grndl * $ " \
+        "-print=column,ElementName,LINA10" \
+        "-print=column,ElementParameter,VOLT" \
+        "-print=column,ParameterMode,Fractional"
+
+# Make error values for the 80 LINB10 instances
+sddssequence -pipe=out -define=ElementOccurence,type=long -sequence=begin=1,end=80,delta=1  -repeat=$ncases \
+    | sddsbreak -pipe -rowlimit=80 \
+    | sddsprocess -pipe=in LINB10-phase.param \
+        "-define=col,Step,i_page,type=long" \
+        "-define=col,ParameterValue,i_page 1 == ? 0 : 0.1 2 grndl * $ " \
+        "-print=column,ElementName,LINB10" \
+        "-print=column,ElementParameter,PHASE" \
+        "-print=column,ParameterMode,Differential"
+sddssequence -pipe=out -define=ElementOccurence,type=long -sequence=begin=1,end=80,delta=1  -repeat=$ncases \
+    | sddsbreak -pipe -rowlimit=80 \
+    | sddsprocess -pipe=in LINB10-voltage.param \
+        "-define=col,Step,i_page,type=long" \
+        "-define=col,ParameterValue,i_page 1 == ? 0 : 0.1e-3 2 grndl * $ " \
+        "-print=column,ElementName,LINB10" \
+        "-print=column,ElementParameter,VOLT" \
+        "-print=column,ParameterMode,Fractional"
+
+sddscombine dt.param LINA10-phase.param LINA10-voltage.param LINB10-phase.param LINB10-voltage.param -pipe=out -merge \
+    | sddssort -pipe -column=Step \
+    | sddsbreak -pipe=in -change=Step  jitterInput.param
+\rm dt.param LINA10-phase.param LINA10-voltage.param LINB10-phase.param LINB10-voltage.param
+
+elegant jitter.ele -macro=ncases=$ncases
+
+# Make histograms of the timing and energy jitter
+foreach file (jitter.w?) 
+        sddscombine $file -merge -pipe=out \
+        | sddsprocess -pipe \
+                -process=Ct,first,Ct0 \
+                -redefine=column,dCt,"Ct Ct0 - 1e12 *",units=ps \
+                -clip=1,0 \
+        | sddsmultihist -pipe=in $file.his -bins=20 -column=Cdelta,dCt -separate
+end
+
+sddsplot -column=Cdelta,CdeltaFrequency jitter.w?.his -graph=line,vary \
+        -legend=filename,edit=Z.2f100d 
+sddsplot -column=dCt,dCtFrequency jitter.w?.his -graph=line,vary \
+        -legend=filename,edit=Z.2f100d 

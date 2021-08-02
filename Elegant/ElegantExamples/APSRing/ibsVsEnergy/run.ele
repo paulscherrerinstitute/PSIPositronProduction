@@ -1,0 +1,14 @@
+&run_setup
+        lattice = apsKick.lte,
+        use_beamline = RING
+        p_central_mev = <energy>
+        use_beamline = sector1
+        rootname = run-<energy>
+&end
+
+&twiss_output
+        matched = 1
+        radiation_integrals = 1
+        filename = %s.twi
+&end
+

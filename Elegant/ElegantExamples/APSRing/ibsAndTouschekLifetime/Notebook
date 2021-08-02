@@ -1,0 +1,15 @@
+Simple example of computing touschek lifetime with ibs-inflated emittances using
+APS lattice at 1.5 GeV
+M. Borland, 2016
+
+apsKick.lte
+        APS lattice file
+
+run.ele
+        Run twiss parameters for a cell
+
+runScript
+        Script to run everything
+
+cleanUp
+        Clean up files

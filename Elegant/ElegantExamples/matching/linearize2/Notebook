@@ -1,0 +1,22 @@
+Demonstration of removing nonlinearity from (p, x) phase space using tracking-based optimization.
+The simulation works by using a REMCOR element to remove the linear component.
+Mimimization of the residual emittance then corresponds to linearization of the phase space.
+
+M. Borland, 8/2018.
+
+lattice.lte
+        Lattice file
+
+run0.ele: initial tracking run
+        elegant run0.ele
+        sddsplot -col=p,x -graph=dot run0.out "-title=Output phase space"
+        sddsplot -col=p,x -graph=dot run0.res "-title=Output phase space with linear component removed"
+
+run1.ele: optimization run
+        elegant run1.ele
+
+run2.ele: verification run
+          elegant run2.ele
+          sddsplot -col=p,x -graph=dot,vary run0.out run2.out "-title=Output phase space" 
+          sddsplot -col=p,x -graph=dot,vary run0.res run2.res "-title=Output phase space with linear component removed"
+

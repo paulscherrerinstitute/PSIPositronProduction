@@ -1,0 +1,24 @@
+&run_setup
+        lattice = par10h.lte
+        p_central_mev = 450
+&end
+
+&twiss_output
+        filename = %s.twi
+        matched = 1
+&end
+
+&run_control
+&end
+
+&bunched_beam
+        use_twiss_command_values = 1
+        emit_x = 1e-6
+        emit_y = 1e-6
+        n_particles_per_bunch = 100000
+        distribution_cutoff[0] = 3*3,
+        enforce_rms_values[0] = 3*1
+        bunch = %s.bun
+&end
+
+&track &end

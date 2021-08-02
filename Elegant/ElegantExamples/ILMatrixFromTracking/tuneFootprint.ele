@@ -1,0 +1,30 @@
+&semaphores &end
+
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = RING,
+	p_central_mev = 6.0e3,
+        magnets = %s.mag,
+        tracking_updates = 1
+&end
+
+&run_control
+	n_steps = 1,
+        n_passes = 256,
+&end
+
+&tune_footprint
+	delta_output = %s.dtf,
+	xmin = 1e-6,
+	xmax = 0.004,
+	ymax = 0.0015,
+	delta_min = -0.015,
+	delta_max = 0.015,
+	nx = 0,
+	ny = 0,
+	ndelta = 128,
+	immediate = 1
+	ignore_half_integer = 1,
+	filtered_output = 0
+&end
+

@@ -1,0 +1,41 @@
+! Perform tracking for a single turn on the closed orbit, allowing us 
+! to get the time-of-flight on the closed orbit for better determination
+! of the rf frequency. 
+
+&semaphores
+&end
+
+&run_setup
+	lattice = lattice.lte,
+	use_beamline = ring,
+	p_central_mev = 3000,
+          tracking_updates = 0,
+          final = %s.fin
+          centroid = %s.cen
+          random_number_seed = <seed>
+          rootname = <rootname>
+&end
+
+&load_parameters
+        filename = <configuration>.param
+        exclude_item_pattern = "SYNCH_RAD"
+&end
+
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=0, &end
+
+&run_control
+&end
+
+&closed_orbit
+    output = %s.clo,
+    closed_orbit_accuracy = 1e-9,
+    closed_orbit_iterations = 500,
+    iteration_fraction = 0.1 
+    verbosity = 2
+&end
+
+&bunched_beam &end
+
+&track
+        center_on_orbit = 1
+&end

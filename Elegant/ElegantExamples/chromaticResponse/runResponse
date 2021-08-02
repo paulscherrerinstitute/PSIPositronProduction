@@ -1,0 +1,34 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+catch {exec elegant reference.ele} result
+puts stderr "$result"
+
+# Find names and positions of all quadrupoles and dipoles, ignoring all but the last slice of quads that are split
+exec sddsprocess reference.cen -pipe=out -match=col,ElementType=*QUAD*,ElementType=*BEN*,| \
+  | sddsbreak -pipe -change=ElementName \
+  | sddsprocess -pipe -clip=0,1,invert \
+  | sddscombine -pipe=in -merge -overwrite quadData.sdds
+set elementList [exec sdds2stream quadData.sdds -column=ElementName]
+set sList [exec sdds2stream quadData.sdds -column=s]
+file delete quadData.sdds reference.cen
+
+foreach element $elementList s $sList {
+    catch {exec elegant template.ele -macro=elementName=$element} result
+    puts stderr "$result"
+    exec sddsprocess $element.cen -pipe=out -clip=0,1,invert \
+      | sddscombine -pipe -merge \
+      | sddsprocess -pipe -process=Cx*,first,%s0 -process=Cx*,last,%s1 \
+      "-define=param,R16,Cx1 Cx0 - 1e-6 /,units=m" \
+      "-define=param,R26,Cxp1 Cxp0 - 1e-6 /,units=" \
+      "-define=param,s,$s,units=m" \
+      | sddscollapse -pipe=in $element.sdds
+    lappend fileList $element.sdds
+    file delete -force $element.cen
+}
+
+eval exec sddscombine $fileList -merge -overwrite response.sdds
+eval file delete $fileList
+
+exec sddsplot -column=s,R?6 response.sdds -graph=line,vary -yscale=names -legend &

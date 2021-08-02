@@ -1,0 +1,21 @@
+SDDS1
+&column name=ColumnName type=string &end
+&column name=ElementParameter type=string &end
+&column name=ElementName type=string &end
+&data mode=ascii no_row_counts=1 &end
+betax0           BETAX           RING1
+betay0           BETAY           RING1
+etax0            ETAX            RING1
+nux              NUX             RING1
+dnux/dp          NUX1M           RING1
+dnux/dp2         NUX2M           RING1
+dnux/dp3         NUX3M           RING1
+nuy              NUY             RING1
+dnuy/dp          NUY1M           RING1
+dnuy/dp2         NUY2M           RING1
+dnuy/dp3         NUY3M           RING1
+dbetax/dp        BETAX1M         RING1
+dbetay/dp        BETAY1M         RING1
+sMax             L               RING1
+alphac           ALPHAC          RING1
+alphac2          ALPHAC2         RING1

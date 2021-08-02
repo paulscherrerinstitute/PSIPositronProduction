@@ -1,0 +1,129 @@
+M0:   drift, l= 0.0
+RFD : drift, l=3.077
+IK:   drift, l=.25
+EK:   drift, l=.80
+ISL2:   drift, l=.40   
+ES1L2:  drift, l=.525  
+ES2L2:  drift, l=.875  
+QF2:  QUAD,   L = .25,   K1 =  .710565
+QD2:  QUAD,   L = .25,   K1 = -.638272
+L00 : DRIFT, L = .08275
+L03 : DRIFT, L = .1
+L01 : DRIFT, L = .1198
+L02 : DRIFT, L = .19345
+L10 : DRIFT, L = .29925
+L11 : DRIFT, L = .06875
+L1  : DRIFT, L = .1465
+L2  : DRIFT, L = .25575
+L2A : DRIFT, L = .07
+L2B : DRIFT, L = .4415
+L22 : DRIFT, L = .31325
+L23 : DRIFT, L = .08275
+L3  : DRIFT, L = 3.077
+L4  : DRIFT, L = .215
+L41 : DRIFT, L = .1101
+L44 : DRIFT, L = .1549
+B2C8P1L : DRIFT, L = 0.8184
+B2C8EKL : DRIFT, L = 1.91275
+B2C9P1L : DRIFT, L = 0.18
+B2C9ES1L: DRIFT, L = 0.55
+B2C9ES2L: DRIFT, L = 0.28775
+B4C8P1L : DRIFT, L = 1.4284
+B4C8ISL : DRIFT, L = 1.30275
+B4C9P1L : DRIFT, L = 0.34
+B4C9IKL : DRIFT, L = 3.22775
+BPM : drift, l = 0.0
+HK  : drift, L= .1155
+VK  : drift, L= .1435
+SF:  SEXT,   L = .1,    K2 = 5.86791952
+SD:  SEXT,   L = .1,    K2 = -10.6210438
+QF:  QUAD,   L = .50,   K1 =  .710565
+QD:  QUAD,   L = .50,   K1 = -.638272
+B: SBEND, L = 3.077, TILT = 0.0, ANGLE = "pi 34 /", &
+              E1 = "pi 68 /", E2 = "pi 68 /"
+b1c0: line=(qf2,l2a,bpm,l2b,rfd,l2b,bpm,l2a,qd2,qd2,&
+            l11,vk,l10,rfd,l2b,bpm,l2a,qf2)
+b1c1: line=(qf2,l23,hk,l22,b,l2b,bpm,l2a,qd2,qd2,l11,vk,l10,l3,l44,&
+            bpm,l41,sf,l1,qf2)
+b1c2: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c3: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c4: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c5: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c6: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c7: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c8: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b1c9: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l02,l01,hk,l00,qf2)
+b2c0: line=(qf2,l1,l03,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c1: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c2: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c3: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c4: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c5: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c6: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c7: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b2c8: line=(qf2,l1,sf,l41,bpm,b2c8p1l,ek,b2c8ekl,vk,l11,qd2,qd2,&
+            l2a,bpm,l2b,b,l22,hk,l23,qf2)
+b2c9: line=(qf2,l2a,bpm,b2c9p1l,es1l2,es1l2,b2c9es1l,es2l2,es2l2,&
+            b2c9es2l,vk,l11,qd2,qd2,l2a,bpm,l2b,l3,l22,hk,l23,qf2)
+b3c0: line=(qf2,l2a,bpm,l2b,rfd,l2b,bpm,l2a,qd2,qd2,&
+            l11,vk,l10,rfd,l2b,bpm,l2a,qf2)
+b3c1: line=(qf2,l23,hk,l22,b,l2b,bpm,l2a,qd2,qd2,l11,vk,l10,l3,l44,&
+            bpm,l41,sf,l1,qf2)
+b3c2: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c3: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c4: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c5: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c6: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c7: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c8: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l44,bpm,l41,sf,l1,qf2)
+b3c9: line=(qf2,l23,hk,l22,b,l44,bpm,l41,sd,l1,qd2,qd2,&
+            l11,vk,l10,b,l02,l01,hk,l00,qf2)
+b4c0: line=(qf2,l1,l03,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c1: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c2: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c3: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c4: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c5: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c6: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c7: line=(qf2,l1,sf,l41,bpm,l44,b,l10,vk,l11,qd2,qd2,&
+            l1,sd,l41,bpm,l44,b,l22,hk,l23,qf2)
+b4c8: line=(qf2,l1,sf,l41,bpm,b4c8p1l,isl2,isl2,b4c8isl,vk,l11,qd2,qd2,&
+            l2a,bpm,l2b,b,l22,hk,l23,qf2)
+b4c9: line=(qf2,l2a,bpm,b4c9p1l,ik,b4c9ikl,vk,l11,qd2,qd2,&
+            l2a,bpm,l2b,l3,l22,hk,l23,qf2)
+boost1: line=(b1c0,b1c1,b1c2,b1c3,b1c4,b1c5,b1c6,b1c7,b1c8,b1c9)
+boost2: line=(b2c0,b2c1,b2c2,b2c3,b2c4,b2c5,b2c6,b2c7,b2c8,b2c9)
+boost3: line=(b3c0,b3c1,b3c2,b3c3,b3c4,b3c5,b3c6,b3c7,b3c8,b3c9)
+boost4: line=(b4c0,b4c1,b4c2,b4c3,b4c4,b4c5,b4c6,b4c7,b4c8,b4c9)
+BOOST: LINE=(boost1,boost2,boost3,boost4)
+return

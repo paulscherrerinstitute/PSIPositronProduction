@@ -1,0 +1,68 @@
+Example of elastic scattering tracking and analysis.
+M. Borland (APS)
+
+===
+Files
+
+PARPressure2015-11-11.sdds
+        Pressure data for several species, provided by J. Carter (APS).
+parTrack.lte
+        Lattice file
+run1.ele
+        File to run elastic_scattering command
+
+===
+Sequence
+
+* Run Pelegant
+mpiexec -np 18 Pelegant run1.ele 
+
+Output files
+       run1.mag --- Magnet profile
+       run1.twi --- Twiss parameters
+       run1.eslog --- Elastic scattering log file
+       run1.eslos --- Elastic scattering los record file
+       run1.esout --- Elastic scattering output (residual electrons) file
+
+* Postprocess
+
+ + Interpolate pressure data with uniform spacing over the entire region of the lattice
+sMin=`sddsprocess run1.twi -pipe=out -process=s,min,%sMin | sdds2stream -pipe -parameter=sMin`
+sMax=`sddsprocess run1.twi -pipe=out -process=s,max,%sMax | sdds2stream -pipe -parameter=sMax`
+sddsinterp PARPressure2015-11-11.sdds PARPressure2015-11-11.sdds.interp -column=s,* \
+           -sequence=1000,$sMin,$sMax -below=extrapolate -above=extrapolate
+
+ + Sort the scattering results file
+sddssort -column=s run1.eslos run1.eslos.sort
+
+elasticScatteringAnalysis run1.eslos.sort run1.esanal -twiss=run1.twi -pressure=PARPressure2015-11-11.sdds.interp -verbose
+
+Output files
+       run1.esanal.sdds --- Main analysis file.
+                   Has lifetime and total scattering rate parameters.
+                   Also has total scattering rate from each scattering location
+       run1.esanal.full --- Full analysis output
+                   Has one page for each scattering location s, giving scattering coordinates (xp, yp, theta, phi),
+                   loss coordinates (xLost, yLost, deltaLost, sLost), and rate.
+
+* Example plots and follow-on analysis
+  * Add column with the log of the rate, then plot scattering angles (xp, yp) for each scattering location, color-coded by rate.
+sddsprocess run1.esanal.full -pipe=out \
+            -define=col,logRate,"rate log" \
+            | sddsxref -pipe run1.eslos.sort -take=* \
+            | sddssort -pipe -column=s,incr \
+            | sddsbreak -pipe -change=s \
+            | sddsprocess -pipe=in run1.esanal.full1 -process=s,first,s0
+
+sddsplot -col=xp,yp run1.esanal.full1 -split=col=logRate,page -sep=page -order=temperature \
+         -graph=sym,vary=subtype,fill  -title=@s0,edit="i/Scattering from s =/ei/m/"
+
+  * Plot lost distribution histogram and cumulative distribution function
+sddshist run1.esanal.full run1.esanal.his -size=0.010 -cdf -data=sLost -weight=rate 
+sddsplot -layout=1,2 -join=x -col=sLost,frequency run1.esanal.his -end -col=sLost,sLostCdf run1.esanal.his 
+
+  * Plot rate-weight transverse loss coordinates (we only look at yLost>=0 since tracking is only for phi>=0)
+sddsprocess run1.esanal.full1 -pipe=out -filter=col,yLost,0,1 \
+            | sddshist2d -pipe=in xyHist.h2d -col=xLost,yLost -xparam=100 -yparam=50 -weight=rate
+sddscontour -shade xyHist.h2d -log=1e-12 
+

@@ -1,0 +1,15 @@
+Example of scanning the beam energy and computing the effect on the emittance.
+
+M. Borland, 2017
+
+apsKick.lte
+        APS lattice file
+
+run.ele
+        Computes twiss parameters and radiation-damped emittance for a specified energy
+
+runScript
+        Script to run everything
+
+cleanUp
+        Clean up files

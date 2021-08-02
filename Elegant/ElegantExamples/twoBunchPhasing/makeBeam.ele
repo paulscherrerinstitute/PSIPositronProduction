@@ -1,0 +1,22 @@
+&run_setup
+        lattice = lattice.lte
+        use_beamline = bd,
+        p_central_mev = 10
+        output = %s.out
+&end
+
+&run_control
+        n_steps = 2
+        bunch_frequency = "(2856e6 4 *)"
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 1000
+        beta_x = 1
+        beta_y = 1
+        sigma_dp = 1e-4
+        sigma_s = "(1e-12 c_mks *)",
+        distribution_type[0] = 3*"gaussian"
+&end
+
+&track &end

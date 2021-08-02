@@ -1,0 +1,32 @@
+! Scan the quadrupole strength and find acceptance
+
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 1000,
+        use_beamline = bl
+        losses = %s.los
+        acceptance = %s.acc
+        centroid = %s.cen,
+        sigma = %s.sig,
+        final = %s.fin
+&end
+
+&run_control
+        n_indices = 1
+&end
+
+&vary_element name=QF1, item=K1, initial=0, final=1, index_number=0, index_limit=21 &end
+&vary_element name=QD1, item=K1, initial=0, final=-1, index_number=0, index_limit=21 &end
+
+! Throw a large beam down the beamline
+&bunched_beam
+        n_particles_per_bunch = 1000,
+        beta_x = 100, emit_x = 1e-6,
+        beta_y = 100, emit_y = 1e-6,
+        distribution_type[0] = "uniform-ellipse", "uniform-ellipse",
+        distribution_cutoff[0] = 1,1
+        one_random_bunch = 1
+        bunch = %s.bun
+&end
+
+&track &end

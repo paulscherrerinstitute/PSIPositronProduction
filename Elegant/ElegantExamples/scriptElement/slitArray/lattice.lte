@@ -1,0 +1,3 @@
+q: charge,total=1e-9
+s1: script,command="slitArray %i %o 2 1.25"
+bl: line=(q,s1)

@@ -1,0 +1,94 @@
+! Match beta functions through the emittance measurement section
+
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        ! Beamline is from exit of the bunch compressor chicane to the last fluorescent screen (L3FS5) in the three-screen system
+        use_beamline = ECCToL3FS5,
+        p_central_mev = 150,
+        always_change_p0 = 1,
+        final = %s.fin
+        parameters = %s.param
+&end
+
+! This command sets up Twiss parameter computation, using as it's starting
+! point some values stored in a previous simulation output. One can also give
+! the values explicitly using the beta_x, beta_y, alpha_x, etc. parameters
+
+&twiss_output
+        matched = 0,
+        output_at_each_step = 1,
+        reference_file = part1.twi,
+&end
+
+&optimization_setup
+        mode = "minimize", method = "simplex",
+        n_restarts = 3,
+        n_evaluations = 1500, n_passes = 3,
+        log_file = /dev/tty,
+        verbose = 0
+&end
+
+! Match to ideal lattice functions for three-screen system
+! For the three-screen system, the screen-to-screen distance is ds=0.963216006 .
+! To get 60 deg phase advance between screens, want beta=ds/tan(60) at the center
+! screen with alpha=0.
+
+&optimization_term
+        term = "L3:FS4#1.betax 0.963216006 60 dtan / .001 sene" &end
+&optimization_term
+        term = "L3:FS4#1.alphax 0 0.001 sene" &end
+
+&optimization_term
+        term = "L3:FS4#1.betay 0.963216006 60 dtan / .001 sene" &end
+&optimization_term
+        term = "L3:FS4#1.alphay 0 0.001 sene" &end
+
+&optimization_variable
+        name = L3:QM3, item = K1, lower_limit=-30, upper_limit=30, step_size=0.1 &end
+&optimization_variable
+        name = L3:QM4, item = K1, lower_limit=-30, upper_limit=30, step_size=0.1 &end
+&optimization_variable
+        name = L3:QM5, item = K1, lower_limit=-30, upper_limit=30, step_size=0.1 &end
+&optimization_variable
+        name = L3:QM6, item = K1, lower_limit=-30, upper_limit=30, step_size=0.1 &end
+
+&run_control
+&end
+
+&bunched_beam
+&end
+
+&optimize &end
+
+! Evaluate the solution we just found
+
+&run_setup
+        lattice = full457MeV.lte,
+        default_order = 1,
+        use_beamline = L1OToL3FS5,
+        expand_for = beamFile.sdds,
+        always_change_p0 = 1,
+        magnets = %s.mag
+&end
+
+! Load the K1 values from the solutions found previously and just now
+
+&load_parameters
+        filename = part1.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+&load_parameters
+        filename = part2.param,
+        change_defined_values = 1
+        include_item_pattern = K1
+&end
+
+&twiss_output
+        matched = 0,
+        filename = %s.twi,
+        reference_file = beamFile.sdds.twi,
+        reference_element = _BEG_
+&end
+

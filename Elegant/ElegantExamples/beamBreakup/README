@@ -1,0 +1,28 @@
+Example of simulating beam-driven deflecting rf mode in a simple linac.
+M. Borland, 3/2016
+
+====
+
+Files
+
+lattice.lte
+	Lattice file
+	Includes 1 linac structure and 1 dipole mode
+	
+run1.ele
+	elegant command input file. Runs 3000 bunches at 2856 MHz	
+
+====
+
+Sequence
+
+!! Run simulation. Should take ~30s or less
+elegant run1.ele
+!! Plot <x'> vs <t>
+sddsplot -parameter=Ct,Cxp run1.fin
+!! Plot (t-<t>, x') for each bunch, color-coded by bunch number
+sddsprocess run1.out -redefine=col,dt,"t Step 1 - 2856e6 / -",units=s
+sddsplot -column=dt,xp run1.out -split=page -order=spectral -graph=dot,vary
+!! Plot voltage in the mode vs time. Note that this is the amplitude of the
+!! voltage, not the voltage seen by the beam.
+sddsplot -column=t,Vx run1.m1

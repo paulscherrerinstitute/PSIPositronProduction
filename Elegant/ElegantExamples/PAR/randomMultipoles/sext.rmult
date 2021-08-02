@@ -1,0 +1,29 @@
+SDDS1
+&parameter name=MagnetType, type=string, fixed_value=sextupole &end
+&parameter name=BoreRadius, type=double, fixed_value=6.000000e-02, units=m &end
+&parameter name=EffectiveLength, type=double, fixed_value=2.300000e-01, units=m &end
+&parameter name=SxPole, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SyPole, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SxSplit, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SySplit, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=SphiHalves, type=double, fixed_value=1.000000e-04 &end
+&parameter name=SrPole, type=double, units=m, fixed_value=1.000000e-04 &end
+&parameter name=referenceRadius, type=double, fixed_value=6.000000e-02, units=m &end
+&column name=order, type=long &end
+&column name=an, type=double &end
+&column name=bn, type=double &end
+&data mode=ascii no_row_counts=1 &end
+1 1.341411e-03 1.287752e-03
+2 5.767514e-03 2.100126e-03
+3 1.381411e-03 1.458802e-03
+4 1.861072e-03 1.098616e-03
+5 1.134905e-03 2.430823e-04
+6 9.046233e-04 5.926414e-04
+7 3.192805e-04 3.377687e-04
+8 4.658807e-04 1.739709e-04
+9 8.815676e-06 7.106983e-06
+10 4.043012e-05 6.929248e-05
+11 4.662102e-05 3.896739e-05
+12 6.283738e-05 5.182355e-05
+13 3.476852e-05 3.684410e-05
+14 5.666722e-05 3.160586e-05

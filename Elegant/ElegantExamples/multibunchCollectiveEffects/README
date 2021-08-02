@@ -1,0 +1,9 @@
+APS-24Bunch-CBI
+        Example of simulating APS 24 bunch mode with ILMATRIX method, short-range 
+        wakes, cavity HOMs, harmonic bunch-lengthening cavity (we don't really have one),
+        main cavity with beam loading and rf feedback, and bunch-by-bunch feedback.
+
+ILMatrixFromTracking
+        Example of determining the parameters for ILMATRIX from tracking. More reliable
+        than using values from twiss_output, as done for APS-24Bunch-CBI. The ILMatrix.sdds
+        file from here can be used in place of the file generated in APS-24Bunch-CBI.

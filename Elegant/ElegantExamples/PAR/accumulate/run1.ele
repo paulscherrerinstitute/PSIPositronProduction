@@ -1,0 +1,18 @@
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 450
+        output = %s.out
+        use_beamline = BL
+        semaphore_file = %s.done
+&end
+
+&twiss_output matched=1, radiation_integrals=1 &end
+
+&run_control n_passes = 50000 &end
+
+&sdds_beam
+       input = bunch.out,
+&end
+
+&track &end
+

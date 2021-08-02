@@ -1,0 +1,19 @@
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 5
+        output = %s.out
+&end
+
+&run_control
+&end
+
+&bunched_beam
+        n_particles_per_bunch = 100000
+        beta_x = 100
+        beta_y = 100
+        emit_x = 1e-5
+        emit_y = 1e-5
+&end
+
+&track &end
+

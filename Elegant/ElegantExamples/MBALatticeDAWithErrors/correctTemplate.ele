@@ -1,0 +1,100 @@
+! Part 1 of 2: Add errors, perform correction with no momentum error, K2=0
+
+&semaphores
+&end
+
+&run_setup
+	lattice =lattice.lte,
+	use_beamline = ring,
+	p_central_mev = 3000,
+          tracking_updates = 0,
+          rootname = <rootname>
+          random_number_seed = <seed>
+&end
+
+! Turn of SR to avoid confusion of the orbit correction by the decay of energy vs s
+! In real machine, this should presumably be subtracted off from BPM offsets.
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=0 &end
+
+&run_control
+&end
+
+&error_control error_log = %s.erl &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KQUAD, item = DX, bind = 0, amplitude = 40e-6 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KQUAD, item = DY, bind = 0, amplitude = 40e-6 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KSEXT, item = DX, bind = 0, amplitude = 40e-6 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KSEXT, item = DY, bind = 0, amplitude = 40e-6 &end
+&error_element name = be1, type = gaussian, cutoff = 1.0, element_type=CSBEN, item = DX, bind = 0, amplitude = 40e-6 &end
+&error_element name = be1, type = gaussian, cutoff = 1.0, element_type=CSBEN, item = DY, bind = 0, amplitude = 40e-6 &end
+&error_element name = be2, type = gaussian, cutoff = 1.0, element_type=CSBEN, item = DX, bind = 0, amplitude = 40e-6 &end
+&error_element name = be2, type = gaussian, cutoff = 1.0, element_type=CSBEN, item = DY, bind = 0, amplitude = 40e-6 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KQUAD, item = FSE, bind = 0, amplitude = 4.00e-4 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KSEXT, item = FSE, bind = 0, amplitude = 4.00e-4 &end
+&error_element name = be1, type = gaussian, cutoff = 1.0, element_type=CSBEN,item = FSE, bind = 0, amplitude = 1e-4 &end
+&error_element name = be2, type = gaussian, cutoff = 1.0, element_type=CSBEN,item = FSE, bind = 0, amplitude = 1e-4 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KQUAD, item = TILT, bind = 0, amplitude = 1.0e-4 &end
+&error_element name = *, type = gaussian, cutoff = 1.0, element_type=KSEXT, item = TILT, bind = 0, amplitude = 1.0e-4 &end
+&error_element name = be1, type = gaussian, cutoff = 1.0, element_type=CSBEN,item = ETILT, bind = 0, amplitude = 1.0e-4 &end
+&error_element name = be2, type = gaussian, cutoff = 1.0, element_type=CSBEN,item = ETILT, bind = 0, amplitude = 1.0e-4 &end
+
+&bunched_beam &end
+&track &end
+
+! Part 2 of 2: Ramp up the sextupoles
+
+&run_setup
+	lattice =lattice.lte,
+	use_beamline = ring,
+	p_central_mev = 3000,
+          tracking_updates = 0,
+          parameters = %s.param
+          rootname = <rootname>
+          final = %s.fin
+&end
+
+&twiss_output
+        output_at_each_step = 1,
+        filename = %s.twi,
+&end
+
+&load_parameters
+        filename = %s.erl,
+        change_defined_values = 1
+        force_occurence_data = 1
+&end
+&alter_elements name=*, type=CSBEND, item=SYNCH_RAD, value=0 &end
+
+&run_control
+        n_indices = 1
+&end
+
+&vary_element name="S1A:S1", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S2", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S3", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S4", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S5", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S6", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S7", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+&vary_element name="S1A:S8", item=FSE, initial=-1, final=0, index_number=0, index_limit=<rampSteps>, differential=1 &end
+
+&correct
+    disable = 0,
+    mode = "orbit", method = "global",
+    verbose = 1, n_iterations = 4, n_xy_cycles = 100,
+    correction_fraction[0] = 0.5, 0.5,
+    bpm_noise[0] = 0e-6, 0e-6,
+    correction_accuracy[0] = 1e-6, 1e-6,
+    trajectory_output = "%s.orb",
+    corrector_output = "%s.cor",
+    statistics = "%s.scor",
+    closed_orbit_iteration_fraction = 0.1
+    closed_orbit_iterations = 500,
+    closed_orbit_accuracy = 1e-9,
+    prezero_correctors = 0,
+    keep_largest_SVs[0] = 0, 0
+&end
+
+&bunched_beam &end
+
+&track
+&end

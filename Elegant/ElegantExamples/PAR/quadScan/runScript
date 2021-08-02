@@ -1,0 +1,17 @@
+#!/bin/csh
+
+# Make a file containing delta values for Q1 and Q2
+sddssequence -pipe=out -define=Step,type=short -seq=begin=0,end=10,delta=1 \
+| sddsprocess -pipe=in quadProgram.sdds \
+-define=col,Q1Delta,".01 i_row *" \
+-define=col,Q2Delta,"-0.01 i_row *"
+
+elegant run.ele
+
+sddsxref run.twi run.fin '-leave=*' '-transfer=param,*'
+
+sddsplot '-param=Q1.K1,nu?' '-param=Q2.K1,nu?' run.twi -graph=sym,scale=2 -layout=2,2 -sep=1
+
+sddsplot -layout=1,3 '-column=s,beta?' -col=s,etax run.twi -split=page -graph=line,vary -order=spect -unsup=y -group=names -sep=names  \
+    -column=s,Profile run.mag -overlay=xmode=norm,yfact=0.04 -omni
+

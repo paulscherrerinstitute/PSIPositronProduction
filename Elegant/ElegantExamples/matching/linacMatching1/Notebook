@@ -1,0 +1,22 @@
+These files give an example of matching a linac in steps.
+
+part1.ele
+        Match from the photoinjector to the last dipole in the compressor chicane
+
+part2.ele
+        Match from the last dipole in the chicane through the three-screen emittance
+        measurument section
+
+part3.ele
+        Match from the three-screen system to the end of the linac
+
+More details are in the .ele files.
+
+Other files
+beamFile.sdds           beam file from photoinjector simulation
+beamFile.sdds.twi       sddsanalyze beam analysis of beamFile.sdds, used to give
+                        starting Twiss parameters for matching
+cleanUp                 Script to clean up working files
+full457MeV.lte          Lattice file
+knsl45.liwake.sdds      Wakefield file
+und.matrix457           Matrix for undulator (not really used)

@@ -1,0 +1,6 @@
+! Single period, used for kickmap tracking
+cw1: cwiggler,l=0.080,b_max=5.75,periods=1,by_file="harmonics.sdds"
+bl1: line=(cw1)
+! Full device, used for comparison with kickmap tracking
+cw39: cwiggler,l="0.080 39 *",b_max=5.75,periods=39,by_file="harmonics.sdds"
+bl39: line=(cw39)

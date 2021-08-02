@@ -1,0 +1,65 @@
+#!/bin/sh  
+# \
+exec tclsh "$0" "$@"
+
+# <setupFile> is an initial set of elegant input commands
+# <updateFile> is a set of elegant input commands to run repeatedly
+# <watchFile> is a trigger file. When it changes, the <updateFile> commands
+# are executed
+
+set usage "runServer <setupFile> <updateFile> <watchFile>"
+if [llength $argv]!=3 {
+   return -code error "$usage"
+}
+
+set setupFile [lindex $argv 0]
+set updateFile [lindex $argv 1]
+set watchFile [lindex $argv 2]
+
+if [catch {open $setupFile r} fds] {
+   return -code error "$fds"
+}
+
+if [catch {open $updateFile r} fdu] {
+    return -code error $fdu
+}
+set updateText ""
+while {![eof $fdu]} {
+    append updateText [gets $fdu]
+    append updateText "\n"
+}
+
+
+if [catch {open "|elegant -pipe" w} fde] {
+   return -code error "$fde"
+}
+
+# Read from the setup file and send to elegant
+while {![eof $fds]} {
+    puts $fde [gets $fds]
+}
+flush $fde
+
+# Wait for the watch file to change/exist
+set watchSeen 0
+while {1} {
+    set triggered 0
+    if $watchSeen {
+	set t1 [file mtime $watchFile]
+	if [expr $t1!=$t0] {
+	    set t0 $t1
+	    set triggered 1
+	}
+    } else {
+	set t0 [file mtime $watchFile]
+	set triggered 1
+	set watchSeen 1
+    }
+
+    if $triggered {
+	puts $fde "$updateText"
+	flush $fde
+    }
+    after 100
+}
+

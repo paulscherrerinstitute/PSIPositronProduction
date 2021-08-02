@@ -1,0 +1,43 @@
+! Scan strength of Q<n> for an offset of 1mm in x and y
+
+&run_setup
+        lattice = ltp375MeV.lte,
+        default_order = 1,
+        use_beamline = "LTP",
+        p_central_mev = 375
+	rootname = scan-Q<n>,
+        magnets = %s.mag
+	final = %s.fin
+	centroid = %s.cen
+&end
+
+&alter_elements name=LTP:Q<n>, item=DX, value=1e-3 &end
+&alter_elements name=LTP:Q<n>, item=DY, value=1e-3 &end
+
+&twiss_output
+        matched = 0,
+	output_at_each_step = 1
+        filename = %s.twi
+        beta_x = 9.245905e+00,
+        beta_y = 1.553086e+01,
+        alpha_x = -7.431876e-01,
+        alpha_y = 1.071413e+00 
+&end
+
+&run_control
+	n_indices = 1
+&end
+
+&vary_element name=LTP:Q<n>, item=K1, initial=0.8, final=1.2, multiplicative=1, index_number=0, index_limit=11 &end
+
+&bunched_beam
+	use_twiss_command_values = 1
+	emit_x = 1e-7,
+	emit_y = 1e-7,
+	distribution_type[0] = "uniform-ellipse", "uniform-ellipse",
+	one_random_bunch = 1
+	limit_in_4d = 1
+	n_particles_per_bunch = 10000
+&end
+
+&track &end

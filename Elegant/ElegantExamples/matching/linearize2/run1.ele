@@ -1,0 +1,43 @@
+&run_setup
+        lattice = lattice.lte
+        p_central_mev = 1e3
+        final = %s.fin
+        parameters = %s.param
+        use_beamline = BL
+&end
+
+&run_control
+&end
+
+&optimization_setup
+        method = simplex, mode = minimize,
+        tolerance = 1e-14
+        target = 1e-11
+        verbose = 0
+        log_file = /dev/tty
+        n_passes = 3
+        n_evaluations = 500,
+        n_restarts = 1
+&end
+
+&optimization_term
+        term = "ex" &end
+
+&optimization_variable
+        name = S1, item = K2, lower_limit = -1e4, upper_limit=1e4, step_size = 1 &end
+&optimization_variable
+        name = S2, item = K2, lower_limit = -1e4, upper_limit=1e4, step_size = 1 &end
+&optimization_variable
+        name = S3, item = K2, lower_limit = -1e4, upper_limit=1e4, step_size = 1 &end
+
+&bunched_beam
+        one_random_bunch = 1
+        n_particles_per_bunch = 1000
+        emit_x = 1e-11
+        beta_x = 10
+        emit_y = 0,
+        sigma_dp = 5e-2
+&end
+
+&optimize &end
+

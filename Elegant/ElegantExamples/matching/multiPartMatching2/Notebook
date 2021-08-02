@@ -1,0 +1,5 @@
+Example of matching a ring with three types of cells.
+
+match1  Match the main cells with alternating horizontal beam size
+match2  Match the tune using two other cells
+match3  Combine, correct chromaticity, compute full-ring parameters

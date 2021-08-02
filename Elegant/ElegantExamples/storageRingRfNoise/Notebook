@@ -1,0 +1,38 @@
+Example of including rf phase and amplitude noise in a tracking simulation.
+An ILMATRIX element is used to model the ring, in order to speed up the simulations.
+We determine the amount of beam centroid motion resulting from the noise.
+M. Borland, 2015
+
+140mA_AM_noise.sdds
+        Fractional amplitude error vs time. This file is from T. Berenc for the APS storage ring.
+
+S3637CavPhs.sdds
+        Differential phase error vs time. This file is from T. Berenc for the APS storage ring.
+
+aps.lte
+        Lattice file
+
+run0.ele
+        Initial run. Creates files needed by subsequent runs.
+
+ILMatrixSetup
+ILMatrix.xref
+        Used to create ILMatrix.sdds, used by run1.ele and run2.ele to configure the ILMATRIX element.
+
+SREffects.xref
+SREffectsSetup
+        Used to create SREffects.sdds, used by run1.ele and run2.ele to configure the SREFFECTS element.
+
+run1.ele
+        Run without any errors
+run2.ele
+        Run with phase and amplitude errors
+
+Sequence of runs:
+% elegant run0.ele
+% ILMatrixSetup
+% SREffectsSetup
+% elegant run1.ele
+% elegant run2.ele
+% sddsplot -col=Pass,dCt run1.wpar run2.wpar -graph=dot,vary
+% sddsplot -col=Pass,Cdelta run1.wpar run2.wpar -graph=dot,vary
