@@ -20,7 +20,7 @@ function do_compile(){
   
   NCore=$(nproc --all)
   
-  cmake -DGeant4_DIR=${G4_CMAKE_DIR} ${PD}/${obj_name}
+  cmake3 -DGeant4_DIR=${G4_CMAKE_DIR} ${PD}/${obj_name}
   
   make clean
   make -j ${NCore} ${obj_name}
