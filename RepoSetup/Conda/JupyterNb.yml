@@ -1,0 +1,10 @@
+name: JupyterNb
+channels:
+  - http://conda-pkg.intranet.psi.ch
+  - defaults
+dependencies:
+  - python=3.8
+  - jupyter
+  - pandas
+  - matplotlib
+prefix: C:\Anaconda\envs\JupyterNb
