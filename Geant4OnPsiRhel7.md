@@ -34,11 +34,13 @@ $ sudo yum install devtoolset-10
 $ scl enable devtoolset-10 bash
 ```
 
-For more details, see
+For more details, see:
+
 https://access.redhat.com/documentation/en-us/red_hat_developer_toolset/10/html/user_guide
+
 or
+
 https://developers.redhat.com/products/developertoolset/hello-world
-.
 
 
 ### Cmake3
