@@ -43,7 +43,7 @@ https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.h
 
 #### VSCode on PSI RHEL7
 
-See [How to build VSCode from source on PSI RHEL7](VSCodeOnPsiRhel7) if you want to keep going with VSCode on RHEL7.
+See [How to build VSCode from source on PSI RHEL7](VSCodeOnPsiRhel7.md) if you want to keep going with VSCode on RHEL7.
 
 
 ### Clone the repository
