@@ -1,0 +1,93 @@
+[
+    {
+        "id": "G4_YongkeReference",
+        "description": "FCCee Target Tracking with parameters originally provided by Yongke, matching those of Irina.",
+        "workflow": "geant4",
+        "beamIni": {
+            "particleType": "electrons",
+            "E": 6000.0,
+            "sigmaX": 1.5,
+            "sigmaY": 1.5,
+            "sigmaZ": 1.0,
+            "sigmaXp": 1e-5,
+            "sigmaYp": 1e-5,
+            "sigmaE": 1e-3
+        },
+        "amorphousTarget": {
+            "type": "tungsten5X0",
+            "Lx": 100.0,
+            "Ly": 100.0,
+            "Lz": 17.5
+        }
+    },
+    {
+        "id": "E_QuadOnTwSameLength",
+        "description": "Simple setup in Elegant where we try to overlap a quadrupole and an RF structure with the same length.",
+        "workflow": "elegant",
+        "beamIni": {
+            "particleType": "positrons",
+            "z": 0.0,
+            "E": 200.0,
+            "gamma": 392.2,
+            "sigmaX": 5.0,
+            "sigmaY": 5.0,
+            "emitnX": 8000.0,
+            "emitnY": 8000.0,
+            "betaX": 1230.0,
+            "betaY": 1230.0,
+            "alphaX": 0,
+            "alphaY": 0
+        },
+        "rf_1": {
+            "type": "SW, S-band",
+            "zStart": 0.0,
+            "zEnd": 500.0,
+            "rAperture": 20.0,
+            "Eacc": 18e-3
+        },
+        "quad_1": {
+            "Bx": 7.5,
+            "k": 11.243,
+            "zStart": 0.0,
+            "zEnd": 500.0
+        },
+        "beamOut": {
+            "z": 500.0
+        }
+    },
+    {
+        "id": "E_ShorterQuadOnLongerTw",
+        "description": "Simple setup in Elegant where we try to overlap a quadrupole in the central part of an RF structure.",
+        "workflow": "elegant",
+        "beamIni": {
+            "particleType": "positrons",
+            "z": 0.0,
+            "E": 200.0,
+            "gamma": 392.2,
+            "sigmaX": 5.0,
+            "sigmaY": 5.0,
+            "emitnX": 8000.0,
+            "emitnY": 8000.0,
+            "betaX": 1230.0,
+            "betaY": 1230.0,
+            "alphaX": 0,
+            "alphaY": 0
+        },
+        "rf_1": {
+            "type": "SW, S-band",
+            "zStart": 0.0,
+            "zEnd": 1250.0,
+            "rAperture": 20.0,
+            "Eacc": 18e-3
+        },
+        "quad_1": {
+            "Bx": 7.5,
+            "k": 11.243,
+            "zStart": 525.0,
+            "zEnd": 725.0
+        },
+        "beamOut": {
+            "z": 1250.0
+        }
+    }
+]
