@@ -18,7 +18,7 @@ function update_path() {
 
 
 # One could also loop over the env variables: declare -a PY_ENV_VARS=("PYTHONPATH" "JUPYTER_PATH") ...
-declare -a MODULE_REL_DIRS=(".")
+declare -a MODULE_REL_DIRS=("..")
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
