@@ -74,19 +74,7 @@ Set the environment paths to declare the location of the different Python module
 
 ### Geant4 simulations
 
-#### FCCee target reference example
-
-Build the example and execute it:
-
-```shell
-$ cd GIT_PSIPositronProduction/Geant4/FCCeeTargetRefExample/run_Injector
-$ ./compile.sh
-$ ./run.sh
-```
-
-This bashscript basically executes `../Injector_build/injector`.
-
-The results can be analyzed with Jupyter Notebooks, see `JupyterNb.ipynb`.
+* [FCC-ee Target Tracking](FCCeeTargetTracking.md) (reference example)
 
 
 ### Elegant simulations
