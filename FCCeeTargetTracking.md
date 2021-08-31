@@ -3,6 +3,11 @@
 This represents our reference example in Geant4.
 
 
+## On this page
+
+[[_TOC_]]
+
+
 ## Building and executing the code
 
 ### On a personal Linux machine
@@ -38,9 +43,9 @@ First, login on a Merlin6 [login node](https://lsm-hpce.gitpages.psi.ch/merlin6/
 Load the necessary modules:
 
 ```shell
-module load gcc/7.3.0
-module load geant4/10.5_multithreaded
-module load root/6.12.06
+$ module load gcc/7.3.0
+$ module load geant4/10.5_multithreaded
+$ module load root/6.12.06
 ```
 
 Compile the code like on a personal machine:
@@ -53,13 +58,13 @@ $ ./compile.sh
 To run the simulation, a job must be submitted to the queue through [Slurm](https://slurm.schedmd.com):
 
 ```shell
-sbatch run_Merlin.sh
+$ sbatch run_Merlin.sh
 ```
 
 To check the progress of your job:
 
 ```shell
-squeue
+$ squeue
 ```
 
 

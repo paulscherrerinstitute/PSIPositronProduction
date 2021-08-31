@@ -21,3 +21,6 @@ elif [[ $ncore -eq 1 ]];then
 fi
  
 root -l -b -q show_N_positrons.C
+
+## Convert to Pcubed standard format
+python convert_fcceett_to_standard_df.py ${output_filename}.root
