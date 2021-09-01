@@ -2,14 +2,14 @@
 #SBATCH --cluster=merlin6                 # Cluster name
 #SBATCH --partition=hourly,daily,general  # Specify one or multiple partitions
 #SBATCH --time=00:15:00                   # Strongly recommended
-#SBATCH --hint=nomultithread              # Mandatory for multithreaded jobs
-#SBATCH --cpus-per-task=24                # Uncomment and specify the number of cores per task
+#SBATCH --hint=multithread                # Mandatory for multithreaded jobs
+#SBATCH --ntasks=1                        # Uncomment and specify #nodes to use
+#SBATCH --cpus-per-task=44                # Uncomment and specify the number of cores per task
+#SBATCH --exclusive                       # Uncomment if you need exclusive node usage
 
 ## Additional available options
-##SBATCH --exclusive                      # Uncomment if you need exclusive node usage
 ##SBATCH --ntasks-per-core=1              # Only mandatory for multithreaded single
 ##SBATCH --nodes=1                        # Uncomment and specify #nodes to use
-##SBATCH --ntasks=44                      # Uncomment and specify #nodes to use
 ##SBATCH --ntasks-per-node=44             # Uncomment and specify #tasks per node
 ##SBATCH --output=<output_file>           # Generate custom output file
 ##SBATCH --error=<error_file>             # Generate custom error  file
@@ -26,7 +26,7 @@ output_filename=FCCeeTargetTracking
 
 ## TODO: Understand how to use multiple cores on Merlin6
 ## ncore=$(nproc --all)
-ncore=$SLURM_NTASKS
+ncore=$SLURM_CPUS_PER_TASK
   
 ## options: "all", "primary", "photon_emit", "xtal_leave", "amor_arrive", "amor_leave", "amd_arrive","amd_leave"
 tree_option="all"
