@@ -4,10 +4,10 @@
 #SBATCH --time=00:15:00                   # Strongly recommended
 #SBATCH --hint=multithread                # Mandatory for multithreaded jobs
 #SBATCH --ntasks=1                        # Uncomment and specify #nodes to use
-#SBATCH --cpus-per-task=44                # Uncomment and specify the number of cores per task
-#SBATCH --exclusive                       # Uncomment if you need exclusive node usage
+#SBATCH --cpus-per-task=32                # Uncomment and specify the number of cores per task
 
 ## Additional available options
+##SBATCH --exclusive                       # Uncomment if you need exclusive node usage
 ##SBATCH --ntasks-per-core=1              # Only mandatory for multithreaded single
 ##SBATCH --nodes=1                        # Uncomment and specify #nodes to use
 ##SBATCH --ntasks-per-node=44             # Uncomment and specify #tasks per node
@@ -49,4 +49,5 @@ root -l -b -q show_N_positrons.C
 module purge
 module load anaconda/2019.07
 conda activate hep_root
+source ../../../RepoSetup/Set_Pythonpath.sh
 python convert_fcceett_to_standard_df.py ${output_filename}.root
