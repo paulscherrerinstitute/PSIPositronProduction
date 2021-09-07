@@ -3,10 +3,6 @@
 Currently (11.08.2021), the official Linux system at PSI is Red Hat Enterprise Linux Server 7.9 (RHEL7).
 In this page we provide specific, step-by-step instructions to install Geant4 on the mentioned system.
 
-## On this page
-
-[[_TOC_]]
-
 
 ## Reference page
 

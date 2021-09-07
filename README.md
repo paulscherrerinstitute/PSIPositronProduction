@@ -7,11 +7,6 @@ This repository collects the codes (Python, Matlab, ...) developed in relation t
 An important part of the codes has been developed to run simulations and to analyze and publish the related results.
 
 
-## On this page
-
-[[_TOC_]]
-
-
 ## Getting started
 
 ### Prerequisites

@@ -3,11 +3,6 @@
 This represents our reference example in Geant4.
 
 
-## On this page
-
-[[_TOC_]]
-
-
 ## Building and executing the code
 
 ### On a personal Linux machine

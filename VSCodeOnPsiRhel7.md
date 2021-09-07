@@ -4,10 +4,6 @@ I am a big fan of the Microsoft Visual Studio Code editor.
 At today (11.08.2021), no official rpm packages for Red Hat Enterprise Linux 7.9 (RHEL7) are provided anymore.
 In this page we provide specific, step-by-step instructions to build the Microsoft Visual Studio Code editor (VSCode) from source on the mentioned PSI official Linux system.
 
-## On this page
-
-[[_TOC_]]
-
 
 ## Reference page
 
