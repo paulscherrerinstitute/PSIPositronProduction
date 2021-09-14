@@ -1,7 +1,12 @@
 import os
+import subprocess
+import warnings
 import numpy as np
 import pandas as pd
-import ROOT
+try:
+    import ROOT
+except:
+    print('ROOT module not available.')
 import json
 import matplotlib.pyplot as plt
 
@@ -21,7 +26,7 @@ PART_CONSTS = {   # Particle constants
     }
 }
 
-COLUMN_ORDER_STANDARD_DF = ['x', 'px', 'y', 'py', 'z', 'pz', 't', 'E', 'gammaRel', 'betaRel', 'xp', 'yp', 'pdgId', 'Q']
+COLUMN_ORDER_STANDARD_DF = ['x', 'px', 'y', 'py', 'z', 'pz', 't', 'E', 'gammaRel', 'betaRel', 'xp', 'yp', 'pdgId', 'Q', 'trackingId']
 UNITS_STANDARD_DF = {
     'x': 'mm', 'px': 'MeV/c',
     'y': 'mm', 'py': 'MeV/c',
@@ -29,13 +34,14 @@ UNITS_STANDARD_DF = {
     't': 'ps', 'E': 'MeV',
     'gammaRel': '', 'betaRel': '',
     'xp': 'mrad', 'yp': 'mrad',
-    'pdgId': '', 'Q': 'C'
+    'pdgId': '', 'Q': 'C',
+    'trackingId': ''
 }
 PRECISION_STANDARD_DF = 9
 #PRECISION_STANDARD_DF = [6, 6, 6, 6, 6, 6, 9, 6, 3, 9, 6, 6]
 #COLUMN_WIDTH_STANDARD_DF = 16
 
-DATA_BASE_PATH = '/afs/psi.ch/project/newgun/PcubedTmp'
+DATA_BASE_PATH = '/afs/psi.ch/project/Pcubed'
 
 
 def build_data_path(relPath):
@@ -95,7 +101,7 @@ def export_sim_db_to_xlsx(jsonFilePath):
 
 
 def save_standard_fwf(sourceFilePath, standardDf):
-    standardTxtFilePath = os.path.splitext(sourceFilePath)[0] + '_StandardDf.txt'
+    standardTxtFilePath = sourceFilePath + '.sdf_txt'
     formatterStr = '{:'+ str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
     formatters = [formatterStr.format] * len(COLUMN_ORDER_STANDARD_DF)
     #formatters={
@@ -149,7 +155,8 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
         standardDf.rename(columns={'e': 'E'}, inplace=True)
         standardDf['pdgId'] = standardDf['pdgId'].astype(int)
         standardDf['gammaRel'] = E_to_gamma(standardDf['E'], standardDf['pdgId'])
-        standardDf['betaRel'] = p_to_beta(standardDf['pz'], standardDf['pdgId'])
+        p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
+        standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
         standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
         standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
         standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
@@ -167,9 +174,74 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
     return dfDict
 
 
-def plot_hist(ax, distr, startEdge, binWidth, orientation='vertical', parsInLabel=True):
-    binEdges = np.arange(startEdge, np.max(distr)+binWidth, binWidth)
-    counts, _, histObj = ax.hist(distr, bins=binEdges, orientation=orientation)
+def convert_sdds_to_standard_df(sourceFilePath, z=np.nan, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
+    os.system('sddsconvert -ascii ' + sourceFilePath)
+    standardDf = pd.read_csv(
+        sourceFilePath, skiprows=24, delim_whitespace=True,
+        names=('x', 'xp', 'y', 'yp', 't', 'p', 'trackingId')
+    )
+    pCentral = get_sdds_parameter(sourceFilePath, 'pCentral')
+    QbunchRead = get_sdds_parameter(sourceFilePath, 'Charge')
+    if not np.isnan(Qbunch) and not np.isclose(Qbunch, QbunchRead):
+        warnStr = "Declared Qbunch = {:.6g} C (function input) does not correspond to value in file QbunchRead = {:.6f} C. Going to use ".format(
+                Qbunch, QbunchRead
+        )
+        if not np.isnan(QbunchRead):
+            Qbunch = QbunchRead
+            warnStr += 'QbunchRead.'
+        else:
+            warnStr += 'declared Qbunch (function input).'
+        warnings.warn(warnStr)
+    else:
+        Qbunch = QbunchRead
+    NparticlesPerBunch = get_sdds_parameter(sourceFilePath, 'Particles')
+    standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
+    standardDf['px'] = standardDf['xp'] * pCentral                              # [MeV/c]
+    standardDf['xp'] = standardDf['xp'] * 1.e3                                  # [mrad]
+    standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
+    standardDf['py'] = standardDf['yp'] * pCentral                              # [MeV/c]
+    standardDf['yp'] = standardDf['yp'] * 1.e3                                  # [mrad]
+    standardDf['z'] = z                                                         # [mm]
+    standardDf['pdgId'] = pdgId
+    p = standardDf['p'] \
+        * pdgId_to_particle_const(standardDf['pdgId'], 'Erest')                 # [MeV/c]
+    standardDf.drop('p', axis=1, inplace=True)
+    standardDf['E'] = p_to_E(p, standardDf['pdgId'])                            # [MeV]
+    standardDf['gammaRel'] = E_to_gamma(standardDf['E'], standardDf['pdgId'])
+    standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
+    standardDf['pz'] = \
+        np.sqrt(p**2. - standardDf['px']**2. - standardDf['py']**2.)            # [MeV/c]
+    standardDf['t'] = standardDf['t'] * 1.e9                                    # [ps]
+    standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
+    standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
+    if saveStandardFwf:
+        save_standard_fwf(sourceFilePath, standardDf)
+    return standardDf
+
+
+def get_sdds_parameter(sourceFilePath, parameterName):
+    result = subprocess.run(
+        ['sdds2stream', sourceFilePath, '-parameters='+parameterName],
+        stdout=subprocess.PIPE
+    )
+    resultStr = result.stdout.decode('utf-8')
+    try:
+        resultVal = float(resultStr)
+    except ValueError:
+        resultVal = np.nan
+    if np.isnan(resultVal):
+        warnings.warn(
+            "Could not read parameter {:s} correctly (resultStr = '{:s}').".format(
+            parameterName, resultStr
+        ))
+    return resultVal
+
+
+def plot_hist(ax, distr, binWidth, binLims=None, orientation='vertical', parsInLabel=True, opacity=1.):
+    if binLims is None:
+        binLims = [np.min(distr), np.max(distr) + binWidth]
+    binEdges = np.arange(binLims[0], binLims[1], binWidth)
+    counts, _, histObj = ax.hist(distr, bins=binEdges, orientation=orientation, alpha=opacity)
     std = np.std(distr)
     if parsInLabel:
         histObj.set_label('std = {:.3f}'.format(std))
@@ -187,18 +259,19 @@ def set_lims(ax, direction, var, lims):
             ax.set_ylim(lims)
 
 
-def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None):
+def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None, opacity=1.):
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
-    ax[0,0].scatter(distr[varName1], distr[varName2], 1)
-    plot_hist(ax[1,0], distr[varName1], np.min(distr[varName1]), binWidth1)
-    plot_hist(ax[0,1], distr[varName2], np.min(distr[varName2]), binWidth2, orientation='horizontal')
+    markerSize = 10
+    ax[0,0].scatter(distr[varName1], distr[varName2], markerSize, alpha=opacity)
+    plot_hist(ax[1,0], distr[varName1], binWidth1, binLims=lims1, opacity=opacity)
+    plot_hist(ax[0,1], distr[varName2], binWidth2, binLims=lims2, orientation='horizontal', opacity=opacity)
     pzLabels = ['All, Counts = {:d}'.format(distr.shape[0]), ]
     if pzCutoff is not None:
         distrLowPz = distr[distr['pz']<pzCutoff]
-        ax[0,0].scatter(distrLowPz[varName1], distrLowPz[varName2], 1)
-        plot_hist(ax[1,0], distrLowPz[varName1], np.min(distr[varName1]), binWidth1)
-        plot_hist(ax[0,1], distrLowPz[varName2], np.min(distr[varName2]), binWidth2, orientation='horizontal')
+        ax[0,0].scatter(distrLowPz[varName1], distrLowPz[varName2], markerSize, alpha=opacity)
+        plot_hist(ax[1,0], distrLowPz[varName1], binWidth1, binLims=lims1, opacity=opacity)
+        plot_hist(ax[0,1], distrLowPz[varName2], binWidth2, binLims=lims2, orientation='horizontal', opacity=opacity)
         pzLabels += ['pz <= {:.1f} {:s}, Counts = {:d}'.format(
             pzCutoff, UNITS_STANDARD_DF['pz'], distrLowPz.shape[0]
         )]
