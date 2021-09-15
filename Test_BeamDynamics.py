@@ -6,7 +6,11 @@ import BeamDynamics as bd
 #     saveStandardCsv=True
 # )
 
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf1/QuadOverRf1.bun'
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf1/QuadOverRf1.out'
+sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf1/PositiveDrift/QuadOverRf1.out'
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf1/PositiveDriftWithEmatrix/QuadOverRf1.out'
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf1/NegativeDriftWithEmatrix/QuadOverRf1.out'
 standardDf = bd.convert_sdds_to_standard_df(
-    './Elegant/FCCee_WP1p3/QuadOverRf_BasicExample_1/QuadOverRf1.out',
-    pdgId = -11, z = 0, Qbunch = 5.e-9, saveStandardFwf=True
+    sddsFilepath, pdgId = -11, z = 0, Qbunch = 5.e-9, saveStandardFwf=True
 )

@@ -237,16 +237,20 @@ def get_sdds_parameter(sourceFilePath, parameterName):
     return resultVal
 
 
-def plot_hist(ax, distr, binWidth, binLims=None, orientation='vertical', parsInLabel=True, opacity=1.):
+def plot_hist(ax, distr, binWidth, binLims=None, legendLabel='', orientation='vertical', parsInLabel=True, opacity=1.):
     if binLims is None:
-        binLims = [np.min(distr), np.max(distr) + binWidth]
+        binLims = [np.min(distr)-binWidth*1.5, np.max(distr)+binWidth*1.5]
     binEdges = np.arange(binLims[0], binLims[1], binWidth)
     counts, _, histObj = ax.hist(distr, bins=binEdges, orientation=orientation, alpha=opacity)
+    avg = np.mean(distr)
     std = np.std(distr)
     if parsInLabel:
-        histObj.set_label('std = {:.3f}'.format(std))
-        ax.legend()
-    return std
+        if legendLabel == '':
+            legendLabel += ', '
+        legendLabel += 'avg = {:.3f}, std = {:.3f}'.format(avg, std)
+    histObj.set_label(legendLabel)
+    ax.legend()
+    return avg, std
 
 
 def set_lims(ax, direction, var, lims):
@@ -259,13 +263,19 @@ def set_lims(ax, direction, var, lims):
             ax.set_ylim(lims)
 
 
-def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None, opacity=1.):
+def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, legendLabel='', binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None, opacity=1.):
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
     markerSize = 10
     ax[0,0].scatter(distr[varName1], distr[varName2], markerSize, alpha=opacity)
-    plot_hist(ax[1,0], distr[varName1], binWidth1, binLims=lims1, opacity=opacity)
-    plot_hist(ax[0,1], distr[varName2], binWidth2, binLims=lims2, orientation='horizontal', opacity=opacity)
+    plot_hist(
+        ax[1,0], distr[varName1], binWidth1, binLims=lims1,
+        legendLabel=legendLabel, opacity=opacity
+    )
+    plot_hist(
+        ax[0,1], distr[varName2], binWidth2, binLims=lims2,
+        legendLabel=legendLabel, orientation='horizontal', opacity=opacity
+    )
     pzLabels = ['All, Counts = {:d}'.format(distr.shape[0]), ]
     if pzCutoff is not None:
         distrLowPz = distr[distr['pz']<pzCutoff]
@@ -281,9 +291,9 @@ def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, bin
     ax[1,0].set_xlim(ax[0,0].get_xlim())
     ax[1,0].invert_yaxis()
     ax[0,1].set_ylim(ax[0,0].get_ylim())
-    ax[0,0].grid()
-    ax[0,1].grid()
-    ax[1,0].grid()
+    ax[0,0].grid(True)
+    ax[0,1].grid(True)
+    ax[1,0].grid(True)
     ax[0,0].set_xlabel(varName1+' ['+UNITS_STANDARD_DF[varName1]+']')
     ax[0,0].set_ylabel(varName2+' ['+UNITS_STANDARD_DF[varName2]+']')
     ax[0,0].yaxis.set_label_position('right')
@@ -295,10 +305,24 @@ def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, bin
     ax[1,1].set_visible(False)
 
 
-def plot_distr(distr, plotDefs, title=None, figHeight=9, figWidth=16):
-    for d in plotDefs:
+def plot_distr(distributions, plotDefs, title=None, legendLabels=None, figHeight=9, figWidth=16):
+    if isinstance(distributions, pd.DataFrame):
+        distributions = [distributions]
+        if isinstance(legendLabels, str):
+            legendLabels = [legendLabels]
+    if legendLabels is not None and len(distributions) != len(legendLabels):
+        raise ValueError(
+            'len(distributions) = {:d} does not match len(legendLabels) = {:d}.'.format(
+                len(distributions), len(legendLabels)
+        ))
+    if legendLabels is None:
+        legendLabels = [''] * len(distributions)
+    for plotDef in plotDefs:
         fig, ax = plt.subplots(2, 2)
         fig.set_figheight(figHeight)
         fig.set_figwidth(figWidth)
-        plot_phase_space_2d(ax, distr, **d, title=title)
+        for distr, label in zip(distributions, legendLabels):
+            if len(distributions) > 1:
+                plotDef['pzCutoff'] = None
+            plot_phase_space_2d(ax, distr, **plotDef, title=title, legendLabel=label)
         plt.show()
