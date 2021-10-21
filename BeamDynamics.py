@@ -51,6 +51,19 @@ PRECISION_STANDARD_DF = 9
 #PRECISION_STANDARD_DF = [6, 6, 6, 6, 6, 6, 9, 6, 3, 9, 6, 6]
 #COLUMN_WIDTH_STANDARD_DF = 16
 
+FILE_TYPES_SPECS = {
+    'standardDf': {
+        'ext': '.sdf_txt',
+        'numCols': len(COLUMN_ORDER_STANDARD_DF),
+        'header': True
+    },
+    'astra': {
+        'ext': '.001',
+        'numCols': 10,
+        'header': False
+    },
+}
+
 DATA_BASE_PATH = '/afs/psi.ch/project/Pcubed'
 
 
@@ -134,15 +147,19 @@ def export_sim_db_to_xlsx(jsonFilePath):
     dbDf.to_excel(xlsxFilePath)
 
 
-def save_standard_fwf(sourceFilePath, standardDf, additionalLabel=''):
-    standardTxtFilePath = sourceFilePath + additionalLabel + '.sdf_txt'
+def save_fwf(sourceFilePath, standardDf, formatType='standardDf', additionalLabel=''):
+    fileTypeSpecs = FILE_TYPES_SPECS[formatType]
+    outFilePath = sourceFilePath + additionalLabel + fileTypeSpecs['ext']
     formatterStr = '{:'+ str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
-    formatters = [formatterStr.format] * len(COLUMN_ORDER_STANDARD_DF)
+    formatters = [formatterStr.format] * fileTypeSpecs['numCols']
     #formatters={
     #    'x': '',
     #    'pz': '{:'+str(COLUMN_WIDTH_STANDARD_DF)+'.6f}'.format,
     #}
-    standardDf.to_string(standardTxtFilePath, index=False, formatters=formatters)
+    standardDf.to_string(
+        outFilePath, formatters=formatters,
+        index=False, header=fileTypeSpecs['header']
+    )
     # headerList = standardDf.columns + ' [' + UNITS_STANDARD_DF + ']'
     # standardDf.to_csv(standardCsvFilePath, header=headerList)
 
@@ -170,7 +187,7 @@ def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
     standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
     standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
     if saveStandardFwf:
-        save_standard_fwf(sourceFilePath, standardDf)
+        save_fwf(sourceFilePath, standardDf)
     return standardDf
 
 
@@ -205,7 +222,7 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
                 fileSuffix += '_' + str(id)
         if saveStandardFwf:
             filePath, fileExt = os.path.splitext(sourceFilePath)
-            save_standard_fwf(filePath+fileSuffix+fileExt, standardDf)
+            save_fwf(filePath+fileSuffix+fileExt, standardDf)
         dfDict[distrName] = standardDf
     return dfDict
 
@@ -265,8 +282,45 @@ def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, sa
         standardDf['t'] = standardDf['t'] - deltaZ/vz*1e6
         labelStr += '_zProj{:.0f}mm'.format(zProjection)
     if saveStandardFwf:
-        save_standard_fwf(sourceFilePath, standardDf, additionalLabel=labelStr)
+        save_fwf(sourceFilePath, standardDf, additionalLabel=labelStr)
     return standardDf
+
+
+def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refParticleId=0, saveAstraDist=False, outFilePath='AstraDistribution', additionalLabel=''):
+    if sourceFilePath is not None:
+        if standardDf is None:
+            standardDf = load_standard_fwf(sourceFilePath)
+            outFilePath = sourceFilePath
+        else:
+            raise ValueError('Only one between standardDf and sourceFilePath can be set different than None.')
+    astraDf = standardDf[['x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId']].copy()
+    astraDf['x'] = astraDf['x'] * 1e-3                                          # [m]
+    astraDf['y'] = astraDf['y'] * 1e-3                                          # [m]
+    astraDf['z'] = astraDf['z'] * 1e-3                                          # [m]
+    astraDf['px'] = astraDf['px'] * 1e6                                         # [eV/c]
+    astraDf['py'] = astraDf['py'] * 1e6                                         # [eV/c]
+    astraDf['pz'] = astraDf['pz'] * 1e6                                         # [eV/c]
+    # t is already in [ns]
+    astraDf['Q'] = astraDf['Q'] * 1e9                                           # [nC]
+    astraDf['pdgId'].replace(to_replace={11:1, -11:2}, inplace=True)
+    # Small check for the reference particle
+    if not np.isclose(astraDf['x'][refParticleId], 0) or not np.isclose(astraDf['y'][refParticleId], 0):
+        warnings.warn('Reference particle is out of axis with (x,y) = ({:.6f}, {:.6f}) m'.format(
+            astraDf['x'][refParticleId], astraDf['y'][refParticleId]
+    ))
+    # Longitudinal variables with respect to the reference particle
+    astraDf.loc[1:,'z'] = astraDf.loc[1:,'z'] - astraDf.loc[refParticleId,'z']
+    astraDf.loc[1:,'pz'] = astraDf.loc[1:,'pz'] - astraDf.loc[refParticleId,'pz']
+    astraDf.loc[1:,'t'] = astraDf.loc[1:,'t'] - astraDf.loc[refParticleId,'t']
+    # Add status flag
+    statusFlag = np.full(astraDf.shape[0], 5)
+    astraDf['statusFlag'] = statusFlag
+    # TODO: Move reference particle to first position in the data frame
+    if saveAstraDist:
+        save_fwf(
+            outFilePath, astraDf, formatType='astra',
+            additionalLabel=additionalLabel
+        )
 
 
 def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
@@ -311,7 +365,7 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
     if saveStandardFwf:
-        save_standard_fwf(sourceFilePath, standardDf)
+        save_fwf(sourceFilePath, standardDf)
     return standardDf
 
 
@@ -560,7 +614,10 @@ def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, p
         pdgIdArray, QArray, trackingIdArray
     ), axis=1)
     standardDf = pd.DataFrame(dfData, columns=COLUMN_ORDER_STANDARD_DF)
+    standardDf.drop_duplicates(
+        subset=COLUMN_ORDER_STANDARD_DF[:-1], ignore_index=True, inplace=True
+    )
     if saveStandardFwf:
-        save_standard_fwf(outFilePath, standardDf)
+        save_fwf(outFilePath, standardDf)
     return standardDf
     

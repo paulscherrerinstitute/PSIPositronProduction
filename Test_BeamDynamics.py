@@ -102,7 +102,13 @@ yMax = 10.   # [mm]
 p0 = 200.   # [MeV/c]
 pzDelta = 100.   # [MeV/c]
 outFilePath = './Elegant/FCCee_WP1p3/QuadOverRf1/CrossDistribution'
-bd.generate_cross_distribution(
+standardDf = bd.generate_cross_distribution(
     xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, pzPoints=5,
     saveStandardFwf=True, outFilePath=outFilePath
 )
+
+bd.convert_standard_df_to_astra(
+    standardDf=standardDf, refParticleId=10,
+    saveAstraDist=True, outFilePath=outFilePath
+)
+
