@@ -12,6 +12,13 @@ import matplotlib.pyplot as plt
 
 
 
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+# pd.set_option('display.max_colwidth', -1)
+
+
+
 C = 2.99792458e8   # Speed of light in [m/s]
 PART_CONSTS = {   # Particle constants
     'Erest': {   # Rest energy [MeV]
@@ -26,12 +33,15 @@ PART_CONSTS = {   # Particle constants
     }
 }
 
-COLUMN_ORDER_STANDARD_DF = ['x', 'px', 'y', 'py', 'z', 'pz', 't', 'E', 'gammaRel', 'betaRel', 'xp', 'yp', 'pdgId', 'Q', 'trackingId']
+COLUMN_ORDER_STANDARD_DF = [
+    'x', 'px', 'y', 'py', 'z', 'pz', 't', 'Ekin',
+    'gammaRel', 'betaRel', 'xp', 'yp', 'pdgId', 'Q', 'trackingId'
+]
 UNITS_STANDARD_DF = {
     'x': 'mm', 'px': 'MeV/c',
     'y': 'mm', 'py': 'MeV/c',
     'z': 'mm', 'pz': 'MeV/c',
-    't': 'ps', 'E': 'MeV',
+    't': 'ns', 'Ekin': 'MeV',
     'gammaRel': '', 'betaRel': '',
     'xp': 'mrad', 'yp': 'mrad',
     'pdgId': '', 'Q': 'C',
@@ -52,9 +62,15 @@ def build_data_path(relPath):
 
 
 def pdgId_to_particle_const(pdgId, constName):
+    flagSingleValue = False
+    if not isinstance(pdgId, (pd.Series,np.ndarray)):
+        flagSingleValue = True
+        pdgId = [pdgId]
     Erest = pd.Series([
         PART_CONSTS[constName][pid] if pid in PART_CONSTS[constName].keys() else np.nan for pid in pdgId
     ])
+    if flagSingleValue:
+        Erest = Erest[0]
     return Erest
 
 
@@ -80,16 +96,34 @@ def pTransv_to_slope(pTransv, pLong):
     return slope
 
 
-def p_to_E(p, pdgId):
+def p_to_Ekin(p, pdgId):
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     E = np.sqrt(p**2. + Erest**2.)
-    return E
+    Ekin = E - Erest
+    return Ekin
 
 
-def E_to_gamma(E, pdgId):
+def Ekin_to_p(Ekin, pdgId):
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
-    gamma = E / Erest
+    p = np.sqrt((Ekin+Erest)**2. - Erest**2.)
+    return p
+
+
+def Ekin_to_gamma(Ekin, pdgId):
+    Erest = pdgId_to_particle_const(pdgId, 'Erest')
+    gamma = Ekin / Erest + 1
     return gamma
+
+
+def gamma_to_beta(gamma):
+    beta = np.sqrt(1. - (1./gamma**2.))
+    return beta
+
+
+def Ekin_to_beta(Ekin, pdgId):
+    gamma = Ekin_to_gamma(Ekin, pdgId)
+    beta = gamma_to_beta(gamma)
+    return beta
 
 
 def export_sim_db_to_xlsx(jsonFilePath):
@@ -100,8 +134,8 @@ def export_sim_db_to_xlsx(jsonFilePath):
     dbDf.to_excel(xlsxFilePath)
 
 
-def save_standard_fwf(sourceFilePath, standardDf):
-    standardTxtFilePath = sourceFilePath + '.sdf_txt'
+def save_standard_fwf(sourceFilePath, standardDf, additionalLabel=''):
+    standardTxtFilePath = sourceFilePath + additionalLabel + '.sdf_txt'
     formatterStr = '{:'+ str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
     formatters = [formatterStr.format] * len(COLUMN_ORDER_STANDARD_DF)
     #formatters={
@@ -124,11 +158,12 @@ def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
         header=0, names=('x', 'px', 'y', 'py', 'pz', 't')
     )
     standardDf['z'] = 17.5   # [mm]
-    standardDf['t'] = standardDf['t'] / C * 1e9
+    # TODO: Chekc that the units in the following line are correct
+    standardDf['t'] = standardDf['t'] / C * 1.e9                                # [ns]
     standardDf['pdgId'] = -11
     p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
-    standardDf['E'] = p_to_E(p, standardDf['pdgId'])
-    standardDf['gammaRel'] = E_to_gamma(standardDf['E'], standardDf['pdgId'])
+    standardDf['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])
+    standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
     standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
     standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
     standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
@@ -152,9 +187,10 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
         rootTreeMat = np.column_stack([q for q in rootTreeDict.values()])
         standardDf = pd.DataFrame(data=rootTreeMat, columns=rootTreeDict.keys())
         standardDf.drop('evtId', axis=1, inplace=True)
-        standardDf.rename(columns={'e': 'E'}, inplace=True)
+        # TODO: Check that 'e' in FCC-ee Target Tracking is Ekin and not Ekin + Erest
+        standardDf.rename(columns={'e': 'Ekin'}, inplace=True)
         standardDf['pdgId'] = standardDf['pdgId'].astype(int)
-        standardDf['gammaRel'] = E_to_gamma(standardDf['E'], standardDf['pdgId'])
+        standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
         p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
         standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
         standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
@@ -174,7 +210,66 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
     return dfDict
 
 
-def convert_sdds_to_standard_df(sourceFilePath, z=np.nan, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
+def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, saveStandardFwf=False, verbose=False):
+    standardDf = pd.read_csv(
+        sourceFilePath, delim_whitespace=True,
+        index_col=False, header=None,
+        names=('x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId', 'statusFlag')
+    )
+    standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
+    standardDf['px'] = standardDf['px'] * 1.e-6                                 # [MeV]
+    standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
+    standardDf['py'] = standardDf['py'] * 1.e-6                                 # [MeV]
+    standardDf['z'] = standardDf['z'] * 1.e3                                    # [mm]
+    standardDf['pz'] = standardDf['pz'] * 1.e-6                                 # [MeV]
+    # Longitudinal coordinates in Astra are with respect to reference particle
+    standardDf.loc[1:,'z'] = standardDf.loc[1:,'z'] + standardDf.loc[0,'z']
+    standardDf.loc[1:,'pz'] = standardDf.loc[1:,'pz'] + standardDf.loc[0,'pz']
+    standardDf.loc[1:,'t'] = standardDf.loc[1:,'t'] + standardDf.loc[0,'t']     # [ns]
+    p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
+    standardDf['pdgId'].replace(to_replace={1:11, 2:-11}, inplace=True)
+    standardDf['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])
+    standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
+    standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
+    standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
+    standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
+    standardDf['Q'] = standardDf['Q'] * 1.e-9                                   # [C]
+    standardDf['trackingId'] = np.arange(standardDf.shape[0])
+    standardDf.drop('statusFlag', axis=1, inplace=True)
+    standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
+    labelStr = ''
+    # If requested, cut particles that did not reach zCut
+    if zCut is not None:
+        cutInds = standardDf['z'] < zCut
+        rejectedParticles = standardDf[cutInds]
+        standardDf = standardDf[~cutInds]
+        warnings.warn(
+            '{:d} particles with z < {:.3f} mm have been discarded.'.format(
+                cutInds.sum(), zCut
+        ))
+        if verbose and cutInds.sum() > 0:
+            print(rejectedParticles)
+    # If requested, project all particles on a plane at zProjection
+    if zProjection is not None:
+        deltaZ = standardDf['z'] - zProjection
+        deltaX = deltaZ * standardDf['px'] / standardDf['pz']
+        deltaY = deltaZ * standardDf['py'] / standardDf['pz']
+        standardDf['x'] = standardDf['x'] - deltaX
+        standardDf['y'] = standardDf['y'] - deltaY
+        standardDf['z'] = zProjection
+        alpha = np.arctan(
+            np.sqrt(standardDf['px']**2. + standardDf['py']**2.)
+            / standardDf['pz']
+        )
+        vz = standardDf['betaRel'] * C * np.cos(alpha)
+        standardDf['t'] = standardDf['t'] - deltaZ/vz*1e6
+        labelStr += '_zProj{:.0f}mm'.format(zProjection)
+    if saveStandardFwf:
+        save_standard_fwf(sourceFilePath, standardDf, additionalLabel=labelStr)
+    return standardDf
+
+
+def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
     os.system('sddsconvert -ascii ' + sourceFilePath)
     standardDf = pd.read_csv(
         sourceFilePath, skiprows=24, delim_whitespace=True,
@@ -195,23 +290,24 @@ def convert_sdds_to_standard_df(sourceFilePath, z=np.nan, pdgId=-11, Qbunch=np.n
     else:
         Qbunch = QbunchRead
     NparticlesPerBunch = get_sdds_parameter(sourceFilePath, 'Particles')
+    standardDf['pdgId'] = pdgId
+    Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
     standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
-    standardDf['px'] = standardDf['xp'] * pCentral                              # [MeV/c]
+    standardDf['px'] = standardDf['xp'] * Erest * pCentral                      # [MeV/c]
     standardDf['xp'] = standardDf['xp'] * 1.e3                                  # [mrad]
     standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
-    standardDf['py'] = standardDf['yp'] * pCentral                              # [MeV/c]
+    standardDf['py'] = standardDf['yp'] * Erest * pCentral                      # [MeV/c]
     standardDf['yp'] = standardDf['yp'] * 1.e3                                  # [mrad]
-    standardDf['z'] = z                                                         # [mm]
-    standardDf['pdgId'] = pdgId
-    p = standardDf['p'] \
-        * pdgId_to_particle_const(standardDf['pdgId'], 'Erest')                 # [MeV/c]
+    p = standardDf['p'] * Erest                                                 # [MeV/c]
     standardDf.drop('p', axis=1, inplace=True)
-    standardDf['E'] = p_to_E(p, standardDf['pdgId'])                            # [MeV]
-    standardDf['gammaRel'] = E_to_gamma(standardDf['E'], standardDf['pdgId'])
+    standardDf['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])                            # [MeV]
+    standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
     standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
     standardDf['pz'] = \
         np.sqrt(p**2. - standardDf['px']**2. - standardDf['py']**2.)            # [MeV/c]
-    standardDf['t'] = standardDf['t'] * 1.e9                                    # [ps]
+    standardDf['t'] = standardDf['t'] * 1.e9                                    # [ns]
+    # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6               # [mm]
+    standardDf['z'] = z0
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
     if saveStandardFwf:
@@ -237,15 +333,26 @@ def get_sdds_parameter(sourceFilePath, parameterName):
     return resultVal
 
 
-def plot_hist(ax, distr, binWidth, binLims=None, legendLabel='', orientation='vertical', parsInLabel=True, opacity=1.):
+def plot_hist(ax, distr, binWidth=None, binLims=None, legendLabel='', orientation='vertical', parsInLabel=True, opacity=1.):
+    defaultBinNum = 100
     if binLims is None:
+        if binWidth is None:
+            binWidth = (np.max(distr) - np.min(distr)) / (defaultBinNum-1)
+            if binWidth == 0:
+                binWidth = 1.
+                defaultBinNum = 3
         binLims = [np.min(distr)-binWidth*1.5, np.max(distr)+binWidth*1.5]
-    binEdges = np.arange(binLims[0], binLims[1], binWidth)
-    counts, _, histObj = ax.hist(distr, bins=binEdges, orientation=orientation, alpha=opacity)
+    if binWidth is None:
+        binEdges = np.linspace(binLims[0], binLims[1], num=defaultBinNum)
+    else:
+        binEdges = np.arange(binLims[0], binLims[1], binWidth)
+    counts, _, histObj = ax.hist(
+        distr, bins=binEdges, orientation=orientation, alpha=opacity
+    )
     avg = np.mean(distr)
     std = np.std(distr)
     if parsInLabel:
-        if legendLabel == '':
+        if legendLabel != '':
             legendLabel += ', '
         legendLabel += 'avg = {:.3f}, std = {:.3f}'.format(avg, std)
     histObj.set_label(legendLabel)
@@ -266,26 +373,42 @@ def set_lims(ax, direction, var, lims):
 def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, legendLabel='', binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None, opacity=1.):
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
-    markerSize = 10
-    ax[0,0].scatter(distr[varName1], distr[varName2], markerSize, alpha=opacity)
+    markerSize = 5
+    opacityScatter = 1.
+    ax[0,0].scatter(
+        distr[varName1], distr[varName2],
+        markerSize, alpha=opacityScatter, linewidths=0
+    )
     plot_hist(
-        ax[1,0], distr[varName1], binWidth1, binLims=lims1,
+        ax[1,0], distr[varName1], binWidth=binWidth1, binLims=lims1,
         legendLabel=legendLabel, opacity=opacity
     )
     plot_hist(
-        ax[0,1], distr[varName2], binWidth2, binLims=lims2,
+        ax[0,1], distr[varName2], binWidth=binWidth2, binLims=lims2,
         legendLabel=legendLabel, orientation='horizontal', opacity=opacity
     )
     pzLabels = ['All, Counts = {:d}'.format(distr.shape[0]), ]
     if pzCutoff is not None:
         distrLowPz = distr[distr['pz']<pzCutoff]
-        ax[0,0].scatter(distrLowPz[varName1], distrLowPz[varName2], markerSize, alpha=opacity)
-        plot_hist(ax[1,0], distrLowPz[varName1], binWidth1, binLims=lims1, opacity=opacity)
-        plot_hist(ax[0,1], distrLowPz[varName2], binWidth2, binLims=lims2, orientation='horizontal', opacity=opacity)
+        ax[0,0].scatter(
+            distrLowPz[varName1], distrLowPz[varName2],
+            markerSize, alpha=opacityScatter, linewidths=0
+        )
+        plot_hist(
+            ax[1,0], distrLowPz[varName1],
+            binWidth=binWidth1, binLims=lims1, opacity=opacity
+        )
+        plot_hist(
+            ax[0,1], distrLowPz[varName2], orientation='horizontal',
+            binWidth=binWidth2, binLims=lims2, opacity=opacity
+        )
         pzLabels += ['pz <= {:.1f} {:s}, Counts = {:d}'.format(
             pzCutoff, UNITS_STANDARD_DF['pz'], distrLowPz.shape[0]
         )]
-        ax[0,0].legend(pzLabels, markerscale=5., loc='upper left', bbox_to_anchor=(1.2, -0.2))
+        ax[0,0].legend(
+            pzLabels, markerscale=5.,
+            loc='upper left', bbox_to_anchor=(1.2, -0.2)
+        )
     set_lims(ax[0,0], 'x', distr[varName1], lims1)
     set_lims(ax[0,0], 'y', distr[varName2], lims2)
     ax[1,0].set_xlim(ax[0,0].get_xlim())
@@ -326,3 +449,118 @@ def plot_distr(distributions, plotDefs, title=None, legendLabels=None, figHeight
                 plotDef['pzCutoff'] = None
             plot_phase_space_2d(ax, distr, **plotDef, title=title, legendLabel=label)
         plt.show()
+
+
+def generate_fieldmap_astra_ideal_tw(fileBasePath, freq, Lstructure, zRes):
+    z = np.arange(0, Lstructure+zRes, zRes)
+    # k = 2*np.pi*freq / C
+    # Ereal = np.cos(k*z)
+    # Eimag = np.sin(k*z)
+    # np.savetxt(fileBasePath+'_Real.astra', np.stack([z, Ereal], axis=1), fmt='%.9e')
+    # np.savetxt(fileBasePath+'_Imag.astra', np.stack([z, Eimag], axis=1), fmt='%.9e')
+    Eabs = np.array([1.0]*len(z))
+    np.savetxt(fileBasePath+'.astra', np.stack([z, Eabs], axis=1), fmt='%.9e')
+    
+    
+def generate_lattice_quad_over_rf_elegant(elementName, L, Nslices, quadGradient, rfFreq, rfPhase, rfVoltage, EkinIni, pdgId=-11, ZoverA=1., elegantInputFilePath=None, quadOrder=2):
+    inputStr = ''
+    inputStr += 'Q: CHARGE, TOTAL=5.0e-9\n'
+    Lslice = L / Nslices
+    rfVoltageSlice = rfVoltage / Nslices
+    # RF
+    inputStr += '{:s}.Rf.HalfSlice: RFCA, FREQ={:.1f}, PHASE={:.3f}, &\n'.format(
+        elementName, rfFreq, rfPhase
+    )
+    inputStr += '\tL={:.6f}, VOLT={:.5e}, CHANGE_P0=1, &\n'.format(
+        Lslice/2., rfVoltageSlice*1e6/2.
+    )
+    inputStr += '\tEND1_FOCUS=0, END2_FOCUS=0, BODY_FOCUS_MODEL="NONE"\n'
+    # ND
+    inputStr += '{:s}.Nd.HalfSlice: DRIFT, L={:.6f}\n'.format(
+        elementName, -Lslice/2.
+    )
+    quadOverRfLineStr = ''
+    p0SliceStart = Ekin_to_p(EkinIni, pdgId)
+    for sliceInd in range(1, Nslices+1):
+        beta = Ekin_to_beta(EkinIni, [-11])[0]
+        quadStrengthSlice = quad_strength(
+            quadGradient, p0SliceStart+rfVoltageSlice/2., ZoverA=1.
+        )
+        # QUADRUPOLE
+        inputStr += '{:s}.Quad.{:d}: QUADRUPOLE, L={:.6f}, K1={:.5e}, ORDER={:d}\n'.format(
+            elementName, sliceInd, Lslice, quadStrengthSlice, quadOrder
+        )
+        inputStr += '{0:s}.Slice{1:d}: Line=({0:s}.Rf.HalfSlice, {0:s}.Nd.HalfSlice, {0:s}.Quad.{1:d}, {0:s}.Nd.HalfSlice, {0:s}.Rf.HalfSlice)\n'.format(
+            elementName, sliceInd
+        )
+        # inputStr += generate_quad_over_rf_slice(Lslice, sliceInd, quadStrengthSlice, rfFreq, rfPhase, rfVoltageSlice)
+        quadOverRfLineStr += '{:s}.Slice{:d}'.format(elementName, sliceInd)
+        if sliceInd < Nslices:
+            quadOverRfLineStr += ', '
+        p0SliceStart += rfVoltageSlice
+    inputStr += '{:s}.Line: Line=({:s})\n'.format(
+        elementName, quadOverRfLineStr
+    )
+    inputStr += '{:s}.Start: MARKER\n'.format(elementName)
+    inputStr += '{:s}.End: MARKER\n'.format(elementName)
+    inputStr += '{0:s}: Line=(Q, {0:s}.Start, {0:s}.Line, {0:s}.End)\n'.format(
+        elementName
+    )
+    if elegantInputFilePath is not None:
+        outFile = open(elegantInputFilePath, 'w')
+        outFile.write(inputStr)
+        outFile.close()
+    return inputStr
+
+
+def quad_strength(quadGradient, p0, pdgId=-11, ZoverA=1.):
+    beta = p_to_beta(p0, pdgId)
+    quadStrength = C * 1e-6 * ZoverA * quadGradient / (
+        beta * p0
+    )
+    return quadStrength
+
+
+def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, pzPoints=5, saveStandardFwf=False, outFilePath='crossDistribution'):
+    if not isinstance(xPoints,int) or xPoints < 1:
+        raise ValueError('xPoints must be an integer >= 1.')
+    if not isinstance(yPoints,int) or yPoints < 1:
+        raise ValueError('yPoints must be an integer >= 1.')
+    if not isinstance(pzPoints,int) or pzPoints < 1:
+        raise ValueError('pzPoints must be an integer >= 1.')
+    # Define variations
+    xArray = np.linspace(-xMax, xMax, num=xPoints)
+    yArray = np.linspace(-yMax, yMax, num=yPoints)
+    pzArray = p0 + np.linspace(-pzDelta, pzDelta, num=pzPoints)
+    # Prepare all combinations of the variations
+    xArray = np.repeat(xArray, pzPoints)
+    yArray = np.repeat(yArray, pzPoints)
+    xArray = np.concatenate((xArray, np.zeros(yPoints*pzPoints)))
+    yArray = np.concatenate((np.zeros(xPoints*pzPoints), yArray))
+    pzArray = np.tile(pzArray, xPoints+yPoints)
+    # Define remaining parameters
+    totParticles = (xPoints + yPoints) * pzPoints
+    zArray = np.zeros(totParticles)
+    pxArray = np.zeros(totParticles)
+    pyArray = np.zeros(totParticles)
+    tArray = np.zeros(totParticles)
+    p = pVect_to_p(pxArray, pyArray, pzArray)
+    pdgId = -11
+    EkinArray = p_to_Ekin(p, pdgId)
+    gammaRelArray = Ekin_to_gamma(EkinArray, pdgId)
+    betaRelArray = Ekin_to_beta(EkinArray, pdgId)
+    xpArray = pxArray / pzArray
+    ypArray = pyArray / pzArray
+    pdgIdArray = np.full(totParticles, pdgId)
+    QArray = pdgId_to_particle_const(pdgIdArray, 'Q')
+    trackingIdArray = np.arange(totParticles)
+    dfData = np.stack((
+        xArray, pxArray, yArray, pyArray, zArray, pzArray, tArray, EkinArray,
+        gammaRelArray, betaRelArray, xpArray, ypArray,
+        pdgIdArray, QArray, trackingIdArray
+    ), axis=1)
+    standardDf = pd.DataFrame(dfData, columns=COLUMN_ORDER_STANDARD_DF)
+    if saveStandardFwf:
+        save_standard_fwf(outFilePath, standardDf)
+    return standardDf
+    
