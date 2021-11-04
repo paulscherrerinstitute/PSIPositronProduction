@@ -1,0 +1,209 @@
+Q: CHARGE, TOTAL=5.0e-9
+QuadOverRf.Rf.HalfSlice: RFCA, FREQ=2998800000.0, PHASE=-90.000, &
+	L=0.002500, VOLT=4.50000e+04, CHANGE_P0=1, &
+	END1_FOCUS=0, END2_FOCUS=0, BODY_FOCUS_MODEL="NONE"
+QuadOverRf.Nd.HalfSlice: DRIFT, L=-0.002500
+QuadOverRf.Quad.1: QUADRUPOLE, L=0.005000, K1=1.12397e+01
+QuadOverRf.Slice1: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.1, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.2: QUADRUPOLE, L=0.005000, K1=1.12347e+01
+QuadOverRf.Slice2: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.2, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.3: QUADRUPOLE, L=0.005000, K1=1.12296e+01
+QuadOverRf.Slice3: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.3, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.4: QUADRUPOLE, L=0.005000, K1=1.12246e+01
+QuadOverRf.Slice4: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.4, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.5: QUADRUPOLE, L=0.005000, K1=1.12195e+01
+QuadOverRf.Slice5: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.5, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.6: QUADRUPOLE, L=0.005000, K1=1.12145e+01
+QuadOverRf.Slice6: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.6, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.7: QUADRUPOLE, L=0.005000, K1=1.12095e+01
+QuadOverRf.Slice7: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.7, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.8: QUADRUPOLE, L=0.005000, K1=1.12044e+01
+QuadOverRf.Slice8: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.8, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.9: QUADRUPOLE, L=0.005000, K1=1.11994e+01
+QuadOverRf.Slice9: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.9, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.10: QUADRUPOLE, L=0.005000, K1=1.11944e+01
+QuadOverRf.Slice10: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.10, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.11: QUADRUPOLE, L=0.005000, K1=1.11894e+01
+QuadOverRf.Slice11: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.11, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.12: QUADRUPOLE, L=0.005000, K1=1.11844e+01
+QuadOverRf.Slice12: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.12, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.13: QUADRUPOLE, L=0.005000, K1=1.11794e+01
+QuadOverRf.Slice13: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.13, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.14: QUADRUPOLE, L=0.005000, K1=1.11744e+01
+QuadOverRf.Slice14: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.14, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.15: QUADRUPOLE, L=0.005000, K1=1.11694e+01
+QuadOverRf.Slice15: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.15, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.16: QUADRUPOLE, L=0.005000, K1=1.11644e+01
+QuadOverRf.Slice16: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.16, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.17: QUADRUPOLE, L=0.005000, K1=1.11594e+01
+QuadOverRf.Slice17: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.17, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.18: QUADRUPOLE, L=0.005000, K1=1.11544e+01
+QuadOverRf.Slice18: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.18, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.19: QUADRUPOLE, L=0.005000, K1=1.11494e+01
+QuadOverRf.Slice19: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.19, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.20: QUADRUPOLE, L=0.005000, K1=1.11445e+01
+QuadOverRf.Slice20: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.20, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.21: QUADRUPOLE, L=0.005000, K1=1.11395e+01
+QuadOverRf.Slice21: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.21, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.22: QUADRUPOLE, L=0.005000, K1=1.11345e+01
+QuadOverRf.Slice22: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.22, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.23: QUADRUPOLE, L=0.005000, K1=1.11296e+01
+QuadOverRf.Slice23: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.23, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.24: QUADRUPOLE, L=0.005000, K1=1.11246e+01
+QuadOverRf.Slice24: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.24, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.25: QUADRUPOLE, L=0.005000, K1=1.11197e+01
+QuadOverRf.Slice25: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.25, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.26: QUADRUPOLE, L=0.005000, K1=1.11147e+01
+QuadOverRf.Slice26: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.26, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.27: QUADRUPOLE, L=0.005000, K1=1.11098e+01
+QuadOverRf.Slice27: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.27, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.28: QUADRUPOLE, L=0.005000, K1=1.11048e+01
+QuadOverRf.Slice28: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.28, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.29: QUADRUPOLE, L=0.005000, K1=1.10999e+01
+QuadOverRf.Slice29: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.29, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.30: QUADRUPOLE, L=0.005000, K1=1.10950e+01
+QuadOverRf.Slice30: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.30, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.31: QUADRUPOLE, L=0.005000, K1=1.10900e+01
+QuadOverRf.Slice31: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.31, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.32: QUADRUPOLE, L=0.005000, K1=1.10851e+01
+QuadOverRf.Slice32: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.32, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.33: QUADRUPOLE, L=0.005000, K1=1.10802e+01
+QuadOverRf.Slice33: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.33, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.34: QUADRUPOLE, L=0.005000, K1=1.10753e+01
+QuadOverRf.Slice34: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.34, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.35: QUADRUPOLE, L=0.005000, K1=1.10704e+01
+QuadOverRf.Slice35: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.35, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.36: QUADRUPOLE, L=0.005000, K1=1.10655e+01
+QuadOverRf.Slice36: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.36, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.37: QUADRUPOLE, L=0.005000, K1=1.10606e+01
+QuadOverRf.Slice37: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.37, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.38: QUADRUPOLE, L=0.005000, K1=1.10557e+01
+QuadOverRf.Slice38: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.38, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.39: QUADRUPOLE, L=0.005000, K1=1.10508e+01
+QuadOverRf.Slice39: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.39, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.40: QUADRUPOLE, L=0.005000, K1=1.10459e+01
+QuadOverRf.Slice40: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.40, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.41: QUADRUPOLE, L=0.005000, K1=1.10410e+01
+QuadOverRf.Slice41: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.41, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.42: QUADRUPOLE, L=0.005000, K1=1.10362e+01
+QuadOverRf.Slice42: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.42, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.43: QUADRUPOLE, L=0.005000, K1=1.10313e+01
+QuadOverRf.Slice43: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.43, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.44: QUADRUPOLE, L=0.005000, K1=1.10264e+01
+QuadOverRf.Slice44: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.44, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.45: QUADRUPOLE, L=0.005000, K1=1.10215e+01
+QuadOverRf.Slice45: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.45, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.46: QUADRUPOLE, L=0.005000, K1=1.10167e+01
+QuadOverRf.Slice46: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.46, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.47: QUADRUPOLE, L=0.005000, K1=1.10118e+01
+QuadOverRf.Slice47: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.47, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.48: QUADRUPOLE, L=0.005000, K1=1.10070e+01
+QuadOverRf.Slice48: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.48, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.49: QUADRUPOLE, L=0.005000, K1=1.10021e+01
+QuadOverRf.Slice49: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.49, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.50: QUADRUPOLE, L=0.005000, K1=1.09973e+01
+QuadOverRf.Slice50: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.50, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.51: QUADRUPOLE, L=0.005000, K1=1.09924e+01
+QuadOverRf.Slice51: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.51, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.52: QUADRUPOLE, L=0.005000, K1=1.09876e+01
+QuadOverRf.Slice52: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.52, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.53: QUADRUPOLE, L=0.005000, K1=1.09828e+01
+QuadOverRf.Slice53: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.53, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.54: QUADRUPOLE, L=0.005000, K1=1.09780e+01
+QuadOverRf.Slice54: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.54, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.55: QUADRUPOLE, L=0.005000, K1=1.09731e+01
+QuadOverRf.Slice55: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.55, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.56: QUADRUPOLE, L=0.005000, K1=1.09683e+01
+QuadOverRf.Slice56: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.56, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.57: QUADRUPOLE, L=0.005000, K1=1.09635e+01
+QuadOverRf.Slice57: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.57, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.58: QUADRUPOLE, L=0.005000, K1=1.09587e+01
+QuadOverRf.Slice58: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.58, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.59: QUADRUPOLE, L=0.005000, K1=1.09539e+01
+QuadOverRf.Slice59: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.59, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.60: QUADRUPOLE, L=0.005000, K1=1.09491e+01
+QuadOverRf.Slice60: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.60, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.61: QUADRUPOLE, L=0.005000, K1=1.09443e+01
+QuadOverRf.Slice61: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.61, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.62: QUADRUPOLE, L=0.005000, K1=1.09395e+01
+QuadOverRf.Slice62: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.62, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.63: QUADRUPOLE, L=0.005000, K1=1.09347e+01
+QuadOverRf.Slice63: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.63, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.64: QUADRUPOLE, L=0.005000, K1=1.09299e+01
+QuadOverRf.Slice64: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.64, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.65: QUADRUPOLE, L=0.005000, K1=1.09251e+01
+QuadOverRf.Slice65: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.65, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.66: QUADRUPOLE, L=0.005000, K1=1.09204e+01
+QuadOverRf.Slice66: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.66, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.67: QUADRUPOLE, L=0.005000, K1=1.09156e+01
+QuadOverRf.Slice67: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.67, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.68: QUADRUPOLE, L=0.005000, K1=1.09108e+01
+QuadOverRf.Slice68: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.68, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.69: QUADRUPOLE, L=0.005000, K1=1.09061e+01
+QuadOverRf.Slice69: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.69, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.70: QUADRUPOLE, L=0.005000, K1=1.09013e+01
+QuadOverRf.Slice70: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.70, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.71: QUADRUPOLE, L=0.005000, K1=1.08966e+01
+QuadOverRf.Slice71: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.71, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.72: QUADRUPOLE, L=0.005000, K1=1.08918e+01
+QuadOverRf.Slice72: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.72, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.73: QUADRUPOLE, L=0.005000, K1=1.08871e+01
+QuadOverRf.Slice73: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.73, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.74: QUADRUPOLE, L=0.005000, K1=1.08823e+01
+QuadOverRf.Slice74: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.74, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.75: QUADRUPOLE, L=0.005000, K1=1.08776e+01
+QuadOverRf.Slice75: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.75, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.76: QUADRUPOLE, L=0.005000, K1=1.08728e+01
+QuadOverRf.Slice76: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.76, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.77: QUADRUPOLE, L=0.005000, K1=1.08681e+01
+QuadOverRf.Slice77: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.77, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.78: QUADRUPOLE, L=0.005000, K1=1.08634e+01
+QuadOverRf.Slice78: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.78, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.79: QUADRUPOLE, L=0.005000, K1=1.08587e+01
+QuadOverRf.Slice79: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.79, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.80: QUADRUPOLE, L=0.005000, K1=1.08540e+01
+QuadOverRf.Slice80: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.80, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.81: QUADRUPOLE, L=0.005000, K1=1.08492e+01
+QuadOverRf.Slice81: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.81, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.82: QUADRUPOLE, L=0.005000, K1=1.08445e+01
+QuadOverRf.Slice82: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.82, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.83: QUADRUPOLE, L=0.005000, K1=1.08398e+01
+QuadOverRf.Slice83: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.83, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.84: QUADRUPOLE, L=0.005000, K1=1.08351e+01
+QuadOverRf.Slice84: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.84, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.85: QUADRUPOLE, L=0.005000, K1=1.08304e+01
+QuadOverRf.Slice85: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.85, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.86: QUADRUPOLE, L=0.005000, K1=1.08257e+01
+QuadOverRf.Slice86: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.86, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.87: QUADRUPOLE, L=0.005000, K1=1.08210e+01
+QuadOverRf.Slice87: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.87, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.88: QUADRUPOLE, L=0.005000, K1=1.08164e+01
+QuadOverRf.Slice88: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.88, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.89: QUADRUPOLE, L=0.005000, K1=1.08117e+01
+QuadOverRf.Slice89: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.89, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.90: QUADRUPOLE, L=0.005000, K1=1.08070e+01
+QuadOverRf.Slice90: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.90, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.91: QUADRUPOLE, L=0.005000, K1=1.08023e+01
+QuadOverRf.Slice91: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.91, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.92: QUADRUPOLE, L=0.005000, K1=1.07977e+01
+QuadOverRf.Slice92: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.92, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.93: QUADRUPOLE, L=0.005000, K1=1.07930e+01
+QuadOverRf.Slice93: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.93, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.94: QUADRUPOLE, L=0.005000, K1=1.07883e+01
+QuadOverRf.Slice94: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.94, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.95: QUADRUPOLE, L=0.005000, K1=1.07837e+01
+QuadOverRf.Slice95: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.95, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.96: QUADRUPOLE, L=0.005000, K1=1.07790e+01
+QuadOverRf.Slice96: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.96, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.97: QUADRUPOLE, L=0.005000, K1=1.07744e+01
+QuadOverRf.Slice97: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.97, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.98: QUADRUPOLE, L=0.005000, K1=1.07697e+01
+QuadOverRf.Slice98: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.98, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.99: QUADRUPOLE, L=0.005000, K1=1.07651e+01
+QuadOverRf.Slice99: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.99, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.100: QUADRUPOLE, L=0.005000, K1=1.07605e+01
+QuadOverRf.Slice100: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.100, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Line: Line=(QuadOverRf.Slice1, QuadOverRf.Slice2, QuadOverRf.Slice3, QuadOverRf.Slice4, QuadOverRf.Slice5, QuadOverRf.Slice6, QuadOverRf.Slice7, QuadOverRf.Slice8, QuadOverRf.Slice9, QuadOverRf.Slice10, QuadOverRf.Slice11, QuadOverRf.Slice12, QuadOverRf.Slice13, QuadOverRf.Slice14, QuadOverRf.Slice15, QuadOverRf.Slice16, QuadOverRf.Slice17, QuadOverRf.Slice18, QuadOverRf.Slice19, QuadOverRf.Slice20, QuadOverRf.Slice21, QuadOverRf.Slice22, QuadOverRf.Slice23, QuadOverRf.Slice24, QuadOverRf.Slice25, QuadOverRf.Slice26, QuadOverRf.Slice27, QuadOverRf.Slice28, QuadOverRf.Slice29, QuadOverRf.Slice30, QuadOverRf.Slice31, QuadOverRf.Slice32, QuadOverRf.Slice33, QuadOverRf.Slice34, QuadOverRf.Slice35, QuadOverRf.Slice36, QuadOverRf.Slice37, QuadOverRf.Slice38, QuadOverRf.Slice39, QuadOverRf.Slice40, QuadOverRf.Slice41, QuadOverRf.Slice42, QuadOverRf.Slice43, QuadOverRf.Slice44, QuadOverRf.Slice45, QuadOverRf.Slice46, QuadOverRf.Slice47, QuadOverRf.Slice48, QuadOverRf.Slice49, QuadOverRf.Slice50, QuadOverRf.Slice51, QuadOverRf.Slice52, QuadOverRf.Slice53, QuadOverRf.Slice54, QuadOverRf.Slice55, QuadOverRf.Slice56, QuadOverRf.Slice57, QuadOverRf.Slice58, QuadOverRf.Slice59, QuadOverRf.Slice60, QuadOverRf.Slice61, QuadOverRf.Slice62, QuadOverRf.Slice63, QuadOverRf.Slice64, QuadOverRf.Slice65, QuadOverRf.Slice66, QuadOverRf.Slice67, QuadOverRf.Slice68, QuadOverRf.Slice69, QuadOverRf.Slice70, QuadOverRf.Slice71, QuadOverRf.Slice72, QuadOverRf.Slice73, QuadOverRf.Slice74, QuadOverRf.Slice75, QuadOverRf.Slice76, QuadOverRf.Slice77, QuadOverRf.Slice78, QuadOverRf.Slice79, QuadOverRf.Slice80, QuadOverRf.Slice81, QuadOverRf.Slice82, QuadOverRf.Slice83, QuadOverRf.Slice84, QuadOverRf.Slice85, QuadOverRf.Slice86, QuadOverRf.Slice87, QuadOverRf.Slice88, QuadOverRf.Slice89, QuadOverRf.Slice90, QuadOverRf.Slice91, QuadOverRf.Slice92, QuadOverRf.Slice93, QuadOverRf.Slice94, QuadOverRf.Slice95, QuadOverRf.Slice96, QuadOverRf.Slice97, QuadOverRf.Slice98, QuadOverRf.Slice99, QuadOverRf.Slice100)
+QuadOverRf.Start: MARKER
+QuadOverRf.End: MARKER
+QuadOverRf: Line=(Q, QuadOverRf.Start, QuadOverRf.Line, QuadOverRf.End)

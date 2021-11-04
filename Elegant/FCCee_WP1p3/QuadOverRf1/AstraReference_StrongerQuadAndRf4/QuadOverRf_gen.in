@@ -1,0 +1,19 @@
+&INPUT
+	FNAME='QuadOverRf.ini'
+	Species='positrons'
+	IPart=10000
+	Q_total=5.0
+	Probe=T
+	Noise_reduc=T
+	High_res=T
+	Ref_zpos=0.0
+	Ref_clock=0.0
+	Ref_Ekin=200.0
+	Cathode=F
+	Dist_z='gauss', sig_z=1.0, C_sig_z = 3
+	Dist_pz='gauss', sig_Ekin=50000.0, C_sig_Ekin = 3
+	Dist_x='gauss', sig_x=5.0, C_sig_x = 3
+	Dist_px='gauss', Nemit_x=8000.0, C_sig_px = 3
+	Dist_y='gauss' , sig_y=5.0, C_sig_y = 3
+	Dist_py='gauss', Nemit_y=8000.0, C_sig_py = 3
+/

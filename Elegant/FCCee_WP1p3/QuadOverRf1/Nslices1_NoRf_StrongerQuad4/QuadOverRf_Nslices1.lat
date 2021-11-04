@@ -1,0 +1,5 @@
+Q: CHARGE, TOTAL=5.0e-9
+QuadOverRf.Quad.1: QUADRUPOLE, L=0.500000, K1=44.972, ORDER=3
+QuadOverRf.Start: MARKER
+QuadOverRf.End: MARKER
+QuadOverRf: Line=(Q, QuadOverRf.Start, QuadOverRf.Quad.1, QuadOverRf.End)

@@ -1,0 +1,15 @@
+Q: CHARGE, TOTAL=5.0e-9
+QuadOverRf.Rf.HalfSlice: RFCA, FREQ=2998800000.0, PHASE=-90.000, &
+	L=0.083333, VOLT=1.50000e+06, CHANGE_P0=1, &
+	END1_FOCUS=0, END2_FOCUS=0, BODY_FOCUS_MODEL="NONE"
+QuadOverRf.Nd.HalfSlice: DRIFT, L=-0.083333
+QuadOverRf.Quad.1: QUADRUPOLE, L=0.166667, K1=1.11586e+01
+QuadOverRf.Slice1: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.1, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.2: QUADRUPOLE, L=0.166667, K1=1.09949e+01
+QuadOverRf.Slice2: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.2, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.3: QUADRUPOLE, L=0.166667, K1=1.08359e+01
+QuadOverRf.Slice3: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.3, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Line: Line=(QuadOverRf.Slice1, QuadOverRf.Slice2, QuadOverRf.Slice3)
+QuadOverRf.Start: MARKER
+QuadOverRf.End: MARKER
+QuadOverRf: Line=(Q, QuadOverRf.Start, QuadOverRf.Line, QuadOverRf.End)

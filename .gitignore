@@ -1,0 +1,16 @@
+**/*~
+**/*.sdf_txt
+# Elegant output files
+**/*.bun
+**/*.cen
+**/*.fin
+**/*.mag
+**/*.out
+**/*.par
+**/*.sig
+**/*.twi
+# Astra output files
+**/*.001
+**/*.ini
+**/win_config.dat
+**/NORRAN

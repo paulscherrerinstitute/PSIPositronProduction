@@ -1,0 +1,33 @@
+Q: CHARGE, TOTAL=5.0e-9
+QuadOverRf.Rf.HalfSlice: RFCA, FREQ=2998800000.0, PHASE=-90.000, &
+	L=0.020833, VOLT=3.75000e+05, CHANGE_P0=1, &
+	END1_FOCUS=0, END2_FOCUS=0, BODY_FOCUS_MODEL="NONE"
+QuadOverRf.Nd.HalfSlice: DRIFT, L=-0.020833
+QuadOverRf.Quad.1: QUADRUPOLE, L=0.041667, K1=1.12212e+01, ORDER=3
+QuadOverRf.Slice1: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.1, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.2: QUADRUPOLE, L=0.041667, K1=1.11794e+01, ORDER=3
+QuadOverRf.Slice2: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.2, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.3: QUADRUPOLE, L=0.041667, K1=1.11378e+01, ORDER=3
+QuadOverRf.Slice3: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.3, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.4: QUADRUPOLE, L=0.041667, K1=1.10966e+01, ORDER=3
+QuadOverRf.Slice4: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.4, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.5: QUADRUPOLE, L=0.041667, K1=1.10557e+01, ORDER=3
+QuadOverRf.Slice5: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.5, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.6: QUADRUPOLE, L=0.041667, K1=1.10151e+01, ORDER=3
+QuadOverRf.Slice6: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.6, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.7: QUADRUPOLE, L=0.041667, K1=1.09747e+01, ORDER=3
+QuadOverRf.Slice7: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.7, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.8: QUADRUPOLE, L=0.041667, K1=1.09347e+01, ORDER=3
+QuadOverRf.Slice8: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.8, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.9: QUADRUPOLE, L=0.041667, K1=1.08950e+01, ORDER=3
+QuadOverRf.Slice9: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.9, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.10: QUADRUPOLE, L=0.041667, K1=1.08555e+01, ORDER=3
+QuadOverRf.Slice10: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.10, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.11: QUADRUPOLE, L=0.041667, K1=1.08164e+01, ORDER=3
+QuadOverRf.Slice11: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.11, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Quad.12: QUADRUPOLE, L=0.041667, K1=1.07775e+01, ORDER=3
+QuadOverRf.Slice12: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.12, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
+QuadOverRf.Line: Line=(QuadOverRf.Slice1, QuadOverRf.Slice2, QuadOverRf.Slice3, QuadOverRf.Slice4, QuadOverRf.Slice5, QuadOverRf.Slice6, QuadOverRf.Slice7, QuadOverRf.Slice8, QuadOverRf.Slice9, QuadOverRf.Slice10, QuadOverRf.Slice11, QuadOverRf.Slice12)
+QuadOverRf.Start: MARKER
+QuadOverRf.End: MARKER
+QuadOverRf: Line=(Q, QuadOverRf.Start, QuadOverRf.Line, QuadOverRf.End)

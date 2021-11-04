@@ -1,0 +1,56 @@
+&NEWRUN
+	Head='QuadOverRf'
+	RUN=1
+	Distribution='QuadOverRf.ini'
+	Qbunch=5.0
+	debunch=0.0
+	Track_All=T
+	Auto_Phase=F
+	check_ref_part=F
+	H_max=0.0005
+	H_min=0.0
+	Max_step=5000000
+/
+
+&OUTPUT
+	ZSTART=0.0
+	ZSTOP=1.0
+	Zemit=501
+	Zphase=1
+	High_res=T
+	Local_emit=F   ! If T, do not use distributions for further tracking
+	Lmagnetized=F
+	Lsub_cor=T
+	! Generate some output files
+	RefS=T
+	EmitS=T
+	PhaseS=T
+	TrackS=F
+	TcheckS=F
+	CathodeS=T
+	Screen(1)=0.500
+/
+
+&CHARGE
+	LSPCH=F
+	Lmirror=F
+	Nrad=15, Nlong_in=20
+	Cell_var=2.0
+	min_grid=0.0
+	Max_scale=0.05
+	N_min=30
+/
+
+&CAVITY
+	LEfield=T
+	File_Efield(1)='../../../../fieldmaps/Ez_IdealTw_SBand_L500mm_Real.astra'
+	Nue(1)=2.9988, MaxE(1)=72.0, Phi(1)=90.0, C_pos(1)=0.0, C_smooth(1)=0
+	File_Efield(2)='../../../../fieldmaps/Ez_IdealTw_SBand_L500mm_Imag.astra'
+	Nue(2)=2.9988, MaxE(2)=72.0, Phi(2)=0.0, C_pos(2)=0.0, C_smooth(2)=0
+/
+
+&QUADRUPOLE
+	Lquad=T
+	!Q_K(1)=-11.243 or Q_grad(1)=-7.5
+	Q_grad(1)=-30.0, Q_pos(1)=0.25, Q_length(1)=0.5, Q_bore(1)=0.001
+/
