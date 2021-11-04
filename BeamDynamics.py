@@ -9,6 +9,7 @@ except:
     print('ROOT module not available.')
 import json
 import matplotlib.pyplot as plt
+import matplotlib.markers as pltMarkers
 
 
 
@@ -51,16 +52,44 @@ PRECISION_STANDARD_DF = 9
 #PRECISION_STANDARD_DF = [6, 6, 6, 6, 6, 6, 9, 6, 3, 9, 6, 6]
 #COLUMN_WIDTH_STANDARD_DF = 16
 
+COLUMN_ORDER_ASTRA_DF = [
+    'x', 'y', 'z', 'px', 'py', 'pz', 'clock',
+    'macroCharge', 'particleIndex', 'statusFlag'
+]
+
+SCI_NOTATION_FORMATTER = ('{:' + str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}').format
+INTEGER_FORMATTER = ('{:'+str(PRECISION_STANDARD_DF+9)+'d}').format
+
 FILE_TYPES_SPECS = {
     'standardDf': {
         'ext': '.sdf_txt',
-        'numCols': len(COLUMN_ORDER_STANDARD_DF),
-        'header': True
+        # 'numCols': len(COLUMN_ORDER_STANDARD_DF),
+        'header': True,
+        'formatters': [SCI_NOTATION_FORMATTER]*len(COLUMN_ORDER_STANDARD_DF)
+            # formatterStr = '{:'+ str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
+            # {formatters = [formatterStr.format] * fileTypeSpecs['numCols']
     },
     'astra': {
         'ext': '.001',
-        'numCols': 10,
-        'header': False
+        # 'numCols': 10,
+        'header': False,
+        'formatters': {
+            'x': SCI_NOTATION_FORMATTER,
+            'y': SCI_NOTATION_FORMATTER,
+            'z': SCI_NOTATION_FORMATTER,
+            'px': SCI_NOTATION_FORMATTER,
+            'py': SCI_NOTATION_FORMATTER,
+            'pz': SCI_NOTATION_FORMATTER,
+            'clock': SCI_NOTATION_FORMATTER,
+            'macroCharge': SCI_NOTATION_FORMATTER,
+            'particleIndex': INTEGER_FORMATTER,
+            'statusFlag': INTEGER_FORMATTER
+        }
+    },
+    'sdds': {
+        'ext': '.sdds',
+        # 'numCols': None,
+        'header': None
     },
 }
 
@@ -147,21 +176,20 @@ def export_sim_db_to_xlsx(jsonFilePath):
     dbDf.to_excel(xlsxFilePath)
 
 
-def save_fwf(sourceFilePath, standardDf, formatType='standardDf', additionalLabel=''):
+# TODO: Changed from sourceFilePath to outFilePath=None
+    # outFilePath = sourceFilePath + additionalLabel + fileTypeSpecs['ext']
+def generate_fwf(df, formatType='standardDf', outFilePath=None):
     fileTypeSpecs = FILE_TYPES_SPECS[formatType]
-    outFilePath = sourceFilePath + additionalLabel + fileTypeSpecs['ext']
-    formatterStr = '{:'+ str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
-    formatters = [formatterStr.format] * fileTypeSpecs['numCols']
-    #formatters={
-    #    'x': '',
-    #    'pz': '{:'+str(COLUMN_WIDTH_STANDARD_DF)+'.6f}'.format,
-    #}
-    standardDf.to_string(
-        outFilePath, formatters=formatters,
-        index=False, header=fileTypeSpecs['header']
+    dfStr = df.to_string(
+        formatters=fileTypeSpecs['formatters'], index=False,
+        header=fileTypeSpecs['header']
     )
     # headerList = standardDf.columns + ' [' + UNITS_STANDARD_DF + ']'
-    # standardDf.to_csv(standardCsvFilePath, header=headerList)
+    if outFilePath is not None:
+        outFilePath += FILE_TYPES_SPECS[formatType]['ext']
+        with open(outFilePath, 'w') as outFile:
+            outFile.write(dfStr)
+    return dfStr
 
 
 def load_standard_fwf(sourceFilePath):
@@ -187,7 +215,7 @@ def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
     standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
     standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
     if saveStandardFwf:
-        save_fwf(sourceFilePath, standardDf)
+        generate_fwf(standardDf, outFilePath=sourceFilePath)
     return standardDf
 
 
@@ -222,7 +250,7 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
                 fileSuffix += '_' + str(id)
         if saveStandardFwf:
             filePath, fileExt = os.path.splitext(sourceFilePath)
-            save_fwf(filePath+fileSuffix+fileExt, standardDf)
+            generate_fwf(standardDf, outFilePath=filePath+fileSuffix+fileExt)
         dfDict[distrName] = standardDf
     return dfDict
 
@@ -282,17 +310,15 @@ def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, sa
         standardDf['t'] = standardDf['t'] - deltaZ/vz*1e6
         labelStr += '_zProj{:.0f}mm'.format(zProjection)
     if saveStandardFwf:
-        save_fwf(sourceFilePath, standardDf, additionalLabel=labelStr)
+        generate_fwf(standardDf, outFilePath=sourceFilePath+labelStr)
     return standardDf
 
 
-def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refParticleId=0, saveAstraDist=False, outFilePath='AstraDistribution', additionalLabel=''):
-    if sourceFilePath is not None:
-        if standardDf is None:
-            standardDf = load_standard_fwf(sourceFilePath)
-            outFilePath = sourceFilePath
-        else:
-            raise ValueError('Only one between standardDf and sourceFilePath can be set different than None.')
+def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refParticleId=0, saveAstraDistr=False, outFilePath='AstraDistribution'):
+    # TODO: saveAstraDistr and outFilePath redundant, check also similar functions
+    standardDf, outFilePath = convert_from_standard_df_input_check(
+        standardDf, sourceFilePath, outFilePath
+    )
     astraDf = standardDf[['x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId']].copy()
     astraDf['x'] = astraDf['x'] * 1e-3                                          # [m]
     astraDf['y'] = astraDf['y'] * 1e-3                                          # [m]
@@ -315,12 +341,25 @@ def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refPartic
     # Add status flag
     statusFlag = np.full(astraDf.shape[0], 5)
     astraDf['statusFlag'] = statusFlag
+    astraDf['pdgId'] = astraDf['pdgId'].astype(int)
+    astraDf['statusFlag'] = astraDf['statusFlag'].astype(int)
     # TODO: Move reference particle to first position in the data frame
-    if saveAstraDist:
-        save_fwf(
-            outFilePath, astraDf, formatType='astra',
-            additionalLabel=additionalLabel
-        )
+    astraDf.columns = COLUMN_ORDER_ASTRA_DF
+    if saveAstraDistr:
+        generate_fwf(astraDf, formatType='astra', outFilePath=outFilePath)
+    return astraDf
+
+
+def convert_from_standard_df_input_check(standardDf, sourceFilePath, outFilePath):
+    if sourceFilePath is not None:
+        if standardDf is None:
+            standardDf = load_standard_fwf(sourceFilePath)
+            outFilePath = sourceFilePath
+        else:
+            raise ValueError(
+                'Only one between standardDf and sourceFilePath can be set different than None.'
+            )
+    return standardDf, outFilePath
 
 
 def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
@@ -365,7 +404,7 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
     if saveStandardFwf:
-        save_fwf(sourceFilePath, standardDf)
+        generate_fwf(standardDf, outFilePath=sourceFilePath)
     return standardDf
 
 
@@ -387,7 +426,19 @@ def get_sdds_parameter(sourceFilePath, parameterName):
     return resultVal
 
 
-def plot_hist(ax, distr, binWidth=None, binLims=None, legendLabel='', orientation='vertical', parsInLabel=True, opacity=1.):
+def convert_standard_df_to_sdds(standardDf=None, sourceFilePath=None, outFilePath='SddsDistribution'):
+    # standardDf, outFilePath = convert_from_standard_df_input_check(
+    #     standardDf, sourceFilePath
+    # )
+    astraDf = convert_standard_df_to_astra(standardDf, sourceFilePath)
+    astraDfStr = generate_fwf(astraDf, formatType='astra', outFilePath='TmpAstra')
+    outFilePath += FILE_TYPES_SPECS['sdds']['ext']
+    os.system('astra2elegant TmpAstra.001 ' + outFilePath)
+    os.system('rm TmpAstra.001')
+    # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
+
+
+def plot_hist(ax, distr, binWidth=None, binLims=None, legendLabel='', orientation='vertical', parsInLabel=True, opacityHist=1.):
     defaultBinNum = 100
     if binLims is None:
         if binWidth is None:
@@ -401,7 +452,7 @@ def plot_hist(ax, distr, binWidth=None, binLims=None, legendLabel='', orientatio
     else:
         binEdges = np.arange(binLims[0], binLims[1], binWidth)
     counts, _, histObj = ax.hist(
-        distr, bins=binEdges, orientation=orientation, alpha=opacity
+        distr, bins=binEdges, orientation=orientation, alpha=opacityHist
     )
     avg = np.mean(distr)
     std = np.std(distr)
@@ -424,37 +475,57 @@ def set_lims(ax, direction, var, lims):
             ax.set_ylim(lims)
 
 
-def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, legendLabel='', binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None, opacity=1.):
+def scatter_individual_marker_style(pathCollectionObj, markerStyles):
+    if markerStyles is None:
+        return
+    elif isinstance(markerStyles, str):
+        markerStyles = [markerStyles] * pathCollectionObj.get_transforms().shape[0]
+    markerPaths = []
+    for m in markerStyles:
+        markerObj = pltMarkers.MarkerStyle(m)
+        markerPath = markerObj.get_path().transformed(markerObj.get_transform())
+        markerPaths.append(markerPath)
+    pathCollectionObj.set_paths(markerPaths)
+
+
+def plot_phase_space_2d(
+        ax, distr, varName1=None, varName2=None, title=None, legendLabel='',
+        binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None,
+        markerStyle=None, markerSize=15, color='b', opacityHist=1.
+):
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
-    markerSize = 5
     opacityScatter = 1.
-    ax[0,0].scatter(
+    pathColl = ax[0,0].scatter(
         distr[varName1], distr[varName2],
-        markerSize, alpha=opacityScatter, linewidths=0
+        s=markerSize, edgecolors=color,
+        facecolors='none', linewidths=1., alpha=opacityScatter
     )
+    scatter_individual_marker_style(pathColl, markerStyle)
     plot_hist(
         ax[1,0], distr[varName1], binWidth=binWidth1, binLims=lims1,
-        legendLabel=legendLabel, opacity=opacity
+        legendLabel=legendLabel, opacityHist=opacityHist
     )
     plot_hist(
         ax[0,1], distr[varName2], binWidth=binWidth2, binLims=lims2,
-        legendLabel=legendLabel, orientation='horizontal', opacity=opacity
+        legendLabel=legendLabel, orientation='horizontal',
+        opacityHist=opacityHist
     )
     pzLabels = ['All, Counts = {:d}'.format(distr.shape[0]), ]
     if pzCutoff is not None:
         distrLowPz = distr[distr['pz']<pzCutoff]
         ax[0,0].scatter(
             distrLowPz[varName1], distrLowPz[varName2],
-            markerSize, alpha=opacityScatter, linewidths=0
+            s=markerSize, marker=markerStyle, facecolors='none', linewidths=1., edgecolors=color,
+            alpha=opacityScatter
         )
         plot_hist(
             ax[1,0], distrLowPz[varName1],
-            binWidth=binWidth1, binLims=lims1, opacity=opacity
+            binWidth=binWidth1, binLims=lims1, opacityHist=opacityHist
         )
         plot_hist(
             ax[0,1], distrLowPz[varName2], orientation='horizontal',
-            binWidth=binWidth2, binLims=lims2, opacity=opacity
+            binWidth=binWidth2, binLims=lims2, opacityHist=opacityHist
         )
         pzLabels += ['pz <= {:.1f} {:s}, Counts = {:d}'.format(
             pzCutoff, UNITS_STANDARD_DF['pz'], distrLowPz.shape[0]
@@ -482,7 +553,11 @@ def plot_phase_space_2d(ax, distr, varName1=None, varName2=None, title=None, leg
     ax[1,1].set_visible(False)
 
 
-def plot_distr(distributions, plotDefs, title=None, legendLabels=None, figHeight=9, figWidth=16):
+def plot_distr(
+        distributions, plotDefs, markerStyle=None, markerSize=15,
+        title=None, legendLabels=None, figHeight=9, figWidth=16
+):
+    # TODO: Integrate handling of distributions and legendLabels in check_marker_specs?
     if isinstance(distributions, pd.DataFrame):
         distributions = [distributions]
         if isinstance(legendLabels, str):
@@ -494,15 +569,42 @@ def plot_distr(distributions, plotDefs, title=None, legendLabels=None, figHeight
         ))
     if legendLabels is None:
         legendLabels = [''] * len(distributions)
+    markerStyle = check_marker_specs(distributions, markerStyle, 'markerStyle')
+    markerSize = check_marker_specs(distributions, markerSize, 'markerSize')
+    # TODO: Colors
+    defaultColors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    colors = defaultColors[:len(distributions)]
+    axList = []
     for plotDef in plotDefs:
         fig, ax = plt.subplots(2, 2)
         fig.set_figheight(figHeight)
         fig.set_figwidth(figWidth)
-        for distr, label in zip(distributions, legendLabels):
+        distrAndProperties = zip(
+            distributions, markerStyle, markerSize, legendLabels, colors
+        )
+        for distr, mStyle, mSize, label, color in distrAndProperties:
             if len(distributions) > 1:
                 plotDef['pzCutoff'] = None
-            plot_phase_space_2d(ax, distr, **plotDef, title=title, legendLabel=label)
-        plt.show()
+            plot_phase_space_2d(
+                ax, distr, **plotDef,
+                markerStyle=mStyle, markerSize=mSize, color=color,
+                title=title, legendLabel=label
+            )
+        axList.append(ax)
+        # plt.show()
+    return axList
+
+
+def check_marker_specs(distributions, markerSpecs, specName):
+    try:
+        if len(markerSpecs) != len(distributions):
+            raise ValueError(
+                '{:s} and distributions must have the same length.'.format(
+                    specName
+            ))
+    except TypeError:
+        markerSpecs = [markerSpecs] * len(distributions)
+    return markerSpecs
 
 
 def generate_fieldmap_astra_ideal_tw(fileBasePath, freq, Lstructure, zRes):
@@ -536,7 +638,7 @@ def generate_lattice_quad_over_rf_elegant(elementName, L, Nslices, quadGradient,
     quadOverRfLineStr = ''
     p0SliceStart = Ekin_to_p(EkinIni, pdgId)
     for sliceInd in range(1, Nslices+1):
-        beta = Ekin_to_beta(EkinIni, [-11])[0]
+        beta = Ekin_to_beta(EkinIni, -11)
         quadStrengthSlice = quad_strength(
             quadGradient, p0SliceStart+rfVoltageSlice/2., ZoverA=1.
         )
@@ -575,7 +677,21 @@ def quad_strength(quadGradient, p0, pdgId=-11, ZoverA=1.):
     return quadStrength
 
 
-def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, pzPoints=5, saveStandardFwf=False, outFilePath='crossDistribution'):
+def quad_matrix(k, l):
+    sqrtK = np.sqrt(np.abs(k))
+    phi = sqrtK * l
+    MquadFocusing = np.array((
+        (np.cos(phi), np.sin(phi)/sqrtK),
+        (-np.sin(phi)*sqrtK, np.cos(phi))
+    ))
+    MquadDefocusing = np.array((
+        (np.cosh(phi), np.sinh(phi)/sqrtK),
+        (np.sinh(phi)*sqrtK, np.cosh(phi))
+    ))
+    return MquadFocusing, MquadDefocusing
+
+
+def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, pzPoints=5, saveStandardFwf=False, outFilePath='CrossDistribution'):
     if not isinstance(xPoints,int) or xPoints < 1:
         raise ValueError('xPoints must be an integer >= 1.')
     if not isinstance(yPoints,int) or yPoints < 1:
@@ -618,6 +734,6 @@ def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, p
         subset=COLUMN_ORDER_STANDARD_DF[:-1], ignore_index=True, inplace=True
     )
     if saveStandardFwf:
-        save_fwf(outFilePath, standardDf)
+        generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf
     
