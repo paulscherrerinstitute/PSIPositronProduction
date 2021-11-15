@@ -241,6 +241,7 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
         standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
         standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
         standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
+        standardDf['trackingId'] = np.arange(standardDf.shape[0])
         standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
         fileSuffix = '_' + distrName
         if distrName == 'amor_leave' and pdgId:
