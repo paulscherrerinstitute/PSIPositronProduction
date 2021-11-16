@@ -34,28 +34,15 @@ PART_CONSTS = {   # Particle constants
     }
 }
 
-COLUMN_ORDER_STANDARD_DF = [
-    'x', 'px', 'y', 'py', 'z', 'pz', 't', 'Ekin',
-    'gammaRel', 'betaRel', 'xp', 'yp', 'pdgId', 'Q', 'trackingId'
-]
+COLUMN_ORDER_STANDARD_DF = ['x', 'px', 'y', 'py', 'z', 'pz', 't', 'pdgId', 'Q']
 UNITS_STANDARD_DF = {
     'x': 'mm', 'px': 'MeV/c',
     'y': 'mm', 'py': 'MeV/c',
     'z': 'mm', 'pz': 'MeV/c',
-    't': 'ns', 'Ekin': 'MeV',
-    'gammaRel': '', 'betaRel': '',
-    'xp': 'mrad', 'yp': 'mrad',
-    'pdgId': '', 'Q': 'C',
-    'trackingId': ''
+    't': 'ns',
+    'pdgId': '', 'Q': 'C'
 }
 PRECISION_STANDARD_DF = 9
-#PRECISION_STANDARD_DF = [6, 6, 6, 6, 6, 6, 9, 6, 3, 9, 6, 6]
-#COLUMN_WIDTH_STANDARD_DF = 16
-
-COLUMN_ORDER_ASTRA_DF = [
-    'x', 'y', 'z', 'px', 'py', 'pz', 'clock',
-    'macroCharge', 'particleIndex', 'statusFlag'
-]
 
 SCI_NOTATION_FORMATTER = ('{:' + str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}').format
 INTEGER_FORMATTER = ('{:'+str(PRECISION_STANDARD_DF+9)+'d}').format
@@ -63,7 +50,7 @@ INTEGER_FORMATTER = ('{:'+str(PRECISION_STANDARD_DF+9)+'d}').format
 FILE_TYPES_SPECS = {
     'standardDf': {
         'ext': '.sdf_txt',
-        # 'numCols': len(COLUMN_ORDER_STANDARD_DF),
+        'columnOrder': COLUMN_ORDER_STANDARD_DF,
         'header': True,
         'formatters': [SCI_NOTATION_FORMATTER]*len(COLUMN_ORDER_STANDARD_DF)
             # formatterStr = '{:'+ str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
@@ -71,7 +58,10 @@ FILE_TYPES_SPECS = {
     },
     'astra': {
         'ext': '.001',
-        # 'numCols': 10,
+        'columnOrder': [
+            'x', 'y', 'z', 'px', 'py', 'pz',
+            'clock', 'macroCharge', 'particleIndex', 'statusFlag'
+        ],
         'header': False,
         'formatters': {
             'x': SCI_NOTATION_FORMATTER,
@@ -88,7 +78,7 @@ FILE_TYPES_SPECS = {
     },
     'sdds': {
         'ext': '.sdds',
-        # 'numCols': None,
+        'columnOrder': ('x', 'xp', 'y', 'yp', 't', 'p', 'trackingId'),
         'header': None
     },
 }
@@ -122,19 +112,13 @@ def p_to_beta(p, pdgId):
     return beta
 
 
-def z_to_t(z, pz, pdgId):
-    beta = p_to_beta(pz, pdgId)
-    t = z / (beta*C)
-    return t
-
-
 def pVect_to_p(px, py, pz):
     p = np.sqrt(px**2. + py**2. + pz**2.)
     return p
 
 
 def pTransv_to_slope(pTransv, pLong):
-    slope = pTransv / pLong * 1e3 # [mrad]
+    slope = np.arctan(pTransv / pLong) * 1e3                                    # [mrad]
     return slope
 
 
@@ -168,6 +152,59 @@ def Ekin_to_beta(Ekin, pdgId):
     return beta
 
 
+def extend_standard_df(standardDf):
+    p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
+    dfExtension = pd.DataFrame()
+    dfExtension['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])
+    dfExtension['gammaRel'] = Ekin_to_gamma(dfExtension['Ekin'], standardDf['pdgId'])
+    dfExtension['betaRel'] = p_to_beta(p, standardDf['pdgId'])
+    dfExtension['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
+    dfExtension['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
+    for colName in dfExtension.columns:
+        if colName in standardDf.columns:
+            warnings.warn('Overwriting available column {:s}.'.format(colName))
+            relDiffs = (standardDf[colName] - dfExtension[colName]) / dfExtension[colName]
+            relDiffThreshold = 1e-6
+            isDiff = np.abs(relDiffs) > relDiffThreshold
+            if np.any(isDiff):
+                warnings.warn(
+                    '{:d} discrepancies larger than {:e} detected between available and recomputed values.'.format(
+                        np.sum(isDiff), relDiffThreshold
+                ))
+    standardDf = dfExtension.combine_first(standardDf)
+    return standardDf
+
+
+def compute_emittance(standardDf, planeName, correctOffsets=False):
+    x = standardDf[planeName]
+    px = standardDf['p'+planeName]
+    thresholdFactor = 0.001
+    xAvg = x.mean()
+    if xAvg > x.std()*thresholdFactor:
+        warnings.warn(
+            'Average position {:s}Avg = {:.3f} mm.'.format(planeName, xAvg)
+        )
+    pxAvg = px.mean()
+    if pxAvg > px.std()*thresholdFactor:
+        warnings.warn(
+            'Average divergence p{:s}Avg = {:.3f} MeV/c.'.format(
+                planeName, pxAvg
+        ))
+    if correctOffsets:
+        x -= xAvg
+        px -= pxAvg
+        print(
+            'Correcting offsets {0:s}Avg = {1:.3f} mm and p{0:s}Avg = {2:.3f} MeV/c.'.format(
+                planeName, xAvg, pxAvg
+        ))
+    # TODO: Check that all pdgIds are identical
+    Erest = pdgId_to_particle_const(standardDf['pdgId'][0], 'Erest')
+    emitNorm = np.sqrt(
+        (x**2.).sum() * (px**2.).sum() - (x*px).sum()**2.
+    ) / x.shape[0] / Erest * 1e3
+    return emitNorm                                                             # [mm mrad]
+
+
 def export_sim_db_to_xlsx(jsonFilePath):
     dbFile = open(jsonFilePath)
     dbJson = json.load(dbFile)
@@ -180,7 +217,7 @@ def export_sim_db_to_xlsx(jsonFilePath):
     # outFilePath = sourceFilePath + additionalLabel + fileTypeSpecs['ext']
 def generate_fwf(df, formatType='standardDf', outFilePath=None):
     fileTypeSpecs = FILE_TYPES_SPECS[formatType]
-    dfStr = df.to_string(
+    dfStr = df[fileTypeSpecs['columnOrder']].to_string(
         formatters=fileTypeSpecs['formatters'], index=False,
         header=fileTypeSpecs['header']
     )
@@ -194,6 +231,7 @@ def generate_fwf(df, formatType='standardDf', outFilePath=None):
 
 def load_standard_fwf(sourceFilePath):
     standardDf = pd.read_fwf(sourceFilePath)
+    standardDf = extend_standard_df(standardDf)
     return standardDf
 
 
@@ -206,14 +244,8 @@ def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
     # TODO: Chekc that the units in the following line are correct
     standardDf['t'] = standardDf['t'] / C * 1.e9                                # [ns]
     standardDf['pdgId'] = -11
-    p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
-    standardDf['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])
-    standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
-    standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
-    standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
-    standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
     standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
-    standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
+    standardDf = extend_standard_df(standardDf)
     if saveStandardFwf:
         generate_fwf(standardDf, outFilePath=sourceFilePath)
     return standardDf
@@ -232,16 +264,12 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
         rootTreeMat = np.column_stack([q for q in rootTreeDict.values()])
         standardDf = pd.DataFrame(data=rootTreeMat, columns=rootTreeDict.keys())
         standardDf.drop('evtId', axis=1, inplace=True)
-        # TODO: Check that 'e' in FCC-ee Target Tracking is Ekin and not Ekin + Erest
-        standardDf.rename(columns={'e': 'Ekin'}, inplace=True)
+        standardDf['t'] = standardDf['t'] * 1e-3                                # [ns]
         standardDf['pdgId'] = standardDf['pdgId'].astype(int)
-        standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
-        p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
-        standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
-        standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
-        standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
         standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
-        standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
+        standardDf = extend_standard_df(standardDf)
+        # TODO: Check if 'e' in FCC-ee Target Tracking is Ekin or Ekin + Erest (simple curiosity)
+        # One could have also used: standardDf.rename(columns={'e': 'Ekin'}, inplace=True)
         fileSuffix = '_' + distrName
         if distrName == 'amor_leave' and pdgId:
             standardDf = standardDf[standardDf['pdgId'].isin(pdgId)]
@@ -259,8 +287,9 @@ def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, sa
     standardDf = pd.read_csv(
         sourceFilePath, delim_whitespace=True,
         index_col=False, header=None,
-        names=('x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId', 'statusFlag')
+        names=FILE_TYPES_SPECS['astra']['columnOrder']
     )
+        # names=('x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId', 'statusFlag')
     standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
     standardDf['px'] = standardDf['px'] * 1.e-6                                 # [MeV]
     standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
@@ -270,18 +299,15 @@ def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, sa
     # Longitudinal coordinates in Astra are with respect to reference particle
     standardDf.loc[1:,'z'] = standardDf.loc[1:,'z'] + standardDf.loc[0,'z']
     standardDf.loc[1:,'pz'] = standardDf.loc[1:,'pz'] + standardDf.loc[0,'pz']
-    standardDf.loc[1:,'t'] = standardDf.loc[1:,'t'] + standardDf.loc[0,'t']     # [ns]
-    p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
-    standardDf['pdgId'].replace(to_replace={1:11, 2:-11}, inplace=True)
-    standardDf['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])
-    standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
-    standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
-    standardDf['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
-    standardDf['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
-    standardDf['Q'] = standardDf['Q'] * 1.e-9                                   # [C]
-    standardDf['trackingId'] = np.arange(standardDf.shape[0])
+    standardDf.loc[1:,'clock'] = \
+        standardDf.loc[1:,'clock'] + standardDf.loc[0,'clock']                  # [ns]
+    standardDf.rename(columns={'clock': 't'}, inplace=True)
+    standardDf['particleIndex'].replace(to_replace={1:11, 2:-11}, inplace=True)
+    standardDf.rename(columns={'particleIndex': 'pdgId'}, inplace=True)
+    standardDf['macroCharge'] = standardDf['macroCharge'] * 1.e-9               # [C]
+    standardDf.rename(columns={'macroCharge': 'Q'}, inplace=True)
     standardDf.drop('statusFlag', axis=1, inplace=True)
-    standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
+    standardDf = extend_standard_df(standardDf)
     labelStr = ''
     # If requested, cut particles that did not reach zCut
     if zCut is not None:
@@ -344,7 +370,7 @@ def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refPartic
     astraDf['pdgId'] = astraDf['pdgId'].astype(int)
     astraDf['statusFlag'] = astraDf['statusFlag'].astype(int)
     # TODO: Move reference particle to first position in the data frame
-    astraDf.columns = COLUMN_ORDER_ASTRA_DF
+    astraDf.columns = FILE_TYPES_SPECS['astra']['columnOrder']
     if saveAstraDistr:
         generate_fwf(astraDf, formatType='astra', outFilePath=outFilePath)
     return astraDf
@@ -366,8 +392,9 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     os.system('sddsconvert -ascii ' + sourceFilePath)
     standardDf = pd.read_csv(
         sourceFilePath, skiprows=24, delim_whitespace=True,
-        names=('x', 'xp', 'y', 'yp', 't', 'p', 'trackingId')
+        names=FILE_TYPES_SPECS['sdds']['columnOrder']
     )
+    standardDf.drop('trackingId', axis=1, inplace=True)
     pCentral = get_sdds_parameter(sourceFilePath, 'pCentral')
     QbunchRead = get_sdds_parameter(sourceFilePath, 'Charge')
     if not np.isnan(Qbunch) and not np.isclose(Qbunch, QbunchRead):
@@ -385,24 +412,21 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     NparticlesPerBunch = get_sdds_parameter(sourceFilePath, 'Particles')
     standardDf['pdgId'] = pdgId
     Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
-    standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
-    standardDf['px'] = standardDf['xp'] * Erest * pCentral                      # [MeV/c]
-    standardDf['xp'] = standardDf['xp'] * 1.e3                                  # [mrad]
-    standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
-    standardDf['py'] = standardDf['yp'] * Erest * pCentral                      # [MeV/c]
-    standardDf['yp'] = standardDf['yp'] * 1.e3                                  # [mrad]
     p = standardDf['p'] * Erest                                                 # [MeV/c]
     standardDf.drop('p', axis=1, inplace=True)
-    standardDf['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])                            # [MeV]
-    standardDf['gammaRel'] = Ekin_to_gamma(standardDf['Ekin'], standardDf['pdgId'])
-    standardDf['betaRel'] = p_to_beta(p, standardDf['pdgId'])
-    standardDf['pz'] = \
-        np.sqrt(p**2. - standardDf['px']**2. - standardDf['py']**2.)            # [MeV/c]
+    standardDf['pz'] = p / np.sqrt(1 + np.tan(standardDf['xp'])**2. + np.tan(standardDf['yp'])**2.) # [MeV/c]
+    standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
+    standardDf['px'] = np.tan(standardDf['xp']) * standardDf['pz']              # [MeV/c]
+    standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
+    standardDf['py'] = np.tan(standardDf['yp']) * standardDf['pz']              # [MeV/c]
+    standardDf['z'] = z0                                                        # [mm]
     standardDf['t'] = standardDf['t'] * 1.e9                                    # [ns]
-    # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6               # [mm]
-    standardDf['z'] = z0
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
-    standardDf = standardDf[COLUMN_ORDER_STANDARD_DF]
+    # Extended variables already available
+    standardDf['xp'] = standardDf['xp'] * 1.e3                                  # [mrad]
+    standardDf['yp'] = standardDf['yp'] * 1.e3                                  # [mrad]
+    standardDf = extend_standard_df(standardDf)
+    # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6             # [mm]
     if saveStandardFwf:
         generate_fwf(standardDf, outFilePath=sourceFilePath)
     return standardDf
@@ -663,14 +687,14 @@ def generate_lattice_quad_over_rf_elegant(elementName, L, Nslices, quadGradient,
         elementName
     )
     if elegantInputFilePath is not None:
-        outFile = open(elegantInputFilePath, 'w')
-        outFile.write(inputStr)
-        outFile.close()
+        with open(elegantInputFilePath, 'w') as outFile:
+            outFile.write(inputStr)
     return inputStr
 
 
 def quad_strength(quadGradient, p0, pdgId=-11, ZoverA=1.):
     beta = p_to_beta(p0, pdgId)
+    # TODO: Check this formula, probably without beta?
     quadStrength = C * 1e-6 * ZoverA * quadGradient / (
         beta * p0
     )
@@ -714,25 +738,25 @@ def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, p
     pxArray = np.zeros(totParticles)
     pyArray = np.zeros(totParticles)
     tArray = np.zeros(totParticles)
-    p = pVect_to_p(pxArray, pyArray, pzArray)
     pdgId = -11
-    EkinArray = p_to_Ekin(p, pdgId)
-    gammaRelArray = Ekin_to_gamma(EkinArray, pdgId)
-    betaRelArray = Ekin_to_beta(EkinArray, pdgId)
-    xpArray = pxArray / pzArray
-    ypArray = pyArray / pzArray
     pdgIdArray = np.full(totParticles, pdgId)
     QArray = pdgId_to_particle_const(pdgIdArray, 'Q')
-    trackingIdArray = np.arange(totParticles)
     dfData = np.stack((
-        xArray, pxArray, yArray, pyArray, zArray, pzArray, tArray, EkinArray,
-        gammaRelArray, betaRelArray, xpArray, ypArray,
-        pdgIdArray, QArray, trackingIdArray
+        xArray, pxArray, yArray, pyArray, zArray, pzArray,
+        tArray, pdgIdArray, QArray
     ), axis=1)
-    standardDf = pd.DataFrame(dfData, columns=COLUMN_ORDER_STANDARD_DF)
-    standardDf.drop_duplicates(
-        subset=COLUMN_ORDER_STANDARD_DF[:-1], ignore_index=True, inplace=True
+    standardDf = pd.DataFrame(
+        dfData, columns=FILE_TYPES_SPECS['standardDf']['columnOrder']
     )
+    standardDf.drop_duplicates(ignore_index=True, inplace=True)
+    standardDf = extend_standard_df(standardDf)
+    # TODO: Remove following lines when working (this was the first implementation)
+    # p = pVect_to_p(pxArray, pyArray, pzArray)
+    # EkinArray = p_to_Ekin(p, pdgId)
+    # gammaRelArray = Ekin_to_gamma(EkinArray, pdgId)
+    # betaRelArray = Ekin_to_beta(EkinArray, pdgId)
+    # xpArray = pxArray / pzArray
+    # ypArray = pyArray / pzArray
     if saveStandardFwf:
         generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf
