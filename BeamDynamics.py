@@ -35,12 +35,14 @@ PART_CONSTS = {   # Particle constants
 }
 
 COLUMN_ORDER_STANDARD_DF = ['x', 'px', 'y', 'py', 'z', 'pz', 't', 'pdgId', 'Q']
-UNITS_STANDARD_DF = {
+UNITS_STANDARD_DF_EXTENDED = {
     'x': 'mm', 'px': 'MeV/c',
     'y': 'mm', 'py': 'MeV/c',
     'z': 'mm', 'pz': 'MeV/c',
     't': 'ns',
-    'pdgId': '', 'Q': 'C'
+    'pdgId': '', 'Q': 'C',
+    'Ekin': 'MeV', 'gammaRel': '', 'betaRel': '',
+    'xp': 'mrad', 'yp': 'mrad'
 }
 PRECISION_STANDARD_DF = 9
 
@@ -217,11 +219,15 @@ def export_sim_db_to_xlsx(jsonFilePath):
     # outFilePath = sourceFilePath + additionalLabel + fileTypeSpecs['ext']
 def generate_fwf(df, formatType='standardDf', outFilePath=None):
     fileTypeSpecs = FILE_TYPES_SPECS[formatType]
-    dfStr = df[fileTypeSpecs['columnOrder']].to_string(
-        formatters=fileTypeSpecs['formatters'], index=False,
-        header=fileTypeSpecs['header']
-    )
-    # headerList = standardDf.columns + ' [' + UNITS_STANDARD_DF + ']'
+    try:
+        dfStr = df[fileTypeSpecs['columnOrder']].to_string(
+            formatters=fileTypeSpecs['formatters'], index=False,
+            header=fileTypeSpecs['header']
+        )
+    except KeyError:
+        warnings.warn('No column found.')
+        return
+    # headerList = standardDf.columns + ' [' + UNITS_STANDARD_DF_EXTENDED + ']'
     if outFilePath is not None:
         outFilePath += FILE_TYPES_SPECS[formatType]['ext']
         with open(outFilePath, 'w') as outFile:
@@ -267,7 +273,7 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=
         standardDf['t'] = standardDf['t'] * 1e-3                                # [ns]
         standardDf['pdgId'] = standardDf['pdgId'].astype(int)
         standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
-        standardDf = extend_standard_df(standardDf)
+        # standardDf = extend_standard_df(standardDf)
         # TODO: Check if 'e' in FCC-ee Target Tracking is Ekin or Ekin + Erest (simple curiosity)
         # One could have also used: standardDf.rename(columns={'e': 'Ekin'}, inplace=True)
         fileSuffix = '_' + distrName
@@ -552,7 +558,7 @@ def plot_phase_space_2d(
             binWidth=binWidth2, binLims=lims2, opacityHist=opacityHist
         )
         pzLabels += ['pz <= {:.1f} {:s}, Counts = {:d}'.format(
-            pzCutoff, UNITS_STANDARD_DF['pz'], distrLowPz.shape[0]
+            pzCutoff, UNITS_STANDARD_DF_EXTENDED['pz'], distrLowPz.shape[0]
         )]
         ax[0,0].legend(
             pzLabels, markerscale=5.,
@@ -566,8 +572,8 @@ def plot_phase_space_2d(
     ax[0,0].grid(True)
     ax[0,1].grid(True)
     ax[1,0].grid(True)
-    ax[0,0].set_xlabel(varName1+' ['+UNITS_STANDARD_DF[varName1]+']')
-    ax[0,0].set_ylabel(varName2+' ['+UNITS_STANDARD_DF[varName2]+']')
+    ax[0,0].set_xlabel(varName1+' ['+UNITS_STANDARD_DF_EXTENDED[varName1]+']')
+    ax[0,0].set_ylabel(varName2+' ['+UNITS_STANDARD_DF_EXTENDED[varName2]+']')
     ax[0,0].yaxis.set_label_position('right')
     ax[0,0].yaxis.tick_right()
     ax[1,0].set_ylabel('Bin counts')

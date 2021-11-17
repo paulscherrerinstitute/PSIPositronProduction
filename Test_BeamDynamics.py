@@ -123,3 +123,11 @@ sdfFilePath = '/afs/psi.ch/project/Pcubed/SimulationRuns/Geant4/000011/FCCeeTarg
 beam = bd.load_standard_fwf(sdfFilePath)
 emitX = bd.compute_emittance(beam, 'x', correctOffsets=False)
 print(emitX)
+
+
+#%%
+
+rootFilePath = '/afs/psi.ch/project/Pcubed/SimulationRuns/Geant4/000011/FCCeeTargetTracking.root'
+bd.convert_fcceett_to_standard_df(
+    rootFilePath, pdgId=-11, saveStandardFwf=True
+)
