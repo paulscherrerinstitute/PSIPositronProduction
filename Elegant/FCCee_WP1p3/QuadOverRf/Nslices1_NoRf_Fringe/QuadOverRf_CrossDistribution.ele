@@ -5,7 +5,7 @@
 &run_setup
 	lattice				= QuadOverRf_Nslices1.lat,
 	use_beamline			= QuadOverRf,
-	rootname			= QuadOverRf,
+	rootname			= QuadOverRf_CrossDistr,
 	output				= %s.out,
 	centroid			= %s.cen,
 	sigma				= %s.sig,
@@ -36,34 +36,11 @@
 	alpha_y				= 0.00,
 &end
 
-&bunched_beam
-	bunch				= %s.bun,
-	n_particles_per_bunch 		= 10000,
-	time_start 			= 0,
-	emit_nx 			= 8000.0e-6,
-	beta_x 				= 1.23,
-	alpha_x 			= 0,
-	eta_x				= 0,
-	emit_ny 			= 8000.0e-6,
-	beta_y 				= 1.23,
-	alpha_y 			= 0,
-	eta_y				= 0,
-	Po 				= 392.389,   ! Relativistic beta*gamma at 200 MeV
-	sigma_dp 			= 0.25,
-	sigma_s 			= 1.0e-3,
-	dp_s_coupling 			= 0,
-	!emit_z 				= 0,
-	!beta_z 				= 0,
-	!alpha_z 			= 0,
-	!momentum_chirp 			= 0,
-	!symmetrize 			= 0,
-	!limit_in_4d 			= 0,
-	distribution_cutoff[0] 		= 3*3.0,
-	distribution_type[0] 		= 3*"gaussian",
-	enforce_rms_values[0]		= 3*1
-	centroid[0] 			= 6*0.0,
-	first_is_fiducial 		= 0,
-	save_initial_coordinates 	= 1
+&sdds_beam
+	input_type			= "elegant",
+	sample_interval			= 1,
+	input				= CrossDistribution.sdds,
+	reuse_bunch			= 0 
 &end
 
 &track

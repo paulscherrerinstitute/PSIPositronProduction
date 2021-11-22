@@ -3,7 +3,7 @@ QuadOverRf.Rf.HalfSlice: RFCA, FREQ=2998800000.0, PHASE=-90.000, &
 	L=0.250000, VOLT=0.00000e+00, CHANGE_P0=1, &
 	END1_FOCUS=0, END2_FOCUS=0, BODY_FOCUS_MODEL="NONE"
 QuadOverRf.Nd.HalfSlice: DRIFT, L=-0.250000
-QuadOverRf.Quad.1: QUADRUPOLE, L=0.500000, K1=1.12136e+01, ORDER=3
+QuadOverRf.Quad.1: QUADRUPOLE, L=0.500000, K1=1.12136e+01
 QuadOverRf.Slice1: Line=(QuadOverRf.Rf.HalfSlice, QuadOverRf.Nd.HalfSlice, QuadOverRf.Quad.1, QuadOverRf.Nd.HalfSlice, QuadOverRf.Rf.HalfSlice)
 QuadOverRf.Line: Line=(QuadOverRf.Slice1)
 QuadOverRf.Start: MARKER

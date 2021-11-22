@@ -13,18 +13,18 @@ reload(bd)
 
 #%%
 
-zProjection = None
-zCut = None
-astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference/QuadOverRf.ini'
+# zProjection = None
+# zCut = None
+# astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference/QuadOverRf.ini'
 # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_VanishingLongEmit/QuadOverRf.ini'
 
-# zProjection = 500.   # [mm]
-# zCut = 500.   # [mm]
+zProjection = 500.   # [mm]
+zCut = 500.   # [mm]
 # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference/QuadOverRf.0100.001'
 # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_VanishingLongEmit/QuadOverRf.0100.001'
 # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_NoRf/QuadOverRf.0100.001'
 # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_NoRf_StrongerQuad4/QuadOverRf.0100.001'
-# astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_StrongerQuadAndRf4/QuadOverRf.0050.001'
+astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_StrongerQuadAndRf4/QuadOverRf.0100.001'
 standardDf = bd.convert_astra_to_standard_df(
     astraFilePath, zProjection=zProjection, zCut=zCut,
     saveStandardFwf=True, verbose=True
@@ -33,8 +33,8 @@ standardDf = bd.convert_astra_to_standard_df(
 
 #%%
 
-z0 = 0
-sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1/QuadOverRf.bun'
+# z0 = 0
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1/QuadOverRf.bun'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_VanishingLongEmit/QuadOverRf.bun'
 
 # z0 = 2000.   # [mm]
@@ -42,7 +42,7 @@ sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1/QuadOverRf.bun'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/PositiveDriftSecondOrder/QuadOverRf.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/PositiveDriftWithEmatrix/QuadOverRf.out'
 
-# z0 = 500.   # [mm]
+z0 = 500.   # [mm]
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/NegativeDriftWithEmatrix/QuadOverRf.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NegativeDriftFirstOrder/QuadOverRf.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_VanishingLongEmit/QuadOverRf.out'
@@ -53,7 +53,7 @@ sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1/QuadOverRf.bun'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices100/QuadOverRf.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NoRf/QuadOverRf_CrossDistr.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NoRf_StrongerQuad4/QuadOverRf.out'
-# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_StrongerQuadAndRf4/QuadOverRf.out'
+sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_StrongerQuadAndRf4/QuadOverRf.out'
 
 standardDf = bd.convert_sdds_to_standard_df(
     sddsFilepath, z0=z0, pdgId=-11, Qbunch = 5.e-9, saveStandardFwf=True
@@ -100,7 +100,7 @@ xMax = 20.   # [mm]
 yMax = 20.   # [mm]
 p0 = 200.   # [MeV/c]
 pzDelta = 100.   # [MeV/c]
-outFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/CrossDistributionNew'
+outFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/CrossDistribution'
 standardDf = bd.generate_cross_distribution(
     xMax, yMax, p0, pzDelta, xPoints=7, yPoints=7, pzPoints=5,
     saveStandardFwf=True, outFilePath=outFilePath
