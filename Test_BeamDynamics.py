@@ -51,9 +51,10 @@ z0 = 500.   # [mm]
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices6/QuadOverRf.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices12/QuadOverRf.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices100/QuadOverRf.out'
-# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NoRf/QuadOverRf_CrossDistr.out'
+sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NoRf/QuadOverRf_CrossDistr.out'
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NoRf_Fringe/QuadOverRf_CrossDistr.out'
 # sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_NoRf_StrongerQuad4/QuadOverRf.out'
-sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_StrongerQuadAndRf4/QuadOverRf.out'
+# sddsFilepath = './Elegant/FCCee_WP1p3/QuadOverRf/Nslices1_StrongerQuadAndRf4/QuadOverRf.out'
 
 standardDf = bd.convert_sdds_to_standard_df(
     sddsFilepath, z0=z0, pdgId=-11, Qbunch = 5.e-9, saveStandardFwf=True

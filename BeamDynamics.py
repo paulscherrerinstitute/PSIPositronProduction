@@ -177,34 +177,46 @@ def extend_standard_df(standardDf):
     return standardDf
 
 
-def compute_emittance(standardDf, planeName, correctOffsets=False):
-    x = standardDf[planeName]
-    px = standardDf['p'+planeName]
+def compute_emittance(standardDf, planeName, norm='normalized', correctOffsets=False, verbose=True):
+    u = standardDf[planeName]
+    if norm in ['normalized', 'geometric']:
+        uDivName = 'p' + planeName
+        uDivUnits = 'MeV/c'
+    elif norm == 'tracespace':
+        uDivName = planeName + 'p'
+        uDivUnits = 'mrad'
+    uDiv = standardDf[uDivName]
     thresholdFactor = 0.001
-    xAvg = x.mean()
-    if xAvg > x.std()*thresholdFactor:
-        warnings.warn(
-            'Average position {:s}Avg = {:.3f} mm.'.format(planeName, xAvg)
-        )
-    pxAvg = px.mean()
-    if pxAvg > px.std()*thresholdFactor:
-        warnings.warn(
-            'Average divergence p{:s}Avg = {:.3f} MeV/c.'.format(
-                planeName, pxAvg
-        ))
+    if verbose or correctOffsets:
+        uAvg = u.mean()
+        uDivAvg = uDiv.mean()
+    if verbose:
+        if uAvg > u.std()*thresholdFactor:
+            warnings.warn(
+                'Average position {:s}Avg = {:.3f} mm.'.format(planeName, xAvg)
+            )
+        if uDivAvg > uDiv.std()*thresholdFactor:
+            warnings.warn(
+                'Average divergence {:s}Avg = {:.3f} {:s}.'.format(
+                    uDivName, uDivAvg, uDivUnits
+            ))
     if correctOffsets:
-        x -= xAvg
-        px -= pxAvg
+        u -= uAvg
+        uDiv -= uDivAvg
         print(
-            'Correcting offsets {0:s}Avg = {1:.3f} mm and p{0:s}Avg = {2:.3f} MeV/c.'.format(
-                planeName, xAvg, pxAvg
+            'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'.format(
+                planeName, uAvg, uDivName, uDivAvg, uDivUnits
         ))
     # TODO: Check that all pdgIds are identical
-    Erest = pdgId_to_particle_const(standardDf['pdgId'][0], 'Erest')
-    emitNorm = np.sqrt(
-        (x**2.).sum() * (px**2.).sum() - (x*px).sum()**2.
-    ) / x.shape[0] / Erest * 1e3
-    return emitNorm                                                             # [mm mrad]
+    emit = np.sqrt(
+        (u**2.).sum() * (uDiv**2.).sum() - (u*uDiv).sum()**2.
+    ) / u.shape[0]
+    if norm in ['normalized', 'geometric']:
+        Erest = pdgId_to_particle_const(standardDf['pdgId'].iloc[0], 'Erest')
+        emit *= 1e3 / Erest                                                     # [mm mrad]
+        if norm == 'geometric':
+            emit /= (standardDf['betaRel']*standardDf['gammaRel']).mean()
+    return emit                                                                 # [mm mrad]
 
 
 def export_sim_db_to_xlsx(jsonFilePath):
@@ -257,7 +269,7 @@ def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
     return standardDf
 
 
-def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[-11], saveStandardFwf=False):
+def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], saveStandardFwf=False):
     if not isinstance(pdgId, list):
         pdgId = [pdgId]
     rootFile = ROOT.TFile.Open(sourceFilePath, 'READ')
@@ -468,7 +480,7 @@ def convert_standard_df_to_sdds(standardDf=None, sourceFilePath=None, outFilePat
     # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
 
 
-def plot_hist(ax, distr, binWidth=None, binLims=None, legendLabel='', orientation='vertical', parsInLabel=True, opacityHist=1.):
+def plot_hist(ax, distr, binWidth=None, binLims=None, density=False, legendLabel='', orientation='vertical', parsInLabel=True, opacityHist=1.):
     defaultBinNum = 100
     if binLims is None:
         if binWidth is None:
@@ -482,14 +494,15 @@ def plot_hist(ax, distr, binWidth=None, binLims=None, legendLabel='', orientatio
     else:
         binEdges = np.arange(binLims[0], binLims[1], binWidth)
     counts, _, histObj = ax.hist(
-        distr, bins=binEdges, orientation=orientation, alpha=opacityHist
+        distr, bins=binEdges, density=density,
+        orientation=orientation, alpha=opacityHist
     )
     avg = np.mean(distr)
     std = np.std(distr)
     if parsInLabel:
         if legendLabel != '':
             legendLabel += ', '
-        legendLabel += 'avg = {:.3f}, std = {:.3f}'.format(avg, std)
+        legendLabel += 'avg = {:.5e}, std = {:.5e}'.format(avg, std)
     histObj.set_label(legendLabel)
     ax.legend()
     return avg, std
@@ -606,9 +619,7 @@ def plot_distr(
     colors = defaultColors[:len(distributions)]
     axList = []
     for plotDef in plotDefs:
-        fig, ax = plt.subplots(2, 2)
-        fig.set_figheight(figHeight)
-        fig.set_figwidth(figWidth)
+        fig, ax = plt.subplots(2, 2, figsize=(figWidth,figHeight))
         distrAndProperties = zip(
             distributions, markerStyle, markerSize, legendLabels, colors
         )
