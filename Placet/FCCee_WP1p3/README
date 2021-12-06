@@ -1,0 +1,9 @@
+Default units:
+> Emittance: 10^-7 m.rad
+> Equations:
+>   0.3*G[T/m] = S[GeV/c/e/m]/L[m] = K[m-2]*P[GeV/c]/q[e] = 0.3*B[T]/R[m]
+>   |sin(u/2)| = LC/4f, f=1/K/L
+
+FMinsearch options:
+%options = optimset("Display","iter", "MaxFunEvals", 3);
+%options = optimset("Display","iter");
