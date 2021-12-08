@@ -9,8 +9,9 @@
 ### seq 50 -30 30 10
 
 
+set pi 3.1415926535897931
+set c 299792458.
 ### DEFINE BEAMLINE
-
 set charge 10000   ;# number of particles
 set e_initial 0.2   ;# [GeV]
 set gammaRel 392.390
@@ -21,45 +22,33 @@ set emitnx 10000.   ;# [mm mrad]
 set emitny $emitnx
 set alphax 0.
 set alphay 0.
+set gQuad 6.0   ;# [T/m]
 set Ra 20.   ;# [mm]
 set Fa 3.
+set mu [expr $pi/2.]
 set betax [expr ($Ra/$Fa)**2.*$betaRel*$gammaRel/$emitnx]   ;# [m]
-set Lcell [expr $betax/(1+sqrt(2)/2)]   ;# [m]
-set betay [expr $Lcell*(1-sqrt(2)/2)]   ;# [m]
-set f [expr $Lcell/(4.*1.)]
-set gQuad 6.0   ;# [T/m]
-set Lquad 0.30776   ;# [m]
-set kQuad 8.9964   ;# [1/m]
+set Lcell [expr $betax*sin($mu)/(1+sin($mu/2))]   ;# [m]
+set betay [expr $Lcell*(1.-sin($mu/2))/sin($mu)]   ;# [m]
+set f [expr $Lcell/(4.*sin($mu/2))]
+set kQuad [expr $gQuad/($e_initial*1e9)*$c]   ;# [1/m2]
+set Lquad [expr 1/($kQuad*$f)]   ;# [m]
 set Ldrift [expr ($Lcell-2*$Lquad)/2]   ;# [m]
 
-# Parameters of original example
-# set charge 2.56e9
-# set e_initial 9.0
-# set e_spread 2.0
-# set sigma_z 0
-# set betax 170.71067812
-# set betay 29.28932188 
-# set alphax 2.41421356  
-# set alphay -0.41421356
-# set Lquad 1.0
-# set kQuad 30.0
-# set Ldrift 30.0
-# set emitnx 0.1
-# set emitny 0.1
-
-#puts "Lcell = $Lcell m"
+puts "mu = $mu rad"
+puts "Lcell = $Lcell m"
 puts "Lquad = $Lquad m"
+puts "kQuad = $kQuad 1/m2"
 puts "Ldrift = $Ldrift m"
 puts "betax = $betax m"
 puts "betay = $betay m"
 
 BeamlineNew
 Girder
-  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1)*$e_initial*$kQuad*$Lquad/2.]
+  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial*$kQuad*$Lquad/2.]
   Drift -length $Ldrift
   Quadrupole -length $Lquad -strength [expr (-1.)*$e_initial*$kQuad*$Lquad]
   Drift -length $Ldrift
-  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1)*$e_initial*$kQuad*$Lquad/2.]
+  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial*$kQuad*$Lquad/2.]
 BeamlineSet -name beamline
 
 
@@ -86,14 +75,14 @@ set match(charge) $charge
 # puts $match(charge)
 
 # Emittance units: [10^-7 m rad]
-set common_script_dir ../scr/common
+set common_script_dir ../../scr/common
 # set script_dir ../../../../GIT_Placet/examples/fodo_cell
 source $common_script_dir/clic_basic_single.tcl
 source $common_script_dir/clic_beam.tcl
 
 # Global variables required by function make_beam_many in create_beam.tcl:
 # charge, e_initial, match(), n_total
-set n_slice 1
+set n_slice 2
 set n $charge
 set n_total [expr $n_slice * $n]
 
@@ -118,15 +107,25 @@ Octave {
     # Quick analysis
     disp(size(beam))
     figure(1)
-    subplot(2, 1, 1)
+    subplot(3, 1, 1)
     plot(s, beta_x)
     hold on
     plot(s, beta_y)
-    subplot(2, 1, 2)
+    xlabel('s [m]')
+    ylabel('beta [m]')
+    legend('beta_x', 'beta_y')
+    subplot(3, 1, 2)
     plot(s, alpha_x)
     hold on
     plot(s, alpha_y)
-    figure(2)
-    plot(beam(:,1), beam(:,2), '.')
+    xlabel('s [m]')
+    ylabel('alpha')
+    legend('alpha_x', 'alpha_y')
+    subplot(3, 1, 3)
+    plot(s, E)
+    xlabel('s [m]')
+    ylabel('E [GeV]')
+    #figure(2)
+    #plot(beam(:,1), beam(:,2), '.')
     waitforbuttonpress
 }
