@@ -26,15 +26,22 @@
 	n_steps						= 1
 &end
 
-!1.57080
+! 22.5 deg = 0.392699 rad
+! 45 deg = 0.785398 rad
+! 60 deg = 1.04720 rad
+! 70 deg = 1.22173 rad
+! 80 deg = 1.39626 rad
+! 90 deg = 1.57080 rad
+! 100 deg = 1.74533 rad
+! 120 deg = 2.09440 rad
+! 135 deg = 2.35619 rad
 &optimization_setup
 	verbose 					= 1,
 	equation 					= "
 									FODO.END#1.betax FODO.START#1.betax - abs
-									FODO.END#1.psix 1.57080 - abs + 
-									FODO.END#1.psiy 1.57080 - abs +
+									FODO.END#1.psix 1.22173 - abs +
 								  ",
-									!FODO.END#1.psix 1.57080 - abs
+									!FODO.END#1.psiy 1.22173 - abs +
 	mode 						= "minimize",
 	method 						= "simplex",
 	target 						= 1e-6,
@@ -65,8 +72,8 @@
 &optimization_variable
     name 						= Drift,
 	item 						= L, 
-    lower_limit 				= 0.01,
-	upper_limit 				= 1.0,
+    lower_limit 				= 0.010,
+	upper_limit 				= 1.000,
 	step_size 					= 1.
 &end
 
@@ -74,7 +81,7 @@
 	filename					= %s.twi,
 	matched						= 0,
 	beta_x						= 1.743956,
-	beta_y						= 1.223023   ! Analytical value with thin lens approx: beta_y = 0.299215
+	beta_y						= 1.251301   ! Analytical value with thin lens approx: beta_y = 0.299215
 	alpha_x						= 0,
 	alpha_y						= 0,
 &end
@@ -88,7 +95,7 @@
 	alpha_x 					= 0,
 	eta_x						= 0,
 	emit_ny 					= 10000e-6,
-	beta_y 						= 1.223023
+	beta_y 						= 1.251301
 	alpha_y 					= 0,
 	eta_y						= 0,
 	Po 							= 392.389,   ! Relativistic beta*gamma at 200 MeV
@@ -149,7 +156,7 @@
 	filename	= %s.twi,
 	matched		= 0,
 	beta_x		= 1.743956,
-	beta_y		= 1.223023,
+	beta_y		= 1.251301,
 	alpha_x		= 0,
 	alpha_y		= 0
 &end
