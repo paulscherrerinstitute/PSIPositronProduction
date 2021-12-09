@@ -1,0 +1,11 @@
+! Analytical value with thin lens approx: Lquad = 0.307842 m
+! Analytical value with thin lens approx: Ldrift = 0.202950 m
+
+Q: CHARGE, TOTAL=5.0e-9
+Quad.Foc.HalfSlice: QUADRUPOLE, L=0.112642, K1=8.9964
+Drift: DRIFT, L=0.235100
+Quad.Defoc.HalfSlice: QUADRUPOLE, L=0.112642, K1=-8.9964
+FodoCell: Line=(Quad.Foc.HalfSlice, Drift, 2*(Quad.Defoc.HalfSlice), Drift, Quad.Foc.HalfSlice)
+Fodo.Start: MARKER, FITPOINT=1
+Fodo.End: MARKER, FITPOINT=1
+Fodo: Line=(Q, Fodo.Start, 1*(FodoCell), Fodo.End)

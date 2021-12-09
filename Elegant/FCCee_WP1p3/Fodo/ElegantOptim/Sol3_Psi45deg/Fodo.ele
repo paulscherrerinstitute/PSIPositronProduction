@@ -1,0 +1,36 @@
+&change_particle
+	name						= positron
+&end
+
+&run_setup
+	lattice						= Fodo.lat,
+	use_beamline				= Fodo,
+	rootname					= Fodo,
+	output						= %s.out,
+	centroid					= %s.cen,
+	sigma						= %s.sig,
+	final						= %s.fin,
+	parameters					= %s.par,
+	magnets						= %s.mag,
+	combine_bunch_statistics	= 0,
+	default_order		 		= 3,
+	concat_order		 		= 0,
+	print_statistics	 		= 0,
+	random_number_seed	 		= 9876543210,
+	p_central		 			= 392.389,   ! Relativistic beta*gamma at 200 MeV
+	tracking_updates	 		= 1,
+	always_change_p0	 		= 1
+&end
+
+&run_control
+	n_steps						= 1
+&end
+
+&twiss_output
+	filename					= %s.twi,
+	matched						= 0,
+	beta_x						= 1.743956,
+	beta_y						= 0.827728,
+	alpha_x						= 0,
+	alpha_y						= 0
+&end
