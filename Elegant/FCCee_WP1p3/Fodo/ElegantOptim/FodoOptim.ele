@@ -31,7 +31,8 @@
 	verbose 					= 1,
 	equation 					= "
 									FODO.END#1.betax FODO.START#1.betax - abs
-									FODO.END#1.psix FODO.END#1.psiy - abs +
+									FODO.END#1.psix 1.57080 - abs + 
+									FODO.END#1.psiy 1.57080 - abs +
 								  ",
 									!FODO.END#1.psix 1.57080 - abs
 	mode 						= "minimize",
@@ -48,17 +49,17 @@
 &end
 
 &optimization_variable
-    name 						= Quad.Defoc,
+    name 						= Quad.Defoc.HalfSlice,
 	item 						= L, 
-    lower_limit 				= 0.10,
-	upper_limit 				= 1.0,
-	step_size 					= 1.
+    lower_limit 				= 0.05,
+	upper_limit 				= 0.5,
+	step_size 					= 0.5
 &end
 
 &optimization_covariable  
 	name 						= Quad.Foc.HalfSlice,
 	item 						= L,
-	equation 					= "QUAD.DEFOC.L 2. /" 
+	equation 					= "QUAD.DEFOC.HALFSLICE.L" 
 &end
 
 &optimization_variable
