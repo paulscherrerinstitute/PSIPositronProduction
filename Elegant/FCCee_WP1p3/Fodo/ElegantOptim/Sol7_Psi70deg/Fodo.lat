@@ -1,5 +1,5 @@
-! Analytical value with thin lens approx: Lquad = 0.307842 m
-! Analytical value with thin lens approx: Ldrift = 0.202950 m
+! Analytical value with thin lens approx: Lquad = 0.244949 m
+! Analytical value with thin lens approx: Ldrift = 0.275770 m
 
 Q: CHARGE, TOTAL=5.0e-9
 Quad.Foc.HalfSlice: QUADRUPOLE, L=0.144463, K1=8.9964
