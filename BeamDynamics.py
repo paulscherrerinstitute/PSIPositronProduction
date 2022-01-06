@@ -757,12 +757,8 @@ def generate_lattice_quad_over_rf_elegant(elementName, L, Nslices, quadGradient,
     return inputStr
 
 
-def quad_strength(quadGradient, p0, pdgId=-11, ZoverA=1.):
-    beta = p_to_beta(p0, pdgId)
-    # TODO: Check this formula, probably without beta?
-    quadStrength = C * 1e-6 * ZoverA * quadGradient / (
-        beta * p0
-    )
+def quad_strength(quadGradient, p, ZoverA=1.):
+    quadStrength = C * 1e-6 * ZoverA * quadGradient / p
     return quadStrength
 
 
