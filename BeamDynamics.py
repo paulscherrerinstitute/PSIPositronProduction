@@ -83,6 +83,10 @@ FILE_TYPES_SPECS = {
         'columnOrder': ('x', 'xp', 'y', 'yp', 't', 'p', 'trackingId'),
         'header': None
     },
+    'octave': {
+        'ext': '.dat',
+        'columnOrder': ('x', 'xp', 'y', 'yp', 't', 'p'),
+    }
 }
 
 DATA_BASE_PATH = '/afs/psi.ch/project/Pcubed'
@@ -358,6 +362,38 @@ def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, sa
     return standardDf
 
 
+def convert_octave_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
+    if np.isnan(Qbunch):
+        warnings.warn(
+            'Qbunch has not been declared. The charge Q of the (macro)particles cannot be determined.'
+        )
+    with open(sourceFilePath, 'r') as sourceFile:
+        startLine = None
+        endLine = None
+        for lineInd, line in enumerate(sourceFile):
+            if '# name: A_RF\n' == line:
+                startLine = lineInd
+            elif '# name:' in line and startLine is not None and endLine is None:
+                endLine = lineInd
+        totLines = lineInd
+    standardDf = pd.read_csv(
+        sourceFilePath, engine='python', delim_whitespace=True,
+        index_col=False, header=None,
+        names=FILE_TYPES_SPECS['octave']['columnOrder'],
+        skiprows=startLine+4, skipfooter=totLines-endLine+2
+    )
+    standardDf['z'] = z0                                                        # [mm]
+    standardDf['t'] = standardDf['t'] / C * 1e6                                 # [ns]
+    standardDf['pdgId'] = pdgId
+    standardDf = p_components_from_angles(standardDf)
+    NparticlesPerBunch = standardDf.shape[0]
+    standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
+    standardDf = extend_standard_df(standardDf)
+    if saveStandardFwf:
+        generate_fwf(standardDf, outFilePath=sourceFilePath)
+    return standardDf
+
+
 def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refParticleId=0, saveAstraDistr=False, outFilePath='AstraDistribution'):
     # TODO: saveAstraDistr and outFilePath redundant, check also similar functions
     standardDf, outFilePath = convert_from_standard_df_input_check(
@@ -429,24 +465,36 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
         Qbunch = QbunchRead
     NparticlesPerBunch = get_sdds_parameter(sourceFilePath, 'Particles')
     standardDf['pdgId'] = pdgId
-    Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
-    p = standardDf['p'] * Erest                                                 # [MeV/c]
-    standardDf.drop('p', axis=1, inplace=True)
-    standardDf['pz'] = p / np.sqrt(1 + np.tan(standardDf['xp'])**2. + np.tan(standardDf['yp'])**2.) # [MeV/c]
     standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
-    standardDf['px'] = np.tan(standardDf['xp']) * standardDf['pz']              # [MeV/c]
     standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
-    standardDf['py'] = np.tan(standardDf['yp']) * standardDf['pz']              # [MeV/c]
     standardDf['z'] = z0                                                        # [mm]
     standardDf['t'] = standardDf['t'] * 1.e9                                    # [ns]
-    standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
-    # Extended variables already available
     standardDf['xp'] = standardDf['xp'] * 1.e3                                  # [mrad]
     standardDf['yp'] = standardDf['yp'] * 1.e3                                  # [mrad]
+    standardDf['p'] = standardDf['p'] * Erest                                   # [MeV/c]
+    standardDf = p_components_from_angles(standardDf)
+    standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
+    # Some extended variables already available
     standardDf = extend_standard_df(standardDf)
     # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6             # [mm]
     if saveStandardFwf:
         generate_fwf(standardDf, outFilePath=sourceFilePath)
+    return standardDf
+
+
+def p_components_from_angles(standardDf):
+    Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
+    # [MeV/c]
+    p = standardDf['p']
+    standardDf.drop('p', axis=1, inplace=True)
+    standardDf['pz'] = p / np.sqrt(
+        1. + np.tan(standardDf['xp']*1e-3)**2. +
+        np.tan(standardDf['yp']*1e-3)**2.
+    )                                                                           # [MeV/c]
+    standardDf['px'] = np.tan(standardDf['xp']*1e-3) * \
+        standardDf['pz']         # [MeV/c]
+    standardDf['py'] = np.tan(standardDf['yp']*1e-3) * \
+        standardDf['pz']         # [MeV/c]
     return standardDf
 
 

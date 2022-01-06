@@ -132,3 +132,12 @@ rootFilePath = '/afs/psi.ch/project/Pcubed/SimulationRuns/Geant4/000011/FCCeeTar
 bd.convert_fcceett_to_standard_df(
     rootFilePath, pdgId=-11, saveStandardFwf=True
 )
+
+
+#%%
+
+octaveFilepath = './Elegant/FCCee_WP1p3/Distributions_Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
+z0 = 10e3   # [mm]
+standardDf = bd.convert_octave_to_standard_df(
+    octaveFilepath, z0=z0, pdgId=-11, Qbunch = 25.e-9, saveStandardFwf=True
+)
