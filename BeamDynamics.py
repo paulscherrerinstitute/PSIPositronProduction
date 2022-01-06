@@ -152,6 +152,18 @@ def gamma_to_beta(gamma):
     return beta
 
 
+def gamma_to_p(gamma, pdgId):
+    Erest = pdgId_to_particle_const(pdgId, 'Erest')
+    p = Erest * np.sqrt(gamma**2. - 1)
+    return p
+
+
+def p_to_gamma(p, pdgId):
+    Erest = pdgId_to_particle_const(pdgId, 'Erest')
+    gamma = np.sqrt((p/Erest)**2. - 1.)
+    return gamma
+
+
 def Ekin_to_beta(Ekin, pdgId):
     gamma = Ekin_to_gamma(Ekin, pdgId)
     beta = gamma_to_beta(gamma)
@@ -484,17 +496,13 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
 
 def p_components_from_angles(standardDf):
     Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
-    # [MeV/c]
-    p = standardDf['p']
+    p = standardDf['p']                                                         # [MeV/c]
     standardDf.drop('p', axis=1, inplace=True)
     standardDf['pz'] = p / np.sqrt(
-        1. + np.tan(standardDf['xp']*1e-3)**2. +
-        np.tan(standardDf['yp']*1e-3)**2.
+        1. + np.tan(standardDf['xp']*1e-3)**2. + np.tan(standardDf['yp']*1e-3)**2.
     )                                                                           # [MeV/c]
-    standardDf['px'] = np.tan(standardDf['xp']*1e-3) * \
-        standardDf['pz']         # [MeV/c]
-    standardDf['py'] = np.tan(standardDf['yp']*1e-3) * \
-        standardDf['pz']         # [MeV/c]
+    standardDf['px'] = np.tan(standardDf['xp']*1e-3) * standardDf['pz']         # [MeV/c]
+    standardDf['py'] = np.tan(standardDf['yp']*1e-3) * standardDf['pz']         # [MeV/c]
     return standardDf
 
 
