@@ -1,5 +1,8 @@
 **/*~
 **/*.sdf_txt
+# Python
+**/__pycache__
+**/.ipynb_checkpoints
 # Elegant output files
 **/*.bun
 **/*.cen
