@@ -1,3 +1,5 @@
+name:
+  - BinderJupyter
 channels:
   - conda-forge
 dependencies:
