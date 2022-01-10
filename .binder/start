@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#export PYTHONPATH=//home/jovyan/work
-#export JUPYTER_PATH=/home/jovyan/work
-export VARSTR="I am running the script start! $(pwd) $HOME"
-source /home/jovyan/RepoSetup/Set_Pythonpath.sh
+#export VARSTR="I am running the script start! $(pwd) $HOME"
+#source /home/jovyan/RepoSetup/Set_Pythonpath.sh
+source ./RepoSetup/Set_Pythonpath.sh
+
 exec "$@"
