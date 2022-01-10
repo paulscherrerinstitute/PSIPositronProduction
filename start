@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 #export PYTHONPATH=//home/jovyan/work
 #export JUPYTER_PATH=/home/jovyan/work
-source ./RepoSetup/Set_Pythonpath.sh
+#source ./RepoSetup/Set_Pythonpath.sh
+echo "I am running the script start!"
 exec "$@"
