@@ -1,5 +1,5 @@
 #!/usr/bin/bash
 #export PYTHONPATH=//home/jovyan/work
 #export JUPYTER_PATH=/home/jovyan/work
-source ./RepoSetup/Set_Repopath.sh
+source ./RepoSetup/Set_Pythonpath.sh
 exec "$@"
