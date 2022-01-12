@@ -702,9 +702,49 @@ def plot_phase_space_2d(
     ax[0,0].yaxis.tick_right()
     ax[1,0].set_ylabel('Bin counts')
     ax[0,1].set_xlabel('Bin counts')
+    if (varName1 == 'x' and varName2 == 'xp') \
+        or (varName1 == 'y' and varName2 == 'yp'):
+        #TODO: Pass filter specs
+        plot_parameters(ax[1,1], distr, varName1, filterSpecs={})
+    else:
+        ax[1,1].set_visible(False)
     if title is not None:
         ax[0,0].get_figure().suptitle(title)
-    ax[1,1].set_visible(False)
+
+
+def plot_parameters(ax, distr, planeName, filterSpecs={}):
+    emitTab = []
+    emitDefinitions = ['normalized', 'geometric', 'tracespace']
+    # vPos = 0.1
+    # alignSpecs = {
+    #     'horizontalalignment': 'left',
+    #     'verticalalignment': 'center',
+    #     'transform': ax.transAxes
+    # }
+    for emitDef in emitDefinitions:
+        emitTab.append(compute_emittance(
+            distr, planeName, norm=emitDef,
+            filterSpecs=filterSpecs, verbose=False
+        ))
+    emitDefinitions = [
+        'emit'+emitDef.capitalize() for emitDef in emitDefinitions
+    ]
+    #TODO: Parametrize emittance units
+    #TODO: EMIT_DEFINITIONS and TWISS_NAMES
+    twissNames = ['alphaTwiss', 'betaTwiss', 'gammaTwiss']
+    emitTab += compute_twiss(
+        distr, planeName, filterSpecs=filterSpecs, verbose=False
+    )
+    emitDf = pd.DataFrame([emitTab,], columns=emitDefinitions+twissNames)
+    emitDf.update(emitDf.applymap('{:.3f}'.format))
+    tab = pd.plotting.table(
+        ax, emitDf.T, loc='center',
+        colWidths=[1./(1.+emitDf.shape[0])] * emitDf.shape[0]
+    )
+    tab = tab.get_celld()
+    for cell in tab.values():
+        cell.set_height(0.1)
+    ax.set_axis_off()
 
 
 def plot_distr(
