@@ -3,6 +3,7 @@ import subprocess
 import warnings
 import numpy as np
 import pandas as pd
+import scipy.stats as scistats
 try:
     import ROOT
 except:
@@ -582,6 +583,28 @@ def plot_hist(ax, distr, binWidth=None, binLims=None, density=False, legendLabel
         if legendLabel != '':
             legendLabel += ', '
         legendLabel += 'avg = {:.5e}, std = {:.5e}'.format(avg, std)
+    # Plot Gaussian fit
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        try:
+            mu, sigma = scistats.norm.fit(distr)
+            binCenters = (binEdges[1:] + binEdges[:-1]) / 2.
+            gaussFits = scistats.norm.pdf(binCenters, mu, sigma)
+        except RuntimeWarning as err:
+            if str(err) != 'divide by zero encountered in true_divide':
+                raise
+        else:
+            binWidths = binEdges[1:] - binEdges[:-1]
+            fittedHist = gaussFits * binWidths * distr.shape[0]
+            if orientation == 'vertical':
+                data = [binCenters, fittedHist]
+            elif orientation == 'horizontal':
+                data = [fittedHist, binCenters]
+            ax.plot(
+                *data, '-', color=histObj.get_children()[0].get_facecolor()
+            )
+            if parsInLabel:
+                legendLabel += ', sigmaGauss = {:.5e}'.format(sigma)
     histObj.set_label(legendLabel)
     ax.legend()
     return avg, std
