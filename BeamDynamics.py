@@ -10,6 +10,7 @@ except:
 import json
 import matplotlib.pyplot as plt
 import matplotlib.markers as pltMarkers
+import matplotlib.patches as pltPatches
 
 
 
@@ -202,6 +203,28 @@ def compute_emittance(standardDf, planeName, norm='normalized', correctOffsets=F
         uDivName = planeName + 'p'
         uDivUnits = 'mrad'
     uDiv = standardDf[uDivName]
+def compute_twiss(
+        standardDf, planeName, filterSpecs={},
+        correctOffsets=True, verbose=True
+    ):
+    standardDf = filter_distr(standardDf, filterSpecs)
+    emitTraceSpace = compute_emittance(
+        standardDf, planeName, norm='tracespace',
+        correctOffsets=correctOffsets, verbose=verbose
+    )
+    uDivName = planeName + 'p'
+    uDivUnits = 'mrad'
+    # TODO: refactor (see compute_emittance)
+    u, uDiv = check_distribution_offsets(
+        standardDf[planeName], standardDf[uDivName],
+        planeName, uDivName, uDivUnits, correctOffsets, verbose
+    )
+    alphaTwiss = -1. * (u*uDiv).sum()/u.shape[0] / emitTraceSpace
+    betaTwiss = (u**2.).sum()/u.shape[0] / emitTraceSpace
+    gammaTwiss = (uDiv**2.).sum()/u.shape[0] / emitTraceSpace
+    return alphaTwiss, betaTwiss, gammaTwiss
+
+
     thresholdFactor = 0.001
     if verbose or correctOffsets:
         uAvg = u.mean()
@@ -688,8 +711,62 @@ def plot_distr(
                 title=title, legendLabel=label
             )
         axList.append(ax)
-        # plt.show()
     return axList
+
+
+def plot_ellipse(
+        ax, emitGeom, semiAxisOrder=1, color='k',
+        alphaTwiss=None, betaTwiss=None, gammaTwiss=None
+    ):
+    alphaTwiss, betaTwiss, gammaTwiss = third_twiss_param(
+        alphaTwiss=alphaTwiss, betaTwiss=betaTwiss
+    )
+    tiltAngle = np.rad2deg(
+        np.arctan(2*alphaTwiss/(gammaTwiss-betaTwiss)) / 2.
+    )
+    sqrtTerm = np.sqrt((betaTwiss+gammaTwiss)**2. - 4.)
+    majorSemiAxis = 1. / np.sqrt((betaTwiss+gammaTwiss+sqrtTerm)/2./emitGeom)
+    minorSemiAxis = 1. / np.sqrt((betaTwiss+gammaTwiss-sqrtTerm)/2./emitGeom)
+    if semiAxisOrder == 1:
+        semiAxis1 = majorSemiAxis
+        semiAxis2 = minorSemiAxis
+    elif semiAxisOrder == 2:
+        semiAxis1 = minorSemiAxis
+        semiAxis2 = majorSemiAxis
+    ellipse = pltPatches.Ellipse(
+        (0,0), 2.*semiAxis1, 2.*semiAxis2, tiltAngle,
+        facecolor='none', edgecolor=color
+    )
+    ax.add_patch(ellipse)
+
+
+def third_twiss_param(alphaTwiss=None, betaTwiss=None, gammaTwiss=None):
+    if alphaTwiss is not None and betaTwiss is not None and gammaTwiss is None:
+        gammaTwiss = (1. + alphaTwiss**2.) / betaTwiss
+    elif alphaTwiss is not None and gammaTwiss is not None and betaTwiss is None:
+        betaTwiss = (1. + alphaTwiss**2.) / gammaTwiss
+    elif betaTwiss is not None and gammaTwiss is not None and alphaTwiss is None:
+        alphaTwiss = np.sqrt(betaTwiss*gammaTwiss - 1.)
+    else:
+        raise ValueError(
+            'Wrong input. Two out of three Twiss parameters are required.'
+        )
+    return alphaTwiss, betaTwiss, gammaTwiss
+
+
+def distr_within_ellipse(standardDf, planeName, emitTraceSpace, ellipseSpecs):
+    indsWithinEllipse = pd.Series(True, index=standardDf.index)
+    for planeName, ellSpecs in ellipseSpecs.items():
+        alphaTwiss, betaTwiss, gammaTwiss = third_twiss_param(**ellSpecs)
+        u = standardDf[planeName]
+        uDiv = standardDf[planeName+'p']
+        indsWithinEllipse = indsWithinEllipse & (
+            gammaTwiss*u**2. + 2.*alphaTwiss*u*uDiv + betaTwiss*uDiv**2. \
+            <= emitTraceSpace
+        )
+    distrWithinEllipse = standardDf[indsWithinEllipse]
+    portion = distrWithinEllipse.shape[0] / standardDf.shape[0]
+    return distrWithinEllipse, portion
 
 
 def check_marker_specs(distributions, markerSpecs, specName):
