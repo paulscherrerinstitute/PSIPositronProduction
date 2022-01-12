@@ -7,7 +7,7 @@ import scipy.stats as scistats
 try:
     import ROOT
 except:
-    print('ROOT module not available.')
+    pass
 import json
 import matplotlib.pyplot as plt
 import matplotlib.markers as pltMarkers
@@ -226,6 +226,9 @@ def compute_twiss(
     return alphaTwiss, betaTwiss, gammaTwiss
 
 
+def check_distribution_offsets(
+        u, uDiv, planeName, uDivName, uDivUnits, correctOffsets, verbose
+    ):
     thresholdFactor = 0.001
     if verbose or correctOffsets:
         uAvg = u.mean()
@@ -233,7 +236,7 @@ def compute_twiss(
     if verbose:
         if uAvg > u.std()*thresholdFactor:
             warnings.warn(
-                'Average position {:s}Avg = {:.3f} mm.'.format(planeName, xAvg)
+                'Average position {:s}Avg = {:.3f} mm.'.format(planeName, uAvg)
             )
         if uDivAvg > uDiv.std()*thresholdFactor:
             warnings.warn(
@@ -243,10 +246,14 @@ def compute_twiss(
     if correctOffsets:
         u -= uAvg
         uDiv -= uDivAvg
+        if verbose:
         print(
             'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'.format(
                 planeName, uAvg, uDivName, uDivAvg, uDivUnits
         ))
+    return u, uDiv
+
+
 def filter_distr(standardDf, filterSpecs):
     for varName, varLims in filterSpecs.items():
         standardDf = standardDf[
@@ -557,7 +564,10 @@ def convert_standard_df_to_sdds(standardDf=None, sourceFilePath=None, outFilePat
     # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
 
 
-def plot_hist(ax, distr, binWidth=None, binLims=None, density=False, legendLabel='', orientation='vertical', parsInLabel=True, opacityHist=1.):
+def plot_hist(
+        ax, distr, binWidth=None, binLims=None, density=False, legendLabel='',
+        orientation='vertical', parsInLabel=True, opacityHist=1.
+    ):
     defaultBinNum = 100
     if binLims is None:
         if binWidth is None:
