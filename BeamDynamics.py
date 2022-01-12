@@ -247,16 +247,13 @@ def compute_twiss(
             'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'.format(
                 planeName, uAvg, uDivName, uDivAvg, uDivUnits
         ))
-    # TODO: Check that all pdgIds are identical
-    emit = np.sqrt(
-        (u**2.).sum() * (uDiv**2.).sum() - (u*uDiv).sum()**2.
-    ) / u.shape[0]
-    if norm in ['normalized', 'geometric']:
-        Erest = pdgId_to_particle_const(standardDf['pdgId'].iloc[0], 'Erest')
-        emit *= 1e3 / Erest                                                     # [mm mrad]
-        if norm == 'geometric':
-            emit /= (standardDf['betaRel']*standardDf['gammaRel']).mean()
-    return emit                                                                 # [mm mrad]
+def filter_distr(standardDf, filterSpecs):
+    for varName, varLims in filterSpecs.items():
+        standardDf = standardDf[
+            (standardDf[varName] >= varLims[0])
+            & (standardDf[varName] <= varLims[1])
+        ]
+    return standardDf
 
 
 def export_sim_db_to_xlsx(jsonFilePath):
@@ -583,6 +580,8 @@ def plot_hist(ax, distr, binWidth=None, binLims=None, density=False, legendLabel
         if legendLabel != '':
             legendLabel += ', '
         legendLabel += 'avg = {:.5e}, std = {:.5e}'.format(avg, std)
+    # Select portion of distribution
+    distr = distr[(distr>=np.min(binEdges)) & (distr<=np.max(binEdges))]
     # Plot Gaussian fit
     with warnings.catch_warnings():
         warnings.simplefilter('error')
