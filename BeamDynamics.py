@@ -195,15 +195,39 @@ def extend_standard_df(standardDf):
     return standardDf
 
 
-def compute_emittance(standardDf, planeName, norm='normalized', correctOffsets=False, verbose=True):
-    u = standardDf[planeName]
+def compute_emittance(
+        standardDf, planeName, norm='normalized',
+        correctOffsets=True, verbose=True,
+        filterSpecs={}
+    ):
     if norm in ['normalized', 'geometric']:
         uDivName = 'p' + planeName
         uDivUnits = 'MeV/c'
     elif norm == 'tracespace':
         uDivName = planeName + 'p'
         uDivUnits = 'mrad'
+    else:
+        raise ValueError(
+            "norm must be either 'normalized', 'geometric' or 'tracespace'."
+        )
+    standardDf = filter_distr(standardDf, filterSpecs)
+    u = standardDf[planeName]
     uDiv = standardDf[uDivName]
+    u, uDiv = check_distribution_offsets(
+        u, uDiv, planeName, uDivName, uDivUnits, correctOffsets, verbose
+    )
+    # TODO: Check that all pdgIds are identical
+    emit = np.sqrt(
+        (u**2.).sum() * (uDiv**2.).sum() - (u*uDiv).sum()**2.
+    ) / u.shape[0]
+    if norm in ['normalized', 'geometric']:
+        Erest = pdgId_to_particle_const(standardDf['pdgId'].iloc[0], 'Erest')
+        emit *= 1e3 / Erest                                                     # [mm mrad]
+        if norm == 'geometric':
+            emit /= (standardDf['betaRel']*standardDf['gammaRel']).mean()
+    return emit                                                                 # [mm mrad]
+
+
 def compute_twiss(
         standardDf, planeName, filterSpecs={},
         correctOffsets=True, verbose=True
