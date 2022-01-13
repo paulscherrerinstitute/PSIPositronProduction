@@ -67,6 +67,11 @@ Set the environment paths to declare the location of the different Python module
 
 ## Features
 
+### FCCeeInjectorBeamApp
+
+Use it directly through [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/paulscherrerinstitute/PSIPositronProduction/master?labpath=FCCeeInjectorBeamApp%2FFCCeeInjectorBeamApp.ipynb)
+
+
 ### Geant4 simulations
 
 * [FCC-ee Target Tracking](FCCeeTargetTracking.md) (reference example)
