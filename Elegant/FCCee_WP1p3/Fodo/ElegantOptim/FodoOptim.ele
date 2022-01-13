@@ -17,7 +17,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 392.389,   ! Relativistic beta*gamma at 200 MeV
+	p_central		 			= 978.475
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -30,6 +30,7 @@
 ! 45 deg = 0.785398 rad
 ! 60 deg = 1.04720 rad
 ! 70 deg = 1.22173 rad
+! 76.3454 deg = 1.33248 rad
 ! 80 deg = 1.39626 rad
 ! 90 deg = 1.57080 rad
 ! 100 deg = 1.74533 rad
@@ -39,9 +40,9 @@
 	verbose 					= 1,
 	equation 					= "
 									FODO.END#1.betax FODO.START#1.betax - abs
-									FODO.END#1.psix 1.22173 - abs +
+									FODO.END#1.psix 1.33248 - abs +
 								  ",
-									!FODO.END#1.psiy 1.22173 - abs +
+									!FODO.END#1.psiy 1.33248 - abs +
 	mode 						= "minimize",
 	method 						= "simplex",
 	target 						= 1e-6,
@@ -56,32 +57,32 @@
 &end
 
 &optimization_variable
-    name 						= Quad.Defoc.HalfSlice,
-	item 						= L, 
-    lower_limit 				= 0.05,
-	upper_limit 				= 0.5,
-	step_size 					= 0.5
+    name 						= Quad.Foc.HalfSlice,
+	item 						= K1,
+    lower_limit 				= 0.010,
+	upper_limit 				= 5.000,
+	step_size 					= 5.0
 &end
 
 &optimization_covariable  
-	name 						= Quad.Foc.HalfSlice,
-	item 						= L,
-	equation 					= "QUAD.DEFOC.HALFSLICE.L" 
+	name 						= Quad.Defoc.HalfSlice,
+	item 						= K1,
+	equation 					= "QUAD.FOC.HALFSLICE.K1 -1. *" 
 &end
 
 &optimization_variable
     name 						= Drift,
 	item 						= L, 
     lower_limit 				= 0.010,
-	upper_limit 				= 1.000,
-	step_size 					= 1.
+	upper_limit 				= 2.000,
+	step_size 					= 2.0
 &end
 
 &twiss_output
 	filename					= %s.twi,
 	matched						= 0,
-	beta_x						= 1.743956,
-	beta_y						= 1.251301   ! Analytical value with thin lens approx: beta_y = 0.299215
+	beta_x						= 5.503919,
+	beta_y						= 2.215967,
 	alpha_x						= 0,
 	alpha_y						= 0,
 &end
@@ -91,14 +92,14 @@
 	n_particles_per_bunch 		= 10000,
 	time_start 					= 0,
 	emit_nx 					= 10000e-6,
-	beta_x 						= 1.743956,
+	beta_x 						= 5.503919,
 	alpha_x 					= 0,
 	eta_x						= 0,
 	emit_ny 					= 10000e-6,
-	beta_y 						= 1.251301
+	beta_y 						= 2.215967,
 	alpha_y 					= 0,
 	eta_y						= 0,
-	Po 							= 392.389,   ! Relativistic beta*gamma at 200 MeV
+	Po 							= 978.475
 	sigma_dp 					= 0.001,
 	sigma_s 					= 1e-3,
 	dp_s_coupling 				= 0,
@@ -125,7 +126,7 @@
 &end
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Reload the new lattice, generate final twiss parameters etc.
 
 &run_setup
@@ -143,7 +144,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 392.389,   ! Relativistic beta*gamma at 200 MeV
+	p_central		 			= 978.475
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -155,8 +156,8 @@
 &twiss_output
 	filename	= %s.twi,
 	matched		= 0,
-	beta_x		= 1.743956,
-	beta_y		= 1.251301,
+	beta_x		= 5.503919,
+	beta_y		= 2.215967,
 	alpha_x		= 0,
 	alpha_y		= 0
 &end
