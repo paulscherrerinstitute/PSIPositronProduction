@@ -1,0 +1,321 @@
+
+&transmute_elements  
+	name = "*",  
+	type = LSCDRIFT,  
+        new_type = DRIF,    
+&end
+
+&transmute_elements  
+	name = "*",  
+	type = CSRDRIFT,  
+        new_type = DRIF,    
+&end
+
+
+
+
+&run_setup
+	lattice		= Athos.lat,
+	use_beamline	= ATHOS1,
+	rootname	= Athos,
+	output		= out,
+	centroid	= cen,
+	sigma		= sig,
+	final		= fin,
+	parameters	= par,
+	magnets		= mag,
+	combine_bunch_statistics = 0,
+	default_order	= 2,
+	concat_order	= 0,
+	print_statistics	= 0,
+	random_number_seed	= 9876543210,
+	p_central_mev	= 3000,
+	tracking_updates	= 1
+	always_change_p0	= 1
+&end
+ 
+
+&run_control
+	n_steps	= 1,
+	reset_rf_for_each_step = 1
+&end
+
+!&alter_elements
+!        name = "*"
+!	type = RFCW
+!        item = LSC
+!        value = 0
+!&end
+
+!&alter_elements
+!        name = "*"
+!	type = QUAD
+!        item = K1
+!        value = 0.0
+!&end
+
+&optimization_setup
+
+equation = "
+
+SATSY02.END#1.etay abs 10 * 
+SATSY02.END#1.etayp 100 * abs +
+
+SATSY01.END#1.etax abs 10 * +
+SATSY01.END#1.etaxp 100 * abs +
+
+S20SY02.END#1.Cy 1e-2 - abs 10 * +
+S20SY02.END#1.Cyp abs 100 * +
+
+S20SY02.END#1.Cx abs 10 * +
+S20SY02.END#1.Cxp abs 100 * +
+
+!R56 10 * abs +
+R56 0e-3 0.01 segt +
+
+max.betax 100 0.1 segt +
+max.betay 100 0.1 segt +
+min.betax 0.01 0.1 selt +
+min.betay 0.01 0.1 selt +
+
+
+"
+	mode = "minimize", method = "simplex",
+	target = 1e-6, tolerance = 1e-4, n_passes = 5, n_evaluations = 50000, log_file = /dev/tty, 
+        n_restarts = 5, verbose = 1, restart_worst_term_factor = 1, restart_worst_terms = 1
+	include_simplex_1d_scans = 1
+&end
+
+&optimization_variable
+        name = TWI, item=BETAX, 
+        lower_limit=1, upper_limit=60, step_size=1
+&end
+&optimization_variable
+        name = TWI, item=BETAY, 
+        lower_limit=1, upper_limit=60, step_size=1
+&end
+&optimization_variable
+        name = TWI, item=ALPHAX, 
+        lower_limit=-10, upper_limit=10, step_size=0.1
+&end
+&optimization_variable
+        name = TWI, item=ALPHAY, 
+        lower_limit=-10, upper_limit=10, step_size=0.1
+&end
+
+
+&optimization_variable
+        name = S20SY02.MQUA070.Q, item=K1, 
+        lower_limit=-2.7, upper_limit=2.7, step_size=5
+&end
+
+&optimization_variable
+        name = S20SY02.MQUA100.Q, item=K1, 
+        lower_limit=-2.7, upper_limit=2.7, step_size=5
+&end
+
+&optimization_variable
+        name = S20SY02.MQUA140.Q, item=K1, 
+        lower_limit=-2.7, upper_limit=2.7, step_size=5
+&end
+
+&optimization_variable
+        name = S20SY02.MQUA180.Q, item=K1, 
+        lower_limit=-2.7, upper_limit=2.7, step_size=5
+&end
+
+
+&optimization_variable
+        name = SATSY01.MQUA020.Q, item=K1, 
+        lower_limit=-4.5, upper_limit=4.5, step_size=5
+&end
+
+&optimization_variable
+        name = SATSY01.MQUA040.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA040.Q2, item=K1, equation = "SATSY01.MQUA040.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY01.MQUA070.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA070.Q2, item=K1, equation = "SATSY01.MQUA070.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY01.MQUA090.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA090.Q2, item=K1, equation = "SATSY01.MQUA090.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY01.MQUA210.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA210.Q2, item=K1, equation = "SATSY01.MQUA210.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY01.MQUA230.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA230.Q2, item=K1, equation = "SATSY01.MQUA230.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY01.MQUA260.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA260.Q2, item=K1, equation = "SATSY01.MQUA260.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY01.MQUA280.Q, item=K1, 
+        lower_limit=-4.5, upper_limit=4.5, step_size=5
+&end
+
+&optimization_variable
+        name = SATSY01.MQUA300.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY01.MQUA300.Q2, item=K1, equation = "SATSY01.MQUA300.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY02.MQUA010.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY02.MQUA010.Q2, item=K1, equation = "SATSY02.MQUA010.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY02.MQUA110.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY02.MQUA110.Q2, item=K1, equation = "SATSY02.MQUA110.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY02.MQUA120.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY02.MQUA120.Q2, item=K1, equation = "SATSY02.MQUA120.Q1.K1" 
+&end 
+
+&optimization_variable
+        name = SATSY02.MQUA230.Q1, item=K1, 
+        lower_limit=-1.8, upper_limit=1.8, step_size=5
+&end
+
+&optimization_covariable  
+	name = SATSY02.MQUA230.Q2, item=K1, equation = "SATSY02.MQUA230.Q1.K1" 
+&end 
+
+
+
+
+&twiss_output
+	filename	= twi,
+	matched		= 0,
+	beta_x		= 4.243329e+01,
+	beta_y		= 2.187555e+00 ,
+	alpha_x		= 5.360297e+00,
+	alpha_y		= 1.350800e-02,
+	output_at_each_step=1
+&end
+
+&floor_coordinates
+    filename = flo
+&end
+
+&matrix_output  
+    SDDS_output = mat  
+    SDDS_output_order = 2  
+    !start_from = NULL;   
+&end 
+
+&bunched_beam
+	use_twiss_command_values = 1
+&end
+
+
+&optimize summarize_setup=1 &end
+
+&save_lattice filename = swissfel_match.lte &end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Reload the new lattice, generate final twiss parameters etc.
+
+&run_setup
+	lattice		= swissfel_match.lte,
+	use_beamline = ATHOS1
+	rootname	= 250MeV,
+	output		= out,
+	centroid	= cen,
+	sigma		= sig
+	final		= fin,
+	parameters	= par,
+	magnets		= mag,
+	combine_bunch_statistics = 0,
+	default_order	= 2,
+	concat_order	= 0,
+	print_statistics	= 0,
+	random_number_seed	= 9876543210,
+	p_central_mev	= 3000,
+	tracking_updates	= 1
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&twiss_output
+	filename	= twi2,
+	matched		= 0,
+	beta_x		= 4.243329e+01,
+	beta_y		= 2.187555e+00 ,
+	alpha_x		= 5.360297e+00,
+	alpha_y		= 1.350800e-02,
+	output_at_each_step=0
+&end
+
+
+&matrix_output
+    SDDS_output = mat
+    SDDS_output_order = 2
+&end
+
+&floor_coordinates
+    filename = flo
+&end
+
+&bunched_beam
+	use_twiss_command_values=1
+&end
+
+
+
+
