@@ -9,70 +9,84 @@
 ### seq 50 -30 30 10
 
 
-set pi 3.1415926535897931
-set c 299792458.
-### DEFINE BEAMLINE
-set charge 10000   ;# number of particles
-set e_initial 0.2   ;# [GeV]
-set gammaRel 392.390
-set betaRel 1.
-set e_spread 0.1   ; # [%]
-set sigma_z 1.   ;# [um]
-set emitnx 10000.   ;# [mm mrad]
-set emitny $emitnx
-set alphax 0.
-set alphay 0.
-set gQuad 6.0   ;# [T/m]
-set Ra 20.   ;# [mm]
-set Fa 3.
-set mu [expr $pi/2.]
-set betax [expr ($Ra/$Fa)**2.*$betaRel*$gammaRel/$emitnx]   ;# [m]
-set Lcell [expr $betax*sin($mu)/(1+sin($mu/2))]   ;# [m]
-set betay [expr $Lcell*(1.-sin($mu/2))/sin($mu)]   ;# [m]
-set f [expr $Lcell/(4.*sin($mu/2))]
-set kQuad [expr $gQuad/($e_initial*1e9)*$c]   ;# [1/m2]
-set Lquad [expr 1/($kQuad*$f)]   ;# [m]
-set Ldrift [expr ($Lcell-2*$Lquad)/2]   ;# [m]
+### CONSTANTS
+#set pi 3.1415926535897931
+#set c 299792458.
+#set me 0.0005109989499985808   ;# [GeV]
 
-puts "mu = $mu rad"
-puts "Lcell = $Lcell m"
-puts "Lquad = $Lquad m"
-puts "kQuad = $kQuad 1/m2"
-puts "Ldrift = $Ldrift m"
-puts "betax = $betax m"
-puts "betay = $betay m"
+# FORMULAE FROM THIN LENS APPROXIMATION
+# set gammaRel [expr $e_initial / $me]
+# set betaRel 0.9999995
+# set Rquad 0.1   ;# [m]
+# set Bpole 1.   ;# [T]
+# set gQuadMax [expr $Bpole / $Rquad]   ;# [T/m]
+# set Ra 30.   ;# [mm]
+# set Fa 4.
+# set muDeg = 76.345   ;# [deg]
+# set mu [expr $pi / 180. * muDeg]
+# set betax [expr ($Ra/$Fa)**2.*$betaRel*$gammaRel/$emitn_x]   ;# [m]
+# set Lcell [expr $beta_x*sin($mu)/(1+sin($mu/2))]   ;# [m]
+# set betay [expr $Lcell*(1.-sin($mu/2))/sin($mu)]   ;# [m]
+# set fQuad [expr $Lcell/(4.*sin($mu/2))]
+# set kQuad [expr $gQuadMax/($e_initial*1e9)*$c]   ;# [1/m2]
+# set Lquad [expr 1/($kQuad*$f)]   ;# [m]
+# set Ldrift [expr ($Lcell-2*$Lquad)/2]   ;# [m]
+
+### DEFINE INITIAL BEAM PARAMETERS
+set charge 1e10   ;# number of particles
+set e_initial 0.499489   ;# [GeV]
+set e_spread 0.1   ;# [%]
+set sigma_z 1.   ;# [um]
+set emitn_x 10000.   ;# [mm mrad]
+set emitn_y $emitn_x
+set beta_x 5.503919   ;# [m]
+set beta_y 1.456175   ;# [m]
+set alpha_x 0.
+set alpha_y 0.
+# puts "Initial beam parameters:"
+# puts "emitn_x = $emitn_x"
+# puts "emitn_y = $emitn_y"
+# puts "beta_x = $beta_x"
+# puts "beta_y = $beta_y"
+# puts "alpha_x = $alpha_x"
+# puts "alpha_y = $alpha_y"
+# puts "sigma_z = $sigma_z"
+# puts "e_spread = $e_spread"
+# puts "charge = $charge"
+
+### DEFINE FODO PARAMETERS
+set Lquad 1.0   ;# [m]
+set fQuad 1.117493   ;# [m]
+set Ldrift 0.757640   ;# [m]
+# puts "FODO Parameters"
+# puts "Lquad = $Lquad m"
+# puts "e_initial = $e_initial GeV"
+# puts "fQuad = $fQuad m"
+# puts "Ldrift = $Ldrift m"
 
 BeamlineNew
+SetReferenceEnergy $e_initial
 Girder
-  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial*$kQuad*$Lquad/2.]
+  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.]
   Drift -length $Ldrift
-  Quadrupole -length $Lquad -strength [expr (-1.)*$e_initial*$kQuad*$Lquad]
+  Quadrupole -length $Lquad -strength [expr (-1.)*$e_initial/$fQuad]
   Drift -length $Ldrift
-  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial*$kQuad*$Lquad/2.]
+  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.]
 BeamlineSet -name beamline
 
 
 ### DEFINE BEAM
 
 array set match {}
-set match(emitt_x) [expr $emitnx*10.]
-set match(emitt_y) [expr $emitny*10.]
-set match(beta_x) $betax
-set match(beta_y) $betay
-set match(alpha_x) $alphax
-set match(alpha_y) $alphay
+set match(emitt_x) [expr $emitn_x*10.]
+set match(emitt_y) [expr $emitn_y*10.]
+set match(beta_x) $beta_x
+set match(beta_y) $beta_y
+set match(alpha_x) $alpha_x
+set match(alpha_y) $alpha_y
 set match(sigma_z) $sigma_z
 set match(e_spread) $e_spread
 set match(charge) $charge
-# puts $match(emitt_x)
-# puts $match(emitt_y)
-# puts $match(beta_x)
-# puts $match(beta_y)
-# puts $match(alpha_x)
-# puts $match(alpha_y)
-# puts $match(sigma_z)
-# puts $match(e_spread)
-# puts $match(charge)
 
 # Emittance units: [10^-7 m rad]
 set common_script_dir ../../scr/common
@@ -82,13 +96,16 @@ source $common_script_dir/clic_beam.tcl
 
 # Global variables required by function make_beam_many in create_beam.tcl:
 # charge, e_initial, match(), n_total
-set n_slice 2
-set n $charge
+set n_slice 20
+set n 1000
 set n_total [expr $n_slice * $n]
 
 # Create the beam
 make_beam_many beam0 $n_slice $n
 FirstOrder 1
+
+# Compute Twiss parameters (method 2)
+TwissPlotStep -beam beam0 -file out_twiss_2.dat -step 0.01
 
 
 ### TRACK
@@ -96,35 +113,45 @@ FirstOrder 1
 Octave {
 
     # Tracking
-    [emitt,beam] = placet_test_no_correction("beamline", "beam0", "None");
-    [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y, Dx, Dy, E] = placet_evolve_beta_function('beamline', $betax, $alphax, $betay, $alphay);
+    [emitt, beam] = placet_test_no_correction("beamline", "beam0", "None");
+    save -text out_beam.dat beam
+    save -text out_emitt.dat emitt
 
-    # Save output
-    T = [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y, Dx, Dy, E];
-    save -text output_twiss.dat T;
-    save -text beam.out beam
+    # Compute Twiss parameters (method 1)
+    [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y, Dx, Dy, E] = placet_evolve_beta_function('beamline', $beta_x, $alpha_x, $beta_y, $alpha_y);
+    T_1 = [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y, Dx, Dy, E];
+    save -text out_twiss_1.dat T_1
+
+    # Load Twiss parameters from method 2
+    T_2 = load('out_twiss_2.dat');
 
     # Quick analysis
-    disp(size(beam))
     figure(1)
     subplot(3, 1, 1)
-    plot(s, beta_x)
+    plot(s, beta_x, 'b-')
     hold on
-    plot(s, beta_y)
+    plot(s, beta_y, 'r-')
+    plot(T_2(:,2), T_2(:,6), 'b--')
+    plot(T_2(:,2), T_2(:,10), 'r--')
     xlabel('s [m]')
     ylabel('beta [m]')
-    legend('beta_x', 'beta_y')
+    legend('beta_x (Method 1)', 'beta_y (Method 1)', 'beta_x (Method 2)', 'beta_y (Method 2)')
     subplot(3, 1, 2)
-    plot(s, alpha_x)
+    plot(s, alpha_x, 'b-')
     hold on
-    plot(s, alpha_y)
+    plot(s, alpha_y, 'r-')
+    plot(T_2(:,2), T_2(:,7), 'b--')
+    plot(T_2(:,2), T_2(:,11), 'r--')
     xlabel('s [m]')
     ylabel('alpha')
-    legend('alpha_x', 'alpha_y')
+    legend('alpha_x (Method 1)', 'alpha_y,(Method 1)', 'alpha_x (Method 2)', 'alpha_y (Method 2)')
     subplot(3, 1, 3)
-    plot(s, E)
+    plot(s, E, 'b-')
+    hold on
+    plot(T_2(:,2), T_2(:,3), 'b--')
     xlabel('s [m]')
     ylabel('E [GeV]')
+    legend('E (Method 1)', 'E (Method 2)')
     #figure(2)
     #plot(beam(:,1), beam(:,2), '.')
     waitforbuttonpress
