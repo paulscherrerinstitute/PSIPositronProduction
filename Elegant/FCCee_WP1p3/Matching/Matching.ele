@@ -1,0 +1,141 @@
+&change_particle
+	name						= positron
+&end
+
+&run_setup
+	lattice						= Matching_1.lat,
+	use_beamline				= Match,
+	rootname					= Matching_1,
+	output						= %s.out,
+	centroid					= %s.cen,
+	sigma						= %s.sig,
+	final						= %s.fin,
+	parameters					= %s.par,
+	magnets						= %s.mag,
+	combine_bunch_statistics	= 0,
+	default_order		 		= 3,
+	concat_order		 		= 0,
+	print_statistics	 		= 0,
+	random_number_seed	 		= 9876543210,
+	p_central		 			= 978.475
+	tracking_updates	 		= 1,
+	always_change_p0	 		= 1
+&end
+
+&run_control
+	n_steps						= 1
+&end
+
+&optimization_setup
+	verbose 					= 1,
+	equation 					= "
+									MATCHING.END#1.betax 5.503919 - abs
+									MATCHING.END#1.betay 1.456175 - abs +
+									MATCHING.END#1.alphax 0.0 - abs +
+									MATCHING.END#1.alphay 0.0 - abs +
+								  ",
+	mode 						= "minimize",
+	method 						= "simplex",
+	target 						= 1e-6,
+	tolerance 					= 1e-4,
+	n_passes 					= 5,
+	n_evaluations 				= 1000,
+	log_file 					= /dev/tty,
+    !n_restarts 				= 5,
+	!restart_worst_term_factor 	= 1,
+	!restart_worst_terms 		= 1,
+	!include_simplex_1d_scans 	= 1
+&end
+
+&optimization_variable
+    name 						= Quad.M1,
+	item 						= K1,
+    lower_limit 				= 0.0,
+	upper_limit 				= 5.0,
+	step_size 					= 5.0
+&end
+
+&optimization_variable
+    name 						= Quad.M2,
+	item 						= K1,
+    lower_limit 				= -5.0,
+	upper_limit 				= 0.0,
+	step_size 					= 5.0
+&end
+
+&optimization_variable
+    name 						= Quad.M3,
+	item 						= K1,
+    lower_limit 				= 0.0,
+	upper_limit 				= 5.0,
+	step_size 					= 5.0
+&end
+
+&optimization_variable
+    name 						= Quad.M4,
+	item 						= K1,
+    lower_limit 				= -5.0,
+	upper_limit 				= 0.0,
+	step_size 					= 5.0
+&end
+
+&twiss_output
+	filename					= %s.twi,
+	matched						= 0,
+	beta_x						= 1.665,
+	beta_y						= 1.665,
+	alpha_x						= -0.0325,
+	alpha_y						= -0.0325,
+&end
+
+&sdds_beam
+	input_type					= "elegant",
+	sample_interval				= 1,
+	input						= /home/tia/tmp/EmitGrowthInDriftSpace/NicoDistr_Z20p57m/SingleBucket/RUN_2501_121416.2057_SingleBucket.001.sdds,
+	reuse_bunch					= 1
+&end
+
+&optimize
+	summarize_setup				= 1
+&end
+
+&save_lattice
+	filename 					= Matched_1.lat
+&end
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Reload the new lattice, generate final twiss parameters etc.
+
+&run_setup
+	lattice						= Matched_1.lat,
+	use_beamline				= Match,
+	rootname					= Matched_1,
+	output						= %s.out,
+	centroid					= %s.cen,
+	sigma						= %s.sig,
+	final						= %s.fin,
+	parameters					= %s.par,
+	magnets						= %s.mag,
+	combine_bunch_statistics	= 0,
+	default_order		 		= 3,
+	concat_order		 		= 0,
+	print_statistics	 		= 0,
+	random_number_seed	 		= 9876543210,
+	p_central		 			= 978.475
+	tracking_updates	 		= 1,
+	always_change_p0	 		= 1
+&end
+
+&run_control
+        n_steps = 1
+&end
+
+&twiss_output
+	filename	= %s.twi,
+	matched		= 0,
+	beta_x		= 1.665,
+	beta_y		= 1.665,
+	alpha_x		= -0.0325,
+	alpha_y		= -0.0325
+&end
