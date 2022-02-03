@@ -35,14 +35,40 @@
 ### DEFINE INITIAL BEAM PARAMETERS
 set charge 1e10   ;# number of particles
 set e_initial 0.499489   ;# [GeV]
-set e_spread 0.1   ;# [%]
-set sigma_z 1.   ;# [um]
+set e_spread 17.6   ;# [%]
+set sigma_z 7.96e3   ;# [um]   15e3
 set emitn_x 10000.   ;# [mm mrad]
-set emitn_y $emitn_x
+set emitn_y 10000.   ;# [mm mrad]
 set beta_x 5.503919   ;# [m]
 set beta_y 1.456175   ;# [m]
 set alpha_x 0.
 set alpha_y 0.
+set Ra 0.03   ;# [m]
+
+# set initialDistribution "/home/tia/Repo/GIT_PSIPositronProduction/FCCeeInjectorBeamApp/BeamDistrs/Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50_filt.sdf_txt.dat"
+# set charge 1e10   ;# number of particles
+# set e_initial 0.499489   ;# [GeV]
+# set e_spread 10.   ;# [%]
+# set sigma_z 15e3   ;# [um]
+# set emitn_x 7229.739   ;# [mm mrad]
+# set emitn_y 7210.480   ;# [mm mrad]
+# set beta_x 5.503919   ;# [m]
+# set beta_y 1.456175   ;# [m]
+# set alpha_x 0.
+# set alpha_y 0.
+
+# set initialDistribution "/home/tia/Repo/GIT_PSIPositronProduction/FCCeeInjectorBeamApp/BeamDistrs/Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50_filt.sdf_txt.dat"
+# set charge 1e10   ;# number of particles
+# set e_initial 0.499489   ;# [GeV]
+# set e_spread 10.   ;# [%]
+# set sigma_z 10e3   ;# [um]
+# set emitn_x 13999.7   ;# [mm mrad]
+# set emitn_y 13937.4   ;# [mm mrad]
+# set beta_x 5.503919   ;# [m]
+# set beta_y 1.456175   ;# [m]
+# set alpha_x 0.
+# set alpha_y 0.
+
 # puts "Initial beam parameters:"
 # puts "emitn_x = $emitn_x"
 # puts "emitn_y = $emitn_y"
@@ -67,19 +93,21 @@ set Ldrift 0.757640   ;# [m]
 BeamlineNew
 SetReferenceEnergy $e_initial
 Girder
-  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.]
-  Drift -length $Ldrift
-  Quadrupole -length $Lquad -strength [expr (-1.)*$e_initial/$fQuad]
-  Drift -length $Ldrift
-  Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.]
+    for {set cellInd 1} {$cellInd <= 20} {incr cellInd} {
+        Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
+        Drift -length $Ldrift -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
+        Quadrupole -length $Lquad -strength [expr (-1.)*$e_initial/$fQuad] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
+        Drift -length $Ldrift -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
+        Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
+    }
 BeamlineSet -name beamline
 
 
-### DEFINE BEAM
+### DEFINE BEAM FROM EMITTANCE AND TWISS PARAMETERS
 
 array set match {}
-set match(emitt_x) [expr $emitn_x*10.]
-set match(emitt_y) [expr $emitn_y*10.]
+set match(emitt_x) [expr $emitn_x*10.]   ;# Emittance units: [10^-7 m rad]
+set match(emitt_y) [expr $emitn_y*10.]   ;# Emittance units: [10^-7 m rad]
 set match(beta_x) $beta_x
 set match(beta_y) $beta_y
 set match(alpha_x) $alpha_x
@@ -88,7 +116,6 @@ set match(sigma_z) $sigma_z
 set match(e_spread) $e_spread
 set match(charge) $charge
 
-# Emittance units: [10^-7 m rad]
 set common_script_dir ../../scr/common
 # set script_dir ../../../../GIT_Placet/examples/fodo_cell
 source $common_script_dir/clic_basic_single.tcl
@@ -99,10 +126,20 @@ source $common_script_dir/clic_beam.tcl
 set n_slice 20
 set n 1000
 set n_total [expr $n_slice * $n]
-
 # Create the beam
 make_beam_many beam0 $n_slice $n
 FirstOrder 1
+
+### IMPORT BEAM FROM EXTERNAL DISTRIBUTION
+
+# Octave {
+#   B0 = load('$initialDistribution');
+#   # B0(:,1) = B0(:,1) * 500./225.;
+#   # B0(:,2) = B0(:,2) * 7.785;
+#   # B0(:,3) = B0(:,3) * 2.06;
+#   disp(B0(1:10,:));
+#   placet_set_beam("beam0", B0);
+# }
 
 # Compute Twiss parameters (method 2)
 TwissPlotStep -beam beam0 -file out_twiss_2.dat -step 0.01
@@ -125,8 +162,12 @@ Octave {
     # Load Twiss parameters from method 2
     T_2 = load('out_twiss_2.dat');
 
+    # Load initial beam
+    beamIni = load('particles.in');
+
     # Quick analysis
-    figure(1)
+    fontSize = 16;
+    figure(1, 'units','normalized','position',[0.5 0 0.25 1])
     subplot(3, 1, 1)
     plot(s, beta_x, 'b-')
     hold on
@@ -136,6 +177,7 @@ Octave {
     xlabel('s [m]')
     ylabel('beta [m]')
     legend('beta_x (Method 1)', 'beta_y (Method 1)', 'beta_x (Method 2)', 'beta_y (Method 2)')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
     subplot(3, 1, 2)
     plot(s, alpha_x, 'b-')
     hold on
@@ -145,14 +187,58 @@ Octave {
     xlabel('s [m]')
     ylabel('alpha')
     legend('alpha_x (Method 1)', 'alpha_y,(Method 1)', 'alpha_x (Method 2)', 'alpha_y (Method 2)')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
     subplot(3, 1, 3)
-    plot(s, E, 'b-')
-    hold on
-    plot(T_2(:,2), T_2(:,3), 'b--')
+    # plot(s, E, 'b-')
+    # hold on
+    # plot(T_2(:,2), T_2(:,3), 'b--')
+    # xlabel('s [m]')
+    # ylabel('E [GeV]')
+    # legend('E (Method 1)', 'E (Method 2)')
+    plot(s(end), size(beam,1)/size(beamIni,1), 'xb')
     xlabel('s [m]')
-    ylabel('E [GeV]')
-    legend('E (Method 1)', 'E (Method 2)')
-    #figure(2)
-    #plot(beam(:,1), beam(:,2), '.')
+    ylabel('Transport efficiency')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
+
+    figure(2, 'units','normalized','position',[0.75 0 0.25 1])
+    subplot(2, 2, 1)
+    plot(beamIni(:,2)*1e-3, beamIni(:,3)*1e-3, '.')
+    hold on
+    plot(beam(:,2)*1e-3, beam(:,3)*1e-3, '.')
+    xlim([-40., 40.])
+    ylim([-20., 20.])
+    xlabel('x [mm]')
+    ylabel('y [mm]')
+    legend('Start beam', 'End beam')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
+    subplot(2, 2, 2)
+    plot(beamIni(:,3)*1e-3, beamIni(:,6)*1e-3, '.')
+    hold on
+    plot(beam(:,3)*1e-3, beam(:,6)*1e-3, '.')
+    xlim([-20., 20.])
+    ylim([-30., 30.])
+    xlabel('y [mm]')
+    ylabel('yp [mrad]')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
+    subplot(2, 2, 3)
+    plot(beamIni(:,2)*1e-3, beamIni(:,5)*1e-3, '.')
+    hold on
+    plot(beam(:,2)*1e-3, beam(:,5)*1e-3, '.')
+    xlim([-40., 40.])
+    ylim([-10., 10.])
+    xlabel('x [mm]')
+    ylabel('xp [mrad]')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
+    subplot(2, 2, 4)
+    c = 2.998e8;
+    plot(beamIni(:,4)/c*1e3, beamIni(:,1)*1e3, '.')
+    hold on
+    plot(beam(:,4)/c*1e3, beam(:,1)*1e3, '.')
+    xlim([-0.500, 0.500])
+    ylim([200., 800.])
+    xlabel('t [ns]')
+    ylabel('p [Mev/c]')
+    set(gca, "fontsize", fontSize)   # , "linewidth", 4
+    figure(3, 'units','normalized','position',[0.4 0 .1 .1])
     waitforbuttonpress
 }

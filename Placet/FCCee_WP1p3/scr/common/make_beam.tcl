@@ -85,8 +85,8 @@ proc make_beam_many {name nslice n} {
     SetRfGradientSingle $name 0 $l    
     make_beam_particles $e_initial $match(e_spread) [expr $nslice*$n]
     BeamRead -file particles.in -beam $name
-    exec rm -f particles.in
-    exec rm -f beam.dat
+    #exec rm -f particles.in
+    #exec rm -f beam.dat
 }
 
 proc make_beam_many_gradient {name nslice n de} {

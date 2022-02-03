@@ -53,7 +53,8 @@ proc w_long {s} {
     return [expr 377.0*3e8*1e-12/(acos(-1.0)*$a*$a)*exp(-sqrt($s*1e-6/$s0))]
 }
 
-# remove wakefields
+# Remove wakefields for sliced beams
+# by redefining the function
 
 proc w_transv {s} {
  return 0.0
