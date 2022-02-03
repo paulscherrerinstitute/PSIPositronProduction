@@ -22,5 +22,6 @@ declare -a MODULE_REL_DIRS=("../BdPyTools")
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+update_path "P3_REPO" ".."
 update_path "PYTHONPATH" "${MODULE_REL_DIRS[@]}"
 update_path "JUPYTER_PATH" "${MODULE_REL_DIRS[@]}"

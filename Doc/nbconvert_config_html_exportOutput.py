@@ -24,3 +24,11 @@ c.HTMLExporter.preprocessors = [
 #     'nbconvert.preprocessors.CSSHTMLHeaderPreprocessor',
 #     'nbconvert.preprocessors.HighlightMagicsPreprocessor',
 # ]
+
+import pathlib
+import os
+myTemplates = pathlib.Path(os.path.join(
+    os.environ.get('P3_REPO'),
+    'Doc/JupyterTemplates/'
+)).expanduser().absolute()
+c.TemplateExporter.extra_template_basedirs = [myTemplates]

@@ -1,0 +1,44 @@
+{% extends 'lab/index.html.j2' %}
+
+{% block input_group %}
+<div class="input_hidden">
+    {{ super() }}
+</div>
+{% endblock input_group %}
+
+{% block html_head %}
+
+    {{ super() }}
+
+    <style type="text/css">
+        div.jp-Cell-inputWrapper {
+            margin-bottom: 0px !important;
+        }
+        .input_hidden {
+            display: none;
+            margin-bottom: 5px;
+        }
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script>
+    $(document).ready(function(){
+        $(".jp-Cell-outputWrapper").click(function(){
+            //$(this).prev(".input_hidden").slideToggle();   // To show last input cell only
+            //$(this).parent().prevUntil(".jp-Cell-outputWrapper", ".input_hidden").slideToggle();   // prevUnit() might eventually also be useful
+            var tmp = $(this).parent();
+            var securityCounter = 0;
+            do {
+                //console.log(tmp)   // Debugging
+                tmp.children(".input_hidden").slideToggle();
+                tmp = tmp.prev();
+                if (++securityCounter > 100) {
+                  break;
+                }
+            }
+            while (tmp.children(".jp-Cell-outputWrapper").length == 0);
+        });
+    })
+    </script>
+
+{% endblock html_head %}
