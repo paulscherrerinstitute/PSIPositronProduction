@@ -689,10 +689,11 @@ def plot_hist(
     )
     avg = np.mean(distr)
     std = np.std(distr)
+    # TODO: Allows for input of precision of label values
     if parsInLabel:
         if legendLabel != '':
             legendLabel += ', '
-        legendLabel += 'avg = {:.5e}, std = {:.5e}'.format(avg, std)
+        legendLabel += 'avg = {:.2e}, std = {:.2e}'.format(avg, std)
     # Select portion of distribution
     distr = distr[(distr>=np.min(binEdges)) & (distr<=np.max(binEdges))]
     # Plot Gaussian fit
@@ -715,8 +716,9 @@ def plot_hist(
             ax.plot(
                 *data, '-', color=histObj.get_children()[0].get_facecolor()
             )
-            if parsInLabel:
-                legendLabel += ', sigmaGauss = {:.5e}'.format(sigma)
+            # TODO: Why is sigmaGauss sometimes different than std?
+            # if parsInLabel:
+            #     legendLabel += ', sigmaGauss = {:.2e}'.format(sigma)
     histObj.set_label(legendLabel)
     ax.legend()
     return avg, std
@@ -755,8 +757,7 @@ def plot_phase_space_2d(
     opacityScatter = 1.
     pathColl = ax[0,0].scatter(
         distr[varName1], distr[varName2],
-        s=markerSize, edgecolors=color,
-        facecolors='none', linewidths=1., alpha=opacityScatter
+        s=markerSize, c=color, marker='.', alpha=opacityScatter
     )
     scatter_individual_marker_style(pathColl, markerStyle)
     plot_hist(
@@ -795,7 +796,9 @@ def plot_phase_space_2d(
     set_lims(ax[0,0], 'y', distr[varName2], lims2)
     ax[1,0].set_xlim(ax[0,0].get_xlim())
     ax[1,0].invert_yaxis()
+    ax[1,0].set_xticklabels([])
     ax[0,1].set_ylim(ax[0,0].get_ylim())
+    ax[0,1].set_yticklabels([])
     ax[0,0].grid(True)
     ax[0,1].grid(True)
     ax[1,0].grid(True)
@@ -852,7 +855,7 @@ def plot_parameters(ax, distr, planeName, filterSpecs={}):
 
 def plot_distr(
         distributions, plotDefs, markerStyle=None, markerSize=15,
-        title=None, legendLabels=None, figHeight=9, figWidth=16
+        title=None, legendLabels=None, figHeight=6.4, figWidth=9.6
 ):
     # TODO: Integrate handling of distributions and legendLabels in check_marker_specs?
     if isinstance(distributions, pd.DataFrame):
@@ -929,12 +932,13 @@ def third_twiss_param(alphaTwiss=None, betaTwiss=None, gammaTwiss=None):
     return alphaTwiss, betaTwiss, gammaTwiss
 
 
-def distr_within_ellipse(standardDf, planeName, emitTraceSpace, ellipseSpecs):
+def distr_within_ellipse(standardDf, emitTraceSpace, ellipseSpecs):
     indsWithinEllipse = pd.Series(True, index=standardDf.index)
     for planeName, ellSpecs in ellipseSpecs.items():
         alphaTwiss, betaTwiss, gammaTwiss = third_twiss_param(**ellSpecs)
         u = standardDf[planeName]
         uDiv = standardDf[planeName+'p']
+        # TODO: Allow for different emittances in the different planes
         indsWithinEllipse = indsWithinEllipse & (
             gammaTwiss*u**2. + 2.*alphaTwiss*u*uDiv + betaTwiss*uDiv**2. \
             <= emitTraceSpace
