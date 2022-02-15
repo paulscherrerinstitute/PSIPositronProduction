@@ -334,7 +334,7 @@ def load_standard_fwf(sourceFilePath):
     return standardDf
 
 
-def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
+def convert_irina_distr_to_standard_df(sourceFilePath, outFilePath=None):
     standardDf = pd.read_csv(
         sourceFilePath, delim_whitespace=True, index_col=False,
         header=0, names=('x', 'px', 'y', 'py', 'pz', 't')
@@ -345,8 +345,8 @@ def convert_irina_distr_to_standard_df(sourceFilePath, saveStandardFwf=False):
     standardDf['pdgId'] = -11
     standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
     standardDf = extend_standard_df(standardDf)
-    if saveStandardFwf:
-        generate_fwf(standardDf, outFilePath=sourceFilePath)
+    if outFilePath is not None:
+        generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf
 
 
@@ -382,7 +382,10 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], saveStandardFwf=Fal
     return dfDict
 
 
-def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, saveStandardFwf=False, verbose=False):
+def convert_astra_to_standard_df(
+        sourceFilePath, discardLostParticles=True, zProjection=None, zCut=None,
+        saveStandardFwf=False, verbose=False
+    ):
     standardDf = pd.read_csv(
         sourceFilePath, delim_whitespace=True,
         index_col=False, header=None,
@@ -405,6 +408,8 @@ def convert_astra_to_standard_df(sourceFilePath, zProjection=None, zCut=None, sa
     standardDf.rename(columns={'particleIndex': 'pdgId'}, inplace=True)
     standardDf['macroCharge'] = standardDf['macroCharge'] * 1.e-9               # [C]
     standardDf.rename(columns={'macroCharge': 'Q'}, inplace=True)
+    if discardLostParticles:
+        standardDf = standardDf[standardDf['statusFlag'] >= -6]
     standardDf.drop('statusFlag', axis=1, inplace=True)
     standardDf = extend_standard_df(standardDf)
     labelStr = ''
@@ -615,7 +620,6 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
 
 
 def p_components_from_angles(standardDf):
-    Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
     p = standardDf['p']                                                         # [MeV/c]
     standardDf.drop('p', axis=1, inplace=True)
     standardDf['pz'] = p / np.sqrt(
@@ -644,15 +648,22 @@ def get_sdds_parameter(sourceFilePath, parameterName):
     return resultVal
 
 
-def convert_standard_df_to_sdds(standardDf=None, sourceFilePath=None, outFilePath='SddsDistribution'):
-    # standardDf, outFilePath = convert_from_standard_df_input_check(
-    #     standardDf, sourceFilePath
-    # )
-    astraDf = convert_standard_df_to_astra(standardDf, sourceFilePath)
+def convert_standard_df_to_sdds(
+        standardDf=None, sourceFilePath=None, refParticleId=0,
+        outFilePath=None
+    ):
+    standardDf = convert_from_standard_df_input_check(
+        standardDf, sourceFilePath
+    )
+    if outFilePath is None:
+        raise ValueError('Please specify outFilePath.')
+    astraDf = convert_standard_df_to_astra(
+        standardDf=standardDf, refParticleId=refParticleId
+    )
     astraDfStr = generate_fwf(astraDf, formatType='astra', outFilePath='TmpAstra')
     outFilePath += FILE_TYPES_SPECS['sdds']['ext']
-    os.system('astra2elegant TmpAstra.001 ' + outFilePath)
-    os.system('rm TmpAstra.001')
+    os.system('/opt/elegant-2021.4.0-1/usr/bin/astra2elegant TmpAstra.001 ' + outFilePath)
+    # os.system('rm TmpAstra.001')
     # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
 
 
@@ -1025,7 +1036,10 @@ def quad_matrix(k, l):
     return MquadFocusing, MquadDefocusing
 
 
-def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, pzPoints=5, saveStandardFwf=False, outFilePath='CrossDistribution'):
+def generate_cross_distribution(
+        xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, pzPoints=5,
+        outFilePath=None
+    ):
     if not isinstance(xPoints,int) or xPoints < 1:
         raise ValueError('xPoints must be an integer >= 1.')
     if not isinstance(yPoints,int) or yPoints < 1:
@@ -1060,14 +1074,7 @@ def generate_cross_distribution(xMax, yMax, p0, pzDelta, xPoints=5, yPoints=5, p
     )
     standardDf.drop_duplicates(ignore_index=True, inplace=True)
     standardDf = extend_standard_df(standardDf)
-    # TODO: Remove following lines when working (this was the first implementation)
-    # p = pVect_to_p(pxArray, pyArray, pzArray)
-    # EkinArray = p_to_Ekin(p, pdgId)
-    # gammaRelArray = Ekin_to_gamma(EkinArray, pdgId)
-    # betaRelArray = Ekin_to_beta(EkinArray, pdgId)
-    # xpArray = pxArray / pzArray
-    # ypArray = pyArray / pzArray
-    if saveStandardFwf:
+    if outFilePath is not None:
         generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf
     
