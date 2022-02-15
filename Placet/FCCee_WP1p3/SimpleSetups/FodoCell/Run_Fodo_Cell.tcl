@@ -33,16 +33,38 @@
 # set Ldrift [expr ($Lcell-2*$Lquad)/2]   ;# [m]
 
 ### DEFINE INITIAL BEAM PARAMETERS
+
+# set n_slice 10
+# set n 1000
+# set charge 1e10   ;# number of particles
+# set e_initial 0.499489   ;# [GeV]
+# set e_spread 10.   ;# [%]
+# set sigma_z 7.96e3   ;# [um]   15e3
+# set emitn_x 10000.   ;# [mm mrad]
+# set emitn_y 10000.   ;# [mm mrad]
+# set beta_x 5.503919   ;# [m]
+# set beta_y 1.456175   ;# [m]
+# set alpha_x 0.
+# set alpha_y 0.
+# set RaMatching 0.1   ;# [m]
+# set Ra 0.03   ;# [m]
+
+set initialDistribution "/home/tia/tmp/EmitGrowthInDriftSpace/NicoDistr_Z20p57m/SingleBucket/RUN_2501_121416.2057_SingleBucket.001.dat"
+set n_slice 8
+set n 876
 set charge 1e10   ;# number of particles
-set e_initial 0.499489   ;# [GeV]
+# set e_initial 0.499489   ;# [GeV]
+set e_initial 0.450   ;# [GeV]
 set e_spread 17.6   ;# [%]
+# set e_spread 1.0   ;# [%]
 set sigma_z 7.96e3   ;# [um]   15e3
-set emitn_x 10000.   ;# [mm mrad]
-set emitn_y 10000.   ;# [mm mrad]
-set beta_x 5.503919   ;# [m]
-set beta_y 1.456175   ;# [m]
-set alpha_x 0.
-set alpha_y 0.
+set emitn_x 12676.   ;# [mm mrad]
+set emitn_y 13091.   ;# [mm mrad]
+set beta_x 1.663   ;# [m]
+set beta_y 1.667   ;# [m]
+set alpha_x -0.329
+set alpha_y -0.322
+set RaMatching 0.1   ;# [m]
 set Ra 0.03   ;# [m]
 
 # set initialDistribution "/home/tia/Repo/GIT_PSIPositronProduction/FCCeeInjectorBeamApp/BeamDistrs/Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50_filt.sdf_txt.dat"
@@ -80,9 +102,12 @@ set Ra 0.03   ;# [m]
 # puts "e_spread = $e_spread"
 # puts "charge = $charge"
 
+### DEFINE MATCHING PARAMETERS
+set kQuadMatching {0.525249 -0.952379 0.861785 -0.402301 -0.646024}
+
 ### DEFINE FODO PARAMETERS
 set Lquad 1.0   ;# [m]
-set fQuad 1.117493   ;# [m]
+set kQuadFodo 0.89486   ;# [1/m^2]
 set Ldrift 0.757640   ;# [m]
 # puts "FODO Parameters"
 # puts "Lquad = $Lquad m"
@@ -93,12 +118,33 @@ set Ldrift 0.757640   ;# [m]
 BeamlineNew
 SetReferenceEnergy $e_initial
 Girder
-    for {set cellInd 1} {$cellInd <= 20} {incr cellInd} {
-        Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
-        Drift -length $Ldrift -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
-        Quadrupole -length $Lquad -strength [expr (-1.)*$e_initial/$fQuad] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
-        Drift -length $Ldrift -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
-        Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$e_initial/$fQuad/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra
+    # Matching section
+    foreach kQuadTmp $kQuadMatching {
+       set kQuadPlacet [expr $e_initial * ($kQuadTmp*$Lquad)]
+       puts "kQuadTmp = $kQuadTmp 1/m2"
+       puts "kQuadPlacet = $kQuadPlacet GeV m"
+       Quadrupole -length $Lquad -strength [expr (+1)*$kQuadPlacet] -aperture_shape elliptic -aperture_x $RaMatching  -aperture_y $RaMatching -six_dim 1
+       Drift -length $Ldrift -aperture_shape elliptic -aperture_x $RaMatching  -aperture_y $RaMatching -six_dim 1
+    }
+
+    #TclCall -script {
+    #    BeamDump -file savedBeam.dat
+    #    Octave {
+    #        B = placet_get_beam();
+    #        sizeBeam = size(B, 1);
+    #    }
+    #}
+
+    # FODO
+    set kQuadPlacet [expr $e_initial * ($kQuadFodo*$Lquad)]
+    puts "kQuadPlacet = $kQuadPlacet GeV m"
+    Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$kQuadPlacet/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra -six_dim 1
+    for {set cellInd 1} {$cellInd <= 25} {incr cellInd} {
+        Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$kQuadPlacet/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra -six_dim 1
+        Drift -length $Ldrift -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra -six_dim 1
+        Quadrupole -length $Lquad -strength [expr (-1.)*$kQuadPlacet] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra -six_dim 1
+        Drift -length $Ldrift -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra -six_dim 1
+        Quadrupole -length [expr $Lquad/2.] -strength [expr (+1.)*$kQuadPlacet/2.] -aperture_shape elliptic -aperture_x $Ra  -aperture_y $Ra -six_dim 1
     }
 BeamlineSet -name beamline
 
@@ -123,8 +169,6 @@ source $common_script_dir/clic_beam.tcl
 
 # Global variables required by function make_beam_many in create_beam.tcl:
 # charge, e_initial, match(), n_total
-set n_slice 20
-set n 1000
 set n_total [expr $n_slice * $n]
 # Create the beam
 make_beam_many beam0 $n_slice $n
@@ -132,17 +176,18 @@ FirstOrder 1
 
 ### IMPORT BEAM FROM EXTERNAL DISTRIBUTION
 
-# Octave {
-#   B0 = load('$initialDistribution');
-#   # B0(:,1) = B0(:,1) * 500./225.;
-#   # B0(:,2) = B0(:,2) * 7.785;
-#   # B0(:,3) = B0(:,3) * 2.06;
-#   disp(B0(1:10,:));
-#   placet_set_beam("beam0", B0);
-# }
+Octave {
+  B0 = load('$initialDistribution');
+  disp(B0(1:10,:));
+  placet_set_beam("beam0", B0);
+}
 
 # Compute Twiss parameters (method 2)
 TwissPlotStep -beam beam0 -file out_twiss_2.dat -step 0.01
+
+ApertureLosses -file out_aperture_losses.dat -charge_norm 1.0
+
+BeamlineList -file output_beamline.dat
 
 
 ### TRACK
@@ -162,83 +207,160 @@ Octave {
     # Load Twiss parameters from method 2
     T_2 = load('out_twiss_2.dat');
 
+    beamlineIds = placet_get_name_number_list('beamline', '*');
+    s_elInd = placet_element_get_attribute('beamline', beamlineIds, 's');
+    apertureLosses_elInd = placet_element_get_attribute('beamline', beamlineIds, 'aperture_losses');
+
+    quadrupoleIds = placet_get_number_list('beamline', 'quadrupole');
+    sEndMatching1 = placet_element_get_attribute('beamline', quadrupoleIds(6), 's');
+
     # Load initial beam
-    beamIni = load('particles.in');
+    # beamIni = load('particles.in');
+    beamIni = load('$initialDistribution');
 
     # Quick analysis
-    fontSize = 16;
-    figure(1, 'units','normalized','position',[0.5 0 0.25 1])
-    subplot(3, 1, 1)
-    plot(s, beta_x, 'b-')
-    hold on
-    plot(s, beta_y, 'r-')
-    plot(T_2(:,2), T_2(:,6), 'b--')
-    plot(T_2(:,2), T_2(:,10), 'r--')
-    xlabel('s [m]')
-    ylabel('beta [m]')
-    legend('beta_x (Method 1)', 'beta_y (Method 1)', 'beta_x (Method 2)', 'beta_y (Method 2)')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
-    subplot(3, 1, 2)
-    plot(s, alpha_x, 'b-')
-    hold on
-    plot(s, alpha_y, 'r-')
-    plot(T_2(:,2), T_2(:,7), 'b--')
-    plot(T_2(:,2), T_2(:,11), 'r--')
-    xlabel('s [m]')
-    ylabel('alpha')
-    legend('alpha_x (Method 1)', 'alpha_y,(Method 1)', 'alpha_x (Method 2)', 'alpha_y (Method 2)')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
-    subplot(3, 1, 3)
-    # plot(s, E, 'b-')
-    # hold on
-    # plot(T_2(:,2), T_2(:,3), 'b--')
-    # xlabel('s [m]')
-    # ylabel('E [GeV]')
-    # legend('E (Method 1)', 'E (Method 2)')
-    plot(s(end), size(beam,1)/size(beamIni,1), 'xb')
-    xlabel('s [m]')
-    ylabel('Transport efficiency')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
+    if true
+        fontSize = 16;
+        figure(1, 'units','normalized','position',[0.5 0 0.25 1])
+        subplot(3, 1, 1)
+        plot(s, beta_x, 'b-')
+        hold on
+        plot(s, beta_y, 'r-')
+        plot(T_2(:,2), T_2(:,6), 'b--')
+        plot(T_2(:,2), T_2(:,10), 'r--')
+        ylim([0, 20.])
+        plot([sEndMatching1, sEndMatching1], ylim(), 'k')
+        xlabel('s [m]')
+        ylabel('beta [m]')
+        legend('beta_x (Method 1)', 'beta_y (Method 1)', 'beta_x (Method 2)', 'beta_y (Method 2)')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
+        subplot(3, 1, 2)
+        plot(s, alpha_x, 'b-')
+        hold on
+        plot(s, alpha_y, 'r-')
+        plot(T_2(:,2), T_2(:,7), 'b--')
+        plot(T_2(:,2), T_2(:,11), 'r--')
+        # xlim([-40., 40.])
+        ylim([-20., 20.])
+        plot([sEndMatching1, sEndMatching1], ylim(), 'k')
+        xlabel('s [m]')
+        ylabel('alpha')
+        legend('alpha_x (Method 1)', 'alpha_y,(Method 1)', 'alpha_x (Method 2)', 'alpha_y (Method 2)')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
+        subplot(3, 1, 3)
+        # plot(s, E, 'b-')
+        # hold on
+        # plot(T_2(:,2), T_2(:,3), 'b--')
+        # xlabel('s [m]')
+        # ylabel('E [GeV]')
+        # legend('E (Method 1)', 'E (Method 2)')
+        plot(s_elInd, 1.-cumsum(apertureLosses_elInd))
+        hold on
+        ylim([0., 1.])
+        plot([sEndMatching1, sEndMatching1], ylim(), 'k')
+        xlabel('s [m]')
+        ylabel('Transport efficiency')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
 
-    figure(2, 'units','normalized','position',[0.75 0 0.25 1])
-    subplot(2, 2, 1)
-    plot(beamIni(:,2)*1e-3, beamIni(:,3)*1e-3, '.')
-    hold on
-    plot(beam(:,2)*1e-3, beam(:,3)*1e-3, '.')
-    xlim([-40., 40.])
-    ylim([-20., 20.])
-    xlabel('x [mm]')
-    ylabel('y [mm]')
-    legend('Start beam', 'End beam')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
-    subplot(2, 2, 2)
-    plot(beamIni(:,3)*1e-3, beamIni(:,6)*1e-3, '.')
-    hold on
-    plot(beam(:,3)*1e-3, beam(:,6)*1e-3, '.')
-    xlim([-20., 20.])
-    ylim([-30., 30.])
-    xlabel('y [mm]')
-    ylabel('yp [mrad]')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
-    subplot(2, 2, 3)
-    plot(beamIni(:,2)*1e-3, beamIni(:,5)*1e-3, '.')
-    hold on
-    plot(beam(:,2)*1e-3, beam(:,5)*1e-3, '.')
-    xlim([-40., 40.])
-    ylim([-10., 10.])
-    xlabel('x [mm]')
-    ylabel('xp [mrad]')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
-    subplot(2, 2, 4)
-    c = 2.998e8;
-    plot(beamIni(:,4)/c*1e3, beamIni(:,1)*1e3, '.')
-    hold on
-    plot(beam(:,4)/c*1e3, beam(:,1)*1e3, '.')
-    xlim([-0.500, 0.500])
-    ylim([200., 800.])
-    xlabel('t [ns]')
-    ylabel('p [Mev/c]')
-    set(gca, "fontsize", fontSize)   # , "linewidth", 4
-    figure(3, 'units','normalized','position',[0.4 0 .1 .1])
-    waitforbuttonpress
+        figure(2, 'units','normalized','position',[0.75 0 0.25 1])
+        subplot(2, 2, 1)
+        plot(beamIni(:,2)*1e-3, beamIni(:,3)*1e-3, '.')
+        hold on
+        plot(beam(:,2)*1e-3, beam(:,3)*1e-3, '.')
+        xlim([-40., 40.])
+        ylim([-20., 20.])
+        xlabel('x [mm]')
+        ylabel('y [mm]')
+        legend('Start beam', 'End beam')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
+        subplot(2, 2, 2)
+        plot(beamIni(:,3)*1e-3, beamIni(:,6)*1e-3, '.')
+        hold on
+        plot(beam(:,3)*1e-3, beam(:,6)*1e-3, '.')
+        xlim([-20., 20.])
+        ylim([-40., 40.])
+        xlabel('y [mm]')
+        ylabel('yp [mrad]')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
+        subplot(2, 2, 3)
+        plot(beamIni(:,2)*1e-3, beamIni(:,5)*1e-3, '.')
+        hold on
+        plot(beam(:,2)*1e-3, beam(:,5)*1e-3, '.')
+        xlim([-40., 40.])
+        ylim([-10., 10.])
+        xlabel('x [mm]')
+        ylabel('xp [mrad]')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
+        subplot(2, 2, 4)
+        c = 2.998e8;
+        plot(beamIni(:,4)/c*1e3, beamIni(:,1)*1e3, '.')
+        hold on
+        plot(beam(:,4)/c*1e3, beam(:,1)*1e3, '.')
+        xlim([1.148e8, 1.150e8])
+        ylim([200., 800.])
+        xlabel('t [ns]')
+        ylabel('p [Mev/c]')
+        set(gca, "fontsize", fontSize)   # , "linewidth", 4
+        figure(3, 'units','normalized','position',[0.4 0 .1 .1])
+        waitforbuttonpress
+    end
+}
+
+### POSTPROCESSING PYTHON
+
+Python {
+
+import numpy as np
+import matplotlib.pyplot as plt
+import BeamDynamics as bd
+
+# Not defined
+# emitt, beam = test_no_correction('beamline', 'beam0', 'None')
+# Not defined
+# [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y, Dx, Dy, E] = evolve_beta_function('beamline', $beta_x, $alpha_x, $beta_y, $alpha_y)
+
+# Not defined
+# beamlineIds = get_name_number_list('beamline', '*')
+# s_elInd = element_get_attribute('beamline', beamlineIds, 's')
+# apertureLosses_elInd = element_get_attribute('beamline', beamlineIds, 'aperture_losses')
+# Alternative
+# load -text out_twiss_1.dat
+# to get s(end)
+
+beamOut = bd.convert_placet_to_standard_df(
+    'out_beam.dat', z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False
+)
+
+plotDefs = [
+    {
+        'varName1': 'x', 'varName2': 'y',
+        'opacityHist': 0.6,
+    },
+    {
+        'varName1': 'x', 'varName2': 'xp',
+        'opacityHist': 0.6,
+    },
+    {
+        'varName1': 'y', 'varName2': 'yp',
+        'opacityHist': 0.6,
+    },
+    {
+        'varName1': 'z', 'varName2': 'pz',
+        'opacityHist': 0.6,
+    },
+    {
+        'varName1': 't', 'varName2': 'Ekin',
+        'opacityHist': 0.6,
+    },
+    {
+        'varName1': 't', 'varName2': 'pz',
+        'opacityHist': 0.6,
+    },
+]
+# ax = bd.plot_distr([beamOut], plotDefs)
+# # plt.ion()
+# plt.show()
+input("Press Enter to continue...")
+plt.close('all')
+
 }
