@@ -82,13 +82,26 @@ FILE_TYPES_SPECS = {
     },
     'sdds': {
         'ext': '.sdds',
-        'columnOrder': ('x', 'xp', 'y', 'yp', 't', 'p', 'trackingId'),
+        'columnOrder': ['x', 'xp', 'y', 'yp', 't', 'p', 'trackingId'],
         'header': None
     },
     'octave': {
         'ext': '.dat',
-        'columnOrder': ('x', 'xp', 'y', 'yp', 't', 'p'),
-    }
+        'columnOrder': ['x', 'xp', 'y', 'yp', 't', 'p'],
+    },
+    'placet': {
+        'ext': '.dat',
+        'columnOrder': ['p', 'x', 'y', 't', 'xp', 'yp'],
+        'header': False,
+        'formatters': {
+            'p': SCI_NOTATION_FORMATTER,
+            'x': SCI_NOTATION_FORMATTER,
+            'y': SCI_NOTATION_FORMATTER,
+            't': SCI_NOTATION_FORMATTER,
+            'xp': SCI_NOTATION_FORMATTER,
+            'yp': SCI_NOTATION_FORMATTER,
+        }
+    },
 }
 
 DATA_BASE_PATH = '/afs/psi.ch/project/Pcubed'
@@ -498,16 +511,67 @@ def convert_standard_df_to_astra(
     return astraDf
 
 
-def convert_from_standard_df_input_check(standardDf, sourceFilePath, outFilePath):
+def convert_placet_to_standard_df(
+        sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False
+    ):
+    if np.isnan(Qbunch):
+        warnings.warn(
+            'Qbunch has not been declared. The charge Q of the (macro)particles cannot be determined.'
+        )
+    standardDf = pd.read_csv(
+        sourceFilePath, engine='python', delim_whitespace=True,
+        index_col=False, header=None,
+        names=FILE_TYPES_SPECS['placet']['columnOrder'],
+        skiprows=5
+    )
+    standardDf['x'] = standardDf['x'] * 1e-3                                    # From [um] to [mm]
+    standardDf['y'] = standardDf['y'] * 1e-3                                    # From [um] to [mm]
+    standardDf['p'] = standardDf['p'] * 1e3                                     # From [GeV/c] to [MeV/c]
+    standardDf['xp'] = standardDf['xp'] * 1e-3                                  # From [urad] to [mrad]
+    standardDf['yp'] = standardDf['yp'] * 1e-3                                  # From [urad] to [mrad]
+    standardDf = p_components_from_angles(standardDf)
+    standardDf['z'] = z0                                                        # [mm]
+    standardDf['t'] = standardDf['t'] / C * 1e3                                 # From [um/c] to [ns]
+    standardDf['pdgId'] = pdgId
+    NparticlesPerBunch = standardDf.shape[0]
+    standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
+    standardDf = extend_standard_df(standardDf)
+    if saveStandardFwf:
+        generate_fwf(standardDf, outFilePath=sourceFilePath)
+    return standardDf
+
+
+def convert_standard_df_to_placet(
+        standardDf=None, sourceFilePath=None, outFilePath=None
+    ):
+    standardDf = convert_from_standard_df_input_check(
+        standardDf, sourceFilePath
+    )
+    placetDf = standardDf[['x', 'y', 't', 'xp', 'yp']].copy()
+    placetDf['x'] = placetDf['x'] * 1e3                                          # [um]
+    placetDf['y'] = placetDf['y'] * 1e3                                          # [um]
+    placetDf['t'] = placetDf['t'] * C * 1e3                                      # [um/c]
+    placetDf['xp'] = placetDf['xp'] * 1e3                                         # [urad]
+    placetDf['yp'] = placetDf['yp'] * 1e3                                         # [urad]
+    placetDf['p'] = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz']) * 1e-3  # [GeV/c]
+    if outFilePath is not None:
+        generate_fwf(placetDf, formatType='placet', outFilePath=outFilePath)
+    return placetDf
+
+
+def convert_from_standard_df_input_check(standardDf, sourceFilePath):
     if sourceFilePath is not None:
         if standardDf is None:
             standardDf = load_standard_fwf(sourceFilePath)
-            outFilePath = sourceFilePath
         else:
             raise ValueError(
                 'Only one between standardDf and sourceFilePath can be set different than None.'
             )
-    return standardDf, outFilePath
+    elif standardDf is None:
+        raise ValueError(
+            'At least one between standardDf and sourceFilePath must be different than None.'
+        )
+    return standardDf
 
 
 def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
