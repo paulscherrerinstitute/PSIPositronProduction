@@ -24,6 +24,7 @@ function merit = track_function ( P )
   fclose(outfile);
 
   if(g.sampling)
+    printf("INFO from track.m > track_function > g.sampling_true\n")
     system(["placet scr/track_section.tcl input/il_input_PLC_Sample.txt"]);
     AI = load("input/il_input_PLC.txt");
     AIS = load("input/il_input_PLC_Sample.txt");
@@ -36,6 +37,7 @@ function merit = track_function ( P )
     EFF_TOT = NP_ACC / rows(AOS)
     NP_ACC = NP * sf
   else
+    printf("INFO from track.m > track_function > g.sampling_false\n")
     system("placet scr/track_section.tcl");
   endif
 
@@ -52,6 +54,7 @@ g.sampling = 0;
 %% parameters
 par_file = [ "par/" option ".m" ];
 if(exist(par_file) == 2)
+  printf("Reading par_file = %s.\n", par_file);
   source(par_file);
 endif
 
@@ -59,6 +62,7 @@ g.NPM = [ columns(g.P_M1) columns(g.P_M2) columns(g.P_M3) columns(g.P_M4) column
 
 addpath("scr/");
 
+printf("INFO from track.m\n")
 printf("INFO:: Phase: %.1f degree\n", g.Phase);
 printf("INFO:: Phase advance: %.1f degree\n", g.PhA);
 printf("INFO:: Deficit: %.2f\n MeV", g.Deficit);

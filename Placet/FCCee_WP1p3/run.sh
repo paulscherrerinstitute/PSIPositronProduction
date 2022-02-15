@@ -16,7 +16,7 @@ for option in ${Options[*]}
 do
 
   rm -rf output/*
-  ./sh/prepare.sh $option
+  #./sh/prepare.sh $option
   
   if [[ $do_match -eq 1 ]];then
     ./sh/match.sh $option

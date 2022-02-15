@@ -51,8 +51,9 @@ if {$i_sec ==0 || $i_sec >= 5} {
   source $beamline_dir/M5.tcl
   source $util_script_dir/create_S5.tcl
 }
-
 BeamlineSet -name beamline
+
+# BeamlineList -file output_beamline.tcl
 
 ############ End of beamline ##################
 
@@ -67,6 +68,19 @@ source $util_script_dir/create_beam.tcl
 ## Tracking & Save
 
 Octave {
+
+  disp('INFO from track_section.tcl > Tracking and Save');
+  printf("INFO:: Beta_x: %.3f \n", $Beta_x);
+  printf("INFO:: Alpha_x: %.3f \n", $Alpha_x);
+  printf("INFO:: Beta_y: %.3f \n", $Beta_y);
+  printf("INFO:: Alpha_y: %.3f \n", $Alpha_y);
+
+  [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y, Dx, Dy, E] = placet_evolve_beta_function('beamline', $Beta_x, $Alpha_x, $Beta_y, $Alpha_y);
+
+  T =   [s, beta_x, beta_y, alpha_x, alpha_y, mu_x, mu_y];
+  
+  save -text output_twiss.dat T;
+
 
   output_beam_format = "%s %ex %sex %x %sx %ey %sey %Env %sy %n";
 
