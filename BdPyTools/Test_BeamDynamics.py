@@ -1,3 +1,4 @@
+import numpy as np
 import BeamDynamics as bd
 from importlib import reload
 reload(bd)
@@ -136,8 +137,86 @@ bd.convert_fcceett_to_standard_df(
 
 #%%
 
-octaveFilepath = './Elegant/FCCee_WP1p3/Distributions_Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
+#octaveFilepath = './Elegant/FCCee_WP1p3/Distributions_Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
+#octaveFilepath = './Elegant/FCCee_WP1p3/Distributions_Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
+octaveFilepath = './Elegant/FCCee_WP1p3/Distributions_Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
 z0 = 10e3   # [mm]
 standardDf = bd.convert_octave_to_standard_df(
     octaveFilepath, z0=z0, pdgId=-11, Qbunch = 25.e-9, saveStandardFwf=True
+)
+
+
+#%%
+
+sourceFilePath = '../FCCeeInjectorBeamApp/BeamDistrs/Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat.sdf_txt'
+filterSpecs = {
+    'x': (-25., 25.),
+    'xp': (-30., 30.),
+    'y': (-25., 25.),
+    'yp': (-30., 30.),
+    't': (62.8, 63.1),
+    'pz': (50., 400.),
+}
+astraRefParticle = {
+    'x': 0.,
+    'px': 0.,
+    'y': 0.,
+    'py': 0.,
+    'pz': 200.,
+    't': 62.87,
+    'pdgId': -11,
+}
+
+# sourceFilePath = '../FCCeeInjectorBeamApp/BeamDistrs/Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat.sdf_txt'
+# filterSpecs = {
+#     'x': (-25., 25.),
+#     'xp': (-30., 30.),
+#     'y': (-25., 25.),
+#     'yp': (-30., 30.),
+#     't': (58.6, 58.9),
+#     'pz': (0, 400.),
+# }
+# astraRefParticle = {
+#     'x': 0.,
+#     'px': 0.,
+#     'y': 0.,
+#     'py': 0.,
+#     'pz': 225.,
+#     't': 58.73,
+#     'pdgId': -11,
+# }
+
+# bd.convert_standard_df_to_placet(sourceFilePath=sourceFilePath, savePlacetDistr=True)
+
+standardDf = bd.load_standard_fwf(sourceFilePath)
+standardDf = bd.filter_distr(standardDf, filterSpecs)
+
+# bd.convert_standard_df_to_placet(standardDf=standardDf, savePlacetDistr=True)
+
+astraRefParticle['z'] = standardDf['z'][0]
+astraRefParticle['Q'] = standardDf['Q'][0]
+standardDf = standardDf.append(astraRefParticle, ignore_index=True)
+# bd.convert_standard_df_to_astra(
+#     standardDf=standardDf, refParticleId=standardDf.shape[0]-1,
+#     saveAstraDistr=True, outFilePath=sourceFilePath
+# )
+
+bd.convert_standard_df_to_sdds(
+    standardDf=standardDf, refParticleId=standardDf.shape[0]-1,
+    outFilePath=sourceFilePath
+)
+
+
+#%%
+# Astra to Placet
+
+sourceFilePath = '/home/tia/tmp/EmitGrowthInDriftSpace/NicoDistr_Z20p57m/SingleBucket/RUN_2501_121416.2057_SingleBucket.001'
+zProjection = 20.57e3   # [mm]
+
+standardDf = bd.convert_astra_to_standard_df(
+    sourceFilePath, zProjection=zProjection,
+    saveStandardFwf=False, verbose=True
+)
+bd.convert_standard_df_to_placet(
+    standardDf=standardDf, outFilePath=sourceFilePath
 )
