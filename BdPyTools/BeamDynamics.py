@@ -458,10 +458,12 @@ def convert_octave_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan
     return standardDf
 
 
-def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refParticleId=0, saveAstraDistr=False, outFilePath='AstraDistribution'):
-    # TODO: saveAstraDistr and outFilePath redundant, check also similar functions
-    standardDf, outFilePath = convert_from_standard_df_input_check(
-        standardDf, sourceFilePath, outFilePath
+def convert_standard_df_to_astra(
+        standardDf=None, sourceFilePath=None, refParticleId=0,
+        outFilePath=None
+    ):
+    standardDf = convert_from_standard_df_input_check(
+        standardDf, sourceFilePath
     )
     astraDf = standardDf[['x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId']].copy()
     astraDf['x'] = astraDf['x'] * 1e-3                                          # [m]
@@ -475,21 +477,23 @@ def convert_standard_df_to_astra(standardDf=None, sourceFilePath=None, refPartic
     astraDf['pdgId'].replace(to_replace={11:1, -11:2}, inplace=True)
     # Small check for the reference particle
     if not np.isclose(astraDf['x'][refParticleId], 0) or not np.isclose(astraDf['y'][refParticleId], 0):
-        warnings.warn('Reference particle is out of axis with (x,y) = ({:.6f}, {:.6f}) m'.format(
-            astraDf['x'][refParticleId], astraDf['y'][refParticleId]
-    ))
+        warnings.warn(
+            'Reference particle is out of axis with (x,y) = ({:.6f}, {:.6f}) m'.format(
+                astraDf['x'][refParticleId], astraDf['y'][refParticleId]
+        ))
     # Longitudinal variables with respect to the reference particle
-    astraDf.loc[1:,'z'] = astraDf.loc[1:,'z'] - astraDf.loc[refParticleId,'z']
-    astraDf.loc[1:,'pz'] = astraDf.loc[1:,'pz'] - astraDf.loc[refParticleId,'pz']
-    astraDf.loc[1:,'t'] = astraDf.loc[1:,'t'] - astraDf.loc[refParticleId,'t']
+    nonRefIds = [ind for ind in standardDf.index if ind != refParticleId]
+    astraDf.loc[nonRefIds,'z'] = astraDf.loc[nonRefIds,'z'] - astraDf.loc[refParticleId,'z']
+    astraDf.loc[nonRefIds,'pz'] = astraDf.loc[nonRefIds,'pz'] - astraDf.loc[refParticleId,'pz']
+    astraDf.loc[nonRefIds,'t'] = astraDf.loc[nonRefIds,'t'] - astraDf.loc[refParticleId,'t']
     # Add status flag
     statusFlag = np.full(astraDf.shape[0], 5)
     astraDf['statusFlag'] = statusFlag
     astraDf['pdgId'] = astraDf['pdgId'].astype(int)
     astraDf['statusFlag'] = astraDf['statusFlag'].astype(int)
-    # TODO: Move reference particle to first position in the data frame
+    astraDf = astraDf.loc[[refParticleId]+nonRefIds, :]
     astraDf.columns = FILE_TYPES_SPECS['astra']['columnOrder']
-    if saveAstraDistr:
+    if outFilePath is not None:
         generate_fwf(astraDf, formatType='astra', outFilePath=outFilePath)
     return astraDf
 
