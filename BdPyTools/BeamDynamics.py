@@ -1022,6 +1022,11 @@ def quad_strength(quadGradient, p, ZoverA=1.):
     return quadStrength
 
 
+def quad_gradient(quadStrength, p, ZoverA=1.):
+    quadGradient = quadStrength * p / C / 1e-6 / ZoverA
+    return quadGradient
+
+
 def quad_matrix(k, l):
     sqrtK = np.sqrt(np.abs(k))
     phi = sqrtK * l
