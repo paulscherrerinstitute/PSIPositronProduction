@@ -87,9 +87,15 @@ FILE_TYPES_SPECS = {
         'columnOrder': ['x', 'xp', 'y', 'yp', 't', 'p', 'trackingId'],
         'header': None
     },
-    'octave': {
+    'rftrack_xp_t': {
         'ext': '.dat',
         'columnOrder': ['x', 'xp', 'y', 'yp', 't', 'p'],
+        'columnUnits': ['mm', 'mrad', 'mm', 'mrad', 'mm/c', 'MeV/c']
+    },
+    'rftrack_Px_S': {
+        'ext': '.dat',
+        'columnOrder': ['x', 'px', 'y', 'py', 's', 'pz'],
+        'columnUnits': ['mm', 'MeV/c', 'mm', 'MeV/c', 'mm', 'MeV/c']
     },
     'placet': {
         'ext': '.dat',
@@ -105,15 +111,6 @@ FILE_TYPES_SPECS = {
         }
     },
 }
-
-DATA_BASE_PATH = '/afs/psi.ch/project/Pcubed'
-
-
-def build_data_path(relPath):
-    if relPath[0] in ['/', '\\']:
-        raise ValueError('relPath cannot start with a path separator ({:s} found).'.format(relPath[0]))
-    absPath = os.path.join(DATA_BASE_PATH, relPath)
-    return absPath
 
 
 def pdgId_to_particle_const(pdgId, constName):
@@ -310,8 +307,6 @@ def export_sim_db_to_xlsx(jsonFilePath):
     dbDf.to_excel(xlsxFilePath)
 
 
-# TODO: Changed from sourceFilePath to outFilePath=None
-    # outFilePath = sourceFilePath + additionalLabel + fileTypeSpecs['ext']
 def generate_fwf(df, formatType='standardDf', outFilePath=None):
     fileTypeSpecs = FILE_TYPES_SPECS[formatType]
     try:
@@ -327,7 +322,7 @@ def generate_fwf(df, formatType='standardDf', outFilePath=None):
         outFilePath += FILE_TYPES_SPECS[formatType]['ext']
         with open(outFilePath, 'w') as outFile:
             outFile.write(dfStr)
-    return dfStr
+    return dfStr, outFilePath
 
 
 def load_standard_fwf(sourceFilePath):
@@ -348,15 +343,16 @@ def convert_irina_distr_to_standard_df(sourceFilePath, outFilePath=None):
     standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
     standardDf = extend_standard_df(standardDf)
     if outFilePath is not None:
-        generate_fwf(standardDf, outFilePath=outFilePath)
-    return standardDf
+        _, outFilePath = generate_fwf(standardDf, outFilePath=outFilePath)
+    return standardDf, outFilePath
 
 
-def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], saveStandardFwf=False):
+def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], outFwfPath=None):
     if not isinstance(pdgId, list):
         pdgId = [pdgId]
     rootFile = ROOT.TFile.Open(sourceFilePath, 'READ')
     dfDict = {}
+    outFwfPathDict = {}
     for rootKey in rootFile.GetListOfKeys():
         distrName = rootKey.GetName()
         rootTree = rootFile.Get(distrName)
@@ -377,16 +373,17 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], saveStandardFwf=Fal
             fileSuffix += '_pdgId'
             for id in pdgId:
                 fileSuffix += '_' + str(id)
-        if saveStandardFwf:
-            filePath, fileExt = os.path.splitext(sourceFilePath)
-            generate_fwf(standardDf, outFilePath=filePath+fileSuffix+fileExt)
+        if outFwfPath is not None:
+            filePath, fileExt = os.path.splitext(outFwfPath)
+            _, tmpOutFwfPath = generate_fwf(standardDf, outFilePath=filePath+fileSuffix+fileExt)
         dfDict[distrName] = standardDf
-    return dfDict
+        outFwfPathDict[distrName] = tmpOutFwfPath
+    return dfDict, outFwfPathDict
 
 
 def convert_astra_to_standard_df(
         sourceFilePath, discardLostParticles=True, zProjection=None, zCut=None,
-        saveStandardFwf=False, verbose=False
+        outFwfPath=None, verbose=False
     ):
     standardDf = pd.read_csv(
         sourceFilePath, delim_whitespace=True,
@@ -441,48 +438,53 @@ def convert_astra_to_standard_df(
         vz = standardDf['betaRel'] * C * np.cos(alpha)
         standardDf['t'] = standardDf['t'] - deltaZ/vz*1e6
         labelStr += '_zProj{:.0f}mm'.format(zProjection)
-    if saveStandardFwf:
-        generate_fwf(standardDf, outFilePath=sourceFilePath+labelStr)
-    return standardDf
+    if outFwfPath is not None:
+        _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath+labelStr)
+    return standardDf, outFwfPath
 
 
-def convert_octave_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
+def convert_rftrack_to_standard_df(
+        rftrackDf=None, rftrackDfFormat='rftrack_Px_S', sourceFilePath=None, sourceFormat=None,
+        z=np.nan, t=np.nan, pdgId=-11, Qbunch=np.nan, outFwfPath=None
+    ):
+    if sourceFormat == 'rftrackYongke1' and not rftrackDfFormat == 'rftrack_xp_t':
+        warnings.warn((
+            "The combination sourceFormat='{:s}' and " + \
+            "rftrackDfFormat='{:s}' is very unlikely."
+        ).format(sourceFormat, rftrackDfFormat))
     if np.isnan(Qbunch):
         warnings.warn(
             'Qbunch has not been declared. The charge Q of the (macro)particles cannot be determined.'
         )
-    with open(sourceFilePath, 'r') as sourceFile:
-        startLine = None
-        endLine = None
-        for lineInd, line in enumerate(sourceFile):
-            if '# name: A_RF\n' == line:
-                startLine = lineInd
-            elif '# name:' in line and startLine is not None and endLine is None:
-                endLine = lineInd
-        totLines = lineInd
-    standardDf = pd.read_csv(
-        sourceFilePath, engine='python', delim_whitespace=True,
-        index_col=False, header=None,
-        names=FILE_TYPES_SPECS['octave']['columnOrder'],
-        skiprows=startLine+4, skipfooter=totLines-endLine+2
-    )
-    standardDf['z'] = z0                                                        # [mm]
-    standardDf['t'] = standardDf['t'] / C * 1e6                                 # [ns]
+    rftrackDf = convert_from_input_check(rftrackDf, sourceFilePath, sourceFormat=sourceFormat)
+    if rftrackDfFormat == 'rftrack_Px_S':
+        standardDf = pd.DataFrame(
+            data=rftrackDf,
+            columns=FILE_TYPES_SPECS['rftrack_Px_S']['columnOrder']
+        )
+        # TODO: Just renaming s to z is consistent with the definition of z?
+        standardDf.rename(columns={'s': 'z'}, inplace=True)
+        standardDf['t'] = t                                                     # [ns]
+    elif rftrackDfFormat == 'rftrack_xp_t':
+        standardDf = rftrackDf[FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder']].copy()
+        # TODO: Check that in this case we really have a projection of all particles at the same z
+        standardDf['z'] = z                                                     # [mm]
+        standardDf['t'] = standardDf['t'] / C * 1e6                             # [ns]
+        standardDf = p_components_from_angles(standardDf)
     standardDf['pdgId'] = pdgId
-    standardDf = p_components_from_angles(standardDf)
     NparticlesPerBunch = standardDf.shape[0]
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = extend_standard_df(standardDf)
-    if saveStandardFwf:
-        generate_fwf(standardDf, outFilePath=sourceFilePath)
-    return standardDf
+    if outFwfPath is not None:
+        _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
+    return standardDf, outFwfPath
 
 
 def convert_standard_df_to_astra(
         standardDf=None, sourceFilePath=None, refParticleId=0,
         outFilePath=None
     ):
-    standardDf = convert_from_standard_df_input_check(
+    standardDf = convert_from_input_check(
         standardDf, sourceFilePath
     )
     astraDf = standardDf[['x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId']].copy()
@@ -514,12 +516,12 @@ def convert_standard_df_to_astra(
     astraDf = astraDf.loc[[refParticleId]+nonRefIds, :]
     astraDf.columns = FILE_TYPES_SPECS['astra']['columnOrder']
     if outFilePath is not None:
-        generate_fwf(astraDf, formatType='astra', outFilePath=outFilePath)
-    return astraDf
+        _, outFilePath = generate_fwf(astraDf, formatType='astra', outFilePath=outFilePath)
+    return astraDf, outFilePath
 
 
 def convert_placet_to_standard_df(
-        sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False
+        sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, outFwfPath=None
     ):
     if np.isnan(Qbunch):
         warnings.warn(
@@ -543,15 +545,15 @@ def convert_placet_to_standard_df(
     NparticlesPerBunch = standardDf.shape[0]
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = extend_standard_df(standardDf)
-    if saveStandardFwf:
-        generate_fwf(standardDf, outFilePath=sourceFilePath)
-    return standardDf
+    if outFwfPath is not None:
+        _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
+    return standardDf, outFwfPath
 
 
 def convert_standard_df_to_placet(
         standardDf=None, sourceFilePath=None, outFilePath=None
     ):
-    standardDf = convert_from_standard_df_input_check(
+    standardDf = convert_from_input_check(
         standardDf, sourceFilePath
     )
     placetDf = standardDf[['x', 'y', 't', 'xp', 'yp']].copy()
@@ -562,26 +564,48 @@ def convert_standard_df_to_placet(
     placetDf['yp'] = placetDf['yp'] * 1e3                                         # [urad]
     placetDf['p'] = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz']) * 1e-3  # [GeV/c]
     if outFilePath is not None:
-        generate_fwf(placetDf, formatType='placet', outFilePath=outFilePath)
-    return placetDf
+        _, outFilePath = generate_fwf(placetDf, formatType='placet', outFilePath=outFilePath)
+    return placetDf, outFilePath
 
 
-def convert_from_standard_df_input_check(standardDf, sourceFilePath):
-    if sourceFilePath is not None:
-        if standardDf is None:
-            standardDf = load_standard_fwf(sourceFilePath)
-        else:
-            raise ValueError(
-                'Only one between standardDf and sourceFilePath can be set different than None.'
-            )
-    elif standardDf is None:
-        raise ValueError(
-            'At least one between standardDf and sourceFilePath must be different than None.'
-        )
+def load_rftrack_yongke_1(sourceFilePath):
+    with open(sourceFilePath, 'r') as sourceFile:
+        startLine = None
+        endLine = None
+        for lineInd, line in enumerate(sourceFile):
+            if '# name: A_RF\n' == line:
+                startLine = lineInd
+            elif '# name:' in line and startLine is not None and endLine is None:
+                endLine = lineInd
+        totLines = lineInd
+    standardDf = pd.read_csv(
+        sourceFilePath, engine='python', delim_whitespace=True,
+        index_col=False, header=None,
+        names=FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder'],
+        skiprows=startLine+4, skipfooter=totLines-endLine+2
+    )
     return standardDf
 
 
-def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, saveStandardFwf=False):
+def convert_from_input_check(df, sourceFilePath, sourceFormat='standardDf'):
+    if sourceFilePath is not None:
+        if df is None:
+            if sourceFormat == 'standardDf':
+                df = load_standard_fwf(sourceFilePath)
+            if sourceFormat == 'rftrackYongke1':
+                df = load_rftrack_yongke_1(sourceFilePath)
+        else:
+            raise ValueError(
+                'Only one between df and sourceFilePath can be set different than None.'
+            )
+    elif df is None:
+        raise ValueError(
+            'At least one between df and sourceFilePath must be different than None.'
+        )
+    return df
+
+
+def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, outFwfPath=None):
     os.system('sddsconvert -ascii ' + sourceFilePath)
     standardDf = pd.read_csv(
         sourceFilePath, skiprows=24, delim_whitespace=True,
@@ -603,6 +627,7 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     else:
         Qbunch = QbunchRead
     NparticlesPerBunch = get_sdds_parameter(sourceFilePath, 'Particles')
+    Erest = pdgId_to_particle_const(standardDf['pdgId'], 'Erest')
     standardDf['pdgId'] = pdgId
     standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
     standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
@@ -616,9 +641,9 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     # Some extended variables already available
     standardDf = extend_standard_df(standardDf)
     # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6             # [mm]
-    if saveStandardFwf:
-        generate_fwf(standardDf, outFilePath=sourceFilePath)
-    return standardDf
+    if outFwfPath is not None:
+        _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
+    return standardDf, outFwfPath
 
 
 def p_components_from_angles(standardDf):
@@ -654,7 +679,7 @@ def convert_standard_df_to_sdds(
         standardDf=None, sourceFilePath=None, refParticleId=0,
         outFilePath=None
     ):
-    standardDf = convert_from_standard_df_input_check(
+    standardDf = convert_from_input_check(
         standardDf, sourceFilePath
     )
     if outFilePath is None:
@@ -662,7 +687,7 @@ def convert_standard_df_to_sdds(
     astraDf = convert_standard_df_to_astra(
         standardDf=standardDf, refParticleId=refParticleId
     )
-    astraDfStr = generate_fwf(astraDf, formatType='astra', outFilePath='TmpAstra')
+    astraDfStr, _ = generate_fwf(astraDf, formatType='astra', outFilePath='TmpAstra')
     outFilePath += FILE_TYPES_SPECS['sdds']['ext']
     os.system('/opt/elegant-2021.4.0-1/usr/bin/astra2elegant TmpAstra.001 ' + outFilePath)
     # os.system('rm TmpAstra.001')
@@ -971,8 +996,8 @@ def generate_fieldmap_astra_ideal_tw(fileBasePath, freq, Lstructure, zRes):
     # np.savetxt(fileBasePath+'_Imag.astra', np.stack([z, Eimag], axis=1), fmt='%.9e')
     Eabs = np.array([1.0]*len(z))
     np.savetxt(fileBasePath+'.astra', np.stack([z, Eabs], axis=1), fmt='%.9e')
-    
-    
+
+
 def generate_lattice_quad_over_rf_elegant(elementName, L, Nslices, quadGradient, rfFreq, rfPhase, rfVoltage, EkinIni, pdgId=-11, ZoverA=1., elegantInputFilePath=None, quadOrder=2):
     inputStr = ''
     inputStr += 'Q: CHARGE, TOTAL=5.0e-9\n'
@@ -1087,6 +1112,5 @@ def generate_cross_distribution(
     standardDf.drop_duplicates(ignore_index=True, inplace=True)
     standardDf = extend_standard_df(standardDf)
     if outFilePath is not None:
-        generate_fwf(standardDf, outFilePath=outFilePath)
-    return standardDf
-    
+        _, outFilePath = generate_fwf(standardDf, outFilePath=outFilePath)
+    return standardDf, outFilePath
