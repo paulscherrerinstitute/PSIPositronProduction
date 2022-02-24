@@ -6,8 +6,8 @@ import pandas as pd
 import scipy.stats as scistats
 try:
     import ROOT
-except:
-    pass
+except ModuleNotFoundError:
+    warnings.warn('ROOT module not available.')
 import json
 import matplotlib.pyplot as plt
 import matplotlib.markers as pltMarkers
@@ -48,7 +48,9 @@ UNITS_STANDARD_DF_EXTENDED = {
 }
 PRECISION_STANDARD_DF = 9
 
-SCI_NOTATION_FORMATTER = ('{:' + str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}').format
+SCI_NOTATION_FORMATTER = (
+    '{:' + str(PRECISION_STANDARD_DF+9) + '.' + str(PRECISION_STANDARD_DF) + 'e}'
+).format
 INTEGER_FORMATTER = ('{:'+str(PRECISION_STANDARD_DF+9)+'d}').format
 
 FILE_TYPES_SPECS = {
@@ -999,9 +1001,10 @@ def generate_lattice_quad_over_rf_elegant(elementName, L, Nslices, quadGradient,
         inputStr += '{:s}.Quad.{:d}: QUADRUPOLE, L={:.6f}, K1={:.5e}, ORDER={:d}\n'.format(
             elementName, sliceInd, Lslice, quadStrengthSlice, quadOrder
         )
-        inputStr += '{0:s}.Slice{1:d}: Line=({0:s}.Rf.HalfSlice, {0:s}.Nd.HalfSlice, {0:s}.Quad.{1:d}, {0:s}.Nd.HalfSlice, {0:s}.Rf.HalfSlice)\n'.format(
-            elementName, sliceInd
-        )
+        inputStr += (
+            '{0:s}.Slice{1:d}: Line=({0:s}.Rf.HalfSlice, {0:s}.Nd.HalfSlice, ' + \
+            '{0:s}.Quad.{1:d}, {0:s}.Nd.HalfSlice, {0:s}.Rf.HalfSlice)\n'
+        ).format(elementName, sliceInd)
         # inputStr += generate_quad_over_rf_slice(Lslice, sliceInd, quadStrengthSlice, rfFreq, rfPhase, rfVoltageSlice)
         quadOverRfLineStr += '{:s}.Slice{:d}'.format(elementName, sliceInd)
         if sliceInd < Nslices:
