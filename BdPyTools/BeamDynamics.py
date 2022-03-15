@@ -795,13 +795,17 @@ def scatter_individual_marker_style(pathCollectionObj, markerStyles):
 
 
 def plot_phase_space_2d(
-        ax, distr, varName1=None, varName2=None, title=None, legendLabel='',
+        ax, distr, varName1=None, varName2=None, var1Center=False, var2Center=False,
+        title=None, legendLabel='',
         binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None,
         markerStyle=None, markerSize=15, color='b', opacityHist=1.
 ):
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
     opacityScatter = 1.
+    for vName, vCenter in [[varName1, var1Center], [varName2, var2Center]]:
+        if vCenter:
+            distr[vName] = distr[vName] - distr[vName].mean()
     pathColl = ax[0,0].scatter(
         distr[varName1], distr[varName2],
         s=markerSize, c=color, marker='.', alpha=opacityScatter
