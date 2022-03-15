@@ -480,6 +480,26 @@ def convert_rftrack_to_standard_df(
     return standardDf, outFwfPath
 
 
+def convert_standard_df_to_rftrack(
+        standardDf=None, sourceFilePath=None, rftrackDfFormat=None, outFilePath=None
+    ):
+    standardDf = convert_from_input_check(
+        standardDf, sourceFilePath
+    )
+    if rftrackDfFormat == 'rftrack_Px_S':
+        rftrackDf = standardDf[['x', 'px', 'y', 'py', 'z']].copy()
+        # TODO: Check consistency of definitions, z vs. s
+        rftrackDf.rename(columns={'z': 's'}, inplace=True)
+    elif rftrackDfFormat == 'rftrack_xp_t':
+        rftrackDf = standardDf[['x', 'xp', 'y', 'yp', 't']].copy()
+        rftrackDf['t'] = rftrackDf['t'] * C / 1e6                                       # [mm/c]
+    # TODO: Check consistency of definitions, pz vs p
+    rftrackDf['p'] = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])   # [MeV/c]
+    if outFilePath is not None:
+        _, outFilePath = generate_fwf(rftrackDf, formatType=rftrackDfFormat, outFilePath=outFilePath)
+    return rftrackDf, outFilePath
+
+
 def convert_standard_df_to_astra(
         standardDf=None, sourceFilePath=None, refParticleId=0,
         outFilePath=None
@@ -578,13 +598,13 @@ def load_rftrack_yongke_1(sourceFilePath):
             elif '# name:' in line and startLine is not None and endLine is None:
                 endLine = lineInd
         totLines = lineInd
-    standardDf = pd.read_csv(
+    rftDf = pd.read_csv(
         sourceFilePath, engine='python', delim_whitespace=True,
         index_col=False, header=None,
         names=FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder'],
         skiprows=startLine+4, skipfooter=totLines-endLine+2
     )
-    return standardDf
+    return rftDf
 
 
 def convert_from_input_check(df, sourceFilePath, sourceFormat='standardDf'):

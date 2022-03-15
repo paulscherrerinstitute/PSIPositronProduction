@@ -52,6 +52,7 @@ def assert_file_generated(outFilePath):
     # TODO: Add resolve below? outFile.resolve().is_file()
     if not outFile.is_file():
         raise AssertionError(f'File {outFilePath} does not exist.')
+    os.remove(outFilePath)
 
 
 class TestBeamDynamics(unittest.TestCase):
@@ -195,7 +196,7 @@ class TestBeamDynamics(unittest.TestCase):
         # fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
         # fileName = 'YongkeDistrsV1/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
         fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
-        sourceFilePath = build_data_path(relPath, fileName)
+        sourceFilePath = sd.build_data_path(relPath, fileName)
         # TODO: Following 2 values are very approximative
         z = 10e3   # [mm]
         Qbunch = 25.e-9   # [C]
@@ -204,11 +205,37 @@ class TestBeamDynamics(unittest.TestCase):
             z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=pl.Path(sourceFilePath).stem
         )
         assert_file_generated(outFwfPath)
-        os.remove(outFwfPath)
         self.assertAlmostEqual(standardDf.loc[0,'px'], 2.286897262e-01)
         self.assertAlmostEqual(standardDf.loc[54324,'py'], -1.931028202e+00)
 
 
+    def test_rftrack_back_and_forth(self):
+        """Test conversion from RF-Track format to standard data frame and back."""
+        relPath = 'SimulationRuns/DistrsFromExternalPartners/PositronsAt200MeV/YongkeDistrsV1'
+        # fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
+        # fileName = 'YongkeDistrsV1/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
+        fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
+        rftrackDfFormat = 'rftrack_xp_t'
+        sourceFilePath = sd.build_data_path(relPath, fileName)
+        rftDfOriginal = bd.load_rftrack_yongke_1(sourceFilePath)
+        # TODO: Following 2 values are very approximative
+        z = 10e3   # [mm]
+        Qbunch = 25.e-9   # [C]
+        standardDf, _ = bd.convert_rftrack_to_standard_df(
+            sourceFilePath=sourceFilePath, sourceFormat='rftrackYongke1', rftrackDfFormat=rftrackDfFormat,
+            z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=None
+        )
+        #TODO check t= vs z= in rftrack script
+        # with open(sd.build_data_path(REL_PATH, 'filterSpces.json'), 'r') as filterSpecsFile:
+        #     filterSpecsList = json.load(filterSpecsFile)
+        # filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
+        # beamIn = bd.filter_distr(beamIn, filterSpecs)
+        rftDf, _ = bd.convert_standard_df_to_rftrack(standardDf=standardDf, rftrackDfFormat=rftrackDfFormat)
+        for varName in bd.FILE_TYPES_SPECS[rftrackDfFormat]['columnOrder']:
+            for partId in (0, 7, 113, 4802):
+                self.assertAlmostEqual(rftDfOriginal.loc[partId,varName], rftDf.loc[partId,varName])
+
+    
     #%%
     #
     # sourceFilePath = '../FCCeeInjectorBeamApp/BeamDistrs/Positrons_200MeV_Yongke/CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat.sdf_txt'
