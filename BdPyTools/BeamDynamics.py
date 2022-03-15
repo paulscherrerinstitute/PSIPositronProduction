@@ -1138,3 +1138,33 @@ def generate_cross_distribution(
     if outFilePath is not None:
         _, outFilePath = generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf, outFilePath
+
+
+def generate_solenoid_fieldmap(L, B0, Rin):
+    """Create solenoid fieldmap.
+
+    Parameters
+    ----------
+    L : :obj:`float`
+        Solenoid length in [m].
+    Bz : :obj:`float`
+        Solenoidal field in [T].
+    Rin : :obj:`float`
+        Solenoid internal radius (aperture) in [m].
+
+    Returns
+    -------
+    zAxis : :obj:`float`
+        Sampling positions z of the fieldmap in [m].
+    BzOnAxis : :obj:`numpy.array`
+        Longitudinal magnetic field on axis in [T].
+
+    """
+    zAxis = np.linspace(-2*L,2*L,200)
+    lp = 0.5 * L + zAxis   # [m]
+    lm = 0.5 * L - zAxis   # [m]
+    BzOnAxis = 0.5*B0*(lm / np.hypot(Rin, lm) + lp / np.hypot(Rin, lp))   # [T]
+    n_L = 95 / 0.236   # [turns/m]  (CLEAR solenoid)
+    # T / mu0 / (1/m) = 795774.7150238460162655 A
+    print(f'Solenoid current = {B0/n_L*795774.7150238460162655} A\n')
+    return zAxis, BzOnAxis
