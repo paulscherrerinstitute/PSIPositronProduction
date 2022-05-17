@@ -654,13 +654,27 @@ def load_rftrack_yongke_1(sourceFilePath):
     return rftDf
 
 
+def load_rftrack_octave_single_matrix(sourceFilePath):
+    # TODO: Factorize/reorganize, see load_rftrack_yongke()
+    # TODO: allow for input 'rftrack_xp_t' vs. 'rftrack_Px_s' etc.?
+    rftDf = pd.read_csv(
+        sourceFilePath, engine='python', delim_whitespace=True,
+        index_col=False, header=None,
+        names=FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder'],
+        skiprows=5
+    )
+    return rftDf
+
+
 def convert_from_input_check(df, sourceFilePath, sourceFormat='standardDf'):
     if sourceFilePath is not None:
         if df is None:
             if sourceFormat == 'standardDf':
                 df = load_standard_fwf(sourceFilePath)
-            if sourceFormat == 'rftrackYongke1':
+            elif sourceFormat == 'rftrackYongke1':
                 df = load_rftrack_yongke_1(sourceFilePath)
+            elif sourceFormat == 'rftrackOctaveSingleMatrix':
+                df = load_rftrack_octave_single_matrix(sourceFilePath)
         else:
             raise ValueError(
                 'Only one between df and sourceFilePath can be set different than None.'
