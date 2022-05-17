@@ -207,9 +207,9 @@ def Ekin_to_beta(Ekin, pdgId):
     return beta
 
 
-def extend_standard_df(standardDf):
+def extend_standard_df(standardDf, removeNanInf):
     p = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])
-    dfExtension = pd.DataFrame()
+    dfExtension = pd.DataFrame(index=standardDf.index)
     dfExtension['Ekin'] = p_to_Ekin(p, standardDf['pdgId'])
     dfExtension['gammaRel'] = Ekin_to_gamma(dfExtension['Ekin'], standardDf['pdgId'])
     dfExtension['betaRel'] = p_to_beta(p, standardDf['pdgId'])
@@ -227,6 +227,7 @@ def extend_standard_df(standardDf):
                         np.sum(isDiff), relDiffThreshold
                 ))
     standardDf = dfExtension.combine_first(standardDf)
+    standardDf = check_nan_inf_in_distr(standardDf, removeNanInf)
     return standardDf
 
 
@@ -348,9 +349,9 @@ def generate_fwf(df, formatType='standardDf', outFilePath=None):
     return dfStr, outFilePath
 
 
-def load_standard_fwf(sourceFilePath):
+def load_standard_fwf(sourceFilePath, removeNanInf=False):
     standardDf = pd.read_fwf(sourceFilePath)
-    standardDf = extend_standard_df(standardDf)
+    standardDf = extend_standard_df(standardDf, removeNanInf)
     return standardDf
 
 
@@ -433,7 +434,7 @@ def convert_astra_to_standard_df(
     if discardLostParticles:
         standardDf = standardDf[standardDf['statusFlag'] >= -6]
     standardDf.drop('statusFlag', axis=1, inplace=True)
-    standardDf = extend_standard_df(standardDf)
+    standardDf = extend_standard_df(standardDf, removeNanInf)
     labelStr = ''
     # If requested, cut particles that did not reach zCut
     if zCut is not None:
@@ -461,6 +462,7 @@ def convert_astra_to_standard_df(
         vz = standardDf['betaRel'] * C * np.cos(alpha)
         standardDf['t'] = standardDf['t'] - deltaZ/vz*1e6
         labelStr += '_zProj{:.0f}mm'.format(zProjection)
+    standardDf = check_nan_inf_in_distr(standardDf, removeNanInf)
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath+labelStr)
     return standardDf, outFwfPath
@@ -497,7 +499,7 @@ def convert_rftrack_to_standard_df(
     standardDf['pdgId'] = pdgId
     NparticlesPerBunch = standardDf.shape[0]
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
-    standardDf = extend_standard_df(standardDf)
+    standardDf = extend_standard_df(standardDf, removeNanInf)
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
     return standardDf, outFwfPath
@@ -587,7 +589,7 @@ def convert_placet_to_standard_df(
     standardDf['pdgId'] = pdgId
     NparticlesPerBunch = standardDf.shape[0]
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
-    standardDf = extend_standard_df(standardDf)
+    standardDf = extend_standard_df(standardDf, removeNanInf)
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
     return standardDf, outFwfPath
@@ -682,7 +684,7 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     standardDf = p_components_from_angles(standardDf)
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     # Some extended variables already available
-    standardDf = extend_standard_df(standardDf)
+    standardDf = extend_standard_df(standardDf, removeNanInf)
     # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6             # [mm]
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
@@ -737,6 +739,32 @@ def convert_standard_df_to_sdds(
     # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
 
 
+def check_nan_inf_in_distr(distrIn, removeNanInf):
+    NpartIn = distrIn.shape[0]
+    # TODO: Better define subset
+    distrWithoutNan = distrIn.dropna(subset=['x','y','px','py','xp','yp'])
+    NpartWithoutNan = distrWithoutNan.shape[0]
+    if removeNanInf:
+        strMessage = 'removed'
+    else:
+        strMessage = 'found'
+    if NpartIn - NpartWithoutNan > 0:
+        warnings.warn('{:d} particles with some NaN value have been {:s}.'.format(
+            NpartIn - NpartWithoutNan, strMessage
+        ))
+    # TODO: Better define subset
+    distrWithoutNanInf = distrWithoutNan.replace([np.inf, -np.inf], np.nan).dropna(subset=['x','y','px','py','xp','yp'])
+    NpartWithoutNanInf = distrWithoutNanInf.shape[0]
+    if NpartWithoutNan - NpartWithoutNanInf > 0:
+        warnings.warn('{:d} particles with some Inf value have been {:s}.'.format(
+            NpartWithoutNan - NpartWithoutNanInf, strMessage
+        ))
+    if removeNanInf:
+        return distrWithoutNanInf
+    else:
+        return distrIn
+
+
 def plot_hist(
         ax, distr, binWidth=None, binLims=None, density=False, legendLabel='',
         orientation='vertical', parsInLabel=True, opacityHist=1.
@@ -744,11 +772,11 @@ def plot_hist(
     defaultBinNum = 100
     if binLims is None:
         if binWidth is None:
-            binWidth = (np.max(distr) - np.min(distr)) / (defaultBinNum-1)
+            binWidth = (np.nanmax(distr) - np.nanmin(distr)) / (defaultBinNum-1)
             if binWidth == 0:
                 binWidth = 1.
                 defaultBinNum = 3
-        binLims = [np.min(distr)-binWidth*1.5, np.max(distr)+binWidth*1.5]
+        binLims = [np.nanmin(distr)-binWidth*1.5, np.nanmax(distr)+binWidth*1.5]
     if binWidth is None:
         binEdges = np.linspace(binLims[0], binLims[1], num=defaultBinNum)
     else:
@@ -757,6 +785,8 @@ def plot_hist(
         distr, bins=binEdges, density=density,
         orientation=orientation, alpha=opacityHist
     )
+    # Select portion of distribution
+    distr = distr[(distr>=np.nanmin(binEdges)) & (distr<=np.nanmax(binEdges))]
     avg = np.mean(distr)
     std = np.std(distr)
     # TODO: Allows for input of precision of label values
@@ -796,7 +826,7 @@ def plot_hist(
 
 def set_lims(ax, direction, var, lims):
     if lims is None:
-        lims = (np.min(var), np.max(var))
+        lims = (np.nanmin(var), np.nanmax(var))
     if not np.isclose(*lims):
         if direction == 'x':
             ax.set_xlim(lims)
@@ -1157,7 +1187,7 @@ def generate_cross_distribution(
         dfData, columns=FILE_TYPES_SPECS['standardDf']['columnOrder']
     )
     standardDf.drop_duplicates(ignore_index=True, inplace=True)
-    standardDf = extend_standard_df(standardDf)
+    standardDf = extend_standard_df(standardDf, False)
     if outFilePath is not None:
         _, outFilePath = generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf, outFilePath
