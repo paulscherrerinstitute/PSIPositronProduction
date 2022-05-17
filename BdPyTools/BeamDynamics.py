@@ -1034,8 +1034,8 @@ def plot_distr(
             colors = [None]
         else:
             # TODO: Place default colors at the beginning of the module?
-    defaultColors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    colors = defaultColors[:len(distributions)]
+            defaultColors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+            colors = defaultColors[:len(distributions)]
     axList = []
     for plotDef in plotDefs:
         fig, ax = plt.subplots(2, 2, figsize=(figWidth,figHeight))
