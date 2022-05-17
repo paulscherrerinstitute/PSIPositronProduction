@@ -835,8 +835,6 @@ def plot_hist(
         if legendLabel != '':
             legendLabel += ', '
         legendLabel += 'avg = {:.2e}, std = {:.2e}'.format(avg, std)
-    # Select portion of distribution
-    distr = distr[(distr>=np.min(binEdges)) & (distr<=np.max(binEdges))]
     # Plot Gaussian fit
     with warnings.catch_warnings():
         warnings.simplefilter('error')
