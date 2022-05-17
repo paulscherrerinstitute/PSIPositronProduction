@@ -6,6 +6,27 @@ import matplotlib.pyplot as plt
 import json
 
 
+def load_fieldmap_rf_clic(fieldmapBasePath):
+    meshAxes = ['ra', 'ta', 'za']
+    meshes = {}
+    for meshAx in meshAxes:
+        meshes[meshAx] = np.loadtxt(
+            fieldmapBasePath+'_'+meshAx+'.dat', skiprows=5
+        )
+    matDimensions = [meshes[meshAx].shape[0] for meshAx in reversed(meshAxes)]
+    complexComponents = ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz']
+    rfFields = {}   
+    for complComp in complexComponents:
+        rfFields[complComp] = np.loadtxt(
+            fieldmapBasePath+'_'+complComp+'.dat', skiprows=5, dtype=np.complex128,
+            converters={0: lambda s: np.fromstring(
+                s.decode("latin1").replace('(','').replace(')',''),sep=','
+            ).view(np.complex128)}
+        )
+        rfFields[complComp] = rfFields[complComp].reshape(matDimensions).transpose() #.astype(np.complex128)
+    return rfFields, meshes
+
+
 ### USER INPUT START ###
 
 # BUNCH_TYPE = 'Gaussian'
@@ -122,17 +143,81 @@ elif SOLENOID_TYPE == 'SimulatedFieldmap':
     solMatrix = np.loadtxt(FILE_PATH)
     solFieldmapStep = solMatrix[1,0] - solMatrix[0,0]
     solBzOnAxis = BZ_SOLENOID * BZ_CORR_FACTOR * solMatrix[:,1]
-solenoid = rft.Static_Magnetic_FieldMap_1d(solBzOnAxis, solFieldmapStep)
-L_SPACING = L_SOLENOID + L_SEPARATION
 
-# Drift
-L_DRIFT = N_SOLENOIDS * L_SPACING    # [m]
-drift = rft.Drift(L_DRIFT)
-drift.set_static_Efield(0, 0, EZ_ACC_DRIFT)
+
+if RF_TYPE == 'HomogeneousAccel':
+    L_DRIFT = N_SOLENOIDS * SPACING_SOLENOID    # [m]
+    drift = rft.Drift(L_DRIFT)
+    drift.set_static_Efield(0, 0, RF_GRADIENT)
+    if SOLENOID_TYPE == 'HomogeneousChannel':
+            drift.set_static_Bfield(0, 0, BZ_SOLENOID)
+else:
+    # Fields of 1 RF period (3 cells)
+    # TODO: Data location and path construction
+    rfFields, rfMesh = load_fieldmap_rf_clic('./RFTrack/YongkeTool/field/'+RF_TYPE)
+    print('Setting up fieldmap...')
+    # 3D
+    # rf = rft.RF_FieldMap(
+    #     rfFields['Ex'], rfFields['Ey'], rfFields['Ez'],
+    #     rfFields['Bx'], rfFields['By'], rfFields['Bz'],
+    #     rfMesh['ra'][0], rfMesh['ta'][0],
+    #     rfMesh['ra'][1] - rfMesh['ra'][0],
+    #     rfMesh['ta'][1] - rfMesh['ta'][0],
+    #     rfMesh['za'][1] - rfMesh['za'][0],
+    #     rfMesh['za'][-1],
+    #     RF_FREQ, +1
+    # )
+    # rf.set_cylindrical(True)
+    # 1D
+    rf = rft.RF_FieldMap_1d(rfFields['Ez'][0,0,:], rfMesh['za'][1] - rfMesh['za'][0], rfMesh['za'][-1], RF_FREQ, +1)
+    print('... done!')
+    # rf.set_aperture(R_APERTURE, R_APERTURE, 'circular')
+    # RF.set_odeint_algorithm("rkf45");
+    # RF.set_nsteps(50);
+    # RF.set_aperture(20e-3, 20e-3, "circular"); % meter
+    rfGap = rft.Drift(RF_SEPARATION)
+    # RF_GAP.set_odeint_algorithm("rkf45");
+    # RF_GAP.set_nsteps(50);
+    # RF_GAP.set_aperture(0.1, 0.1, "circular"); % meter
+    if SOLENOID_TYPE == 'HomogeneousChannel':
+        rf.set_static_Bfield(0, 0, BZ_SOLENOID)
+        rfGap.set_static_Bfield(0,0, BZ_SOLENOID)
+    lat = rft.Lattice()
+    # Initial gap
+    INITIAL_RF_GAP_L = (L_SOLENOID + SEPARATION_SOLENOID + RF_SEPARATION) / 2.
+    initialRfGap = rft.Drift(INITIAL_RF_GAP_L)
+    tRf = RF_T0 - INITIAL_RF_GAP_L*1e3
+    lat.append(initialRfGap)
+    for structInd in np.arange(RF_N_STRUCTURES):
+        lat.append(rfGap)
+        rf.set_phid(RF_PHASE)
+        rf.set_P_actual((RF_GRADIENT/RF_GRADIENT_FIELDMAP)**2.)
+        rf.set_t0(tRf)
+        tRf += RF_SEPARATION * 1e3   # [mm/c]
+        for rfPeriodInd in np.arange(RF_N_PERIODS_PER_STRUCTURE):
+            lat.append(rf)
+
+if RF_HARMONIC_ON:
+    # TODO: Document this
+    # By N_CELLS: - = TW starts at the beginning of the cell, + = TW starts in the middle of the cell (useful for couplers)
+    RF_HARMONIC_MAIN_MODE_INDEX = 0
+    rfHarmonic = rft.TW_Structure(
+        np.array([RF_HARMONIC_GRADIENT]), RF_HARMONIC_MAIN_MODE_INDEX,
+        RF_HARMONIC_FREQ, RF_HARMONIC_PHASE_ADV, -1.*RF_HARMONIC_N_CELLS
+    )
+    rfHarmonic.set_t0(tRf)
+    rfHarmonic.set_phid(RF_HARMONIC_PHASE)
+    lat.append(rfGap)
+    lat.append(rfHarmonic)
+
 
 # Tracking volume
 vol = rft.Volume()
 vol.set_aperture(R_APERTURE)
+if RF_TYPE == 'HomogeneousAccel':
+    vol.add(drift, 0, 0, 0)
+else:
+    vol.add(lat, 0, 0, 0)
 for solInd in range(0,N_SOLENOIDS):
     vol.add(solenoid, 0, 0, solInd*L_SPACING, 'center')   # element, X, Y, Z in [m]
 vol.add(drift, 0, 0, 0)
