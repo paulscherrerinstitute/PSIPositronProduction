@@ -315,6 +315,15 @@ def check_distribution_offsets(
     return u, uDiv
 
 
+def use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector):
+    folderPath, _ = os.path.split(sourceFilePath)
+    with open(os.path.join(folderPath, 'filterSpecs.json'), 'r') as filterSpecsFile:
+        filterSpecsList = json.load(filterSpecsFile)
+    filterSpecs = filterSpecsList[filterSpecsSelector]['filterSpecs']
+    standardDf = filter_distr(standardDf, filterSpecs)
+    return standardDf
+
+
 def filter_distr(standardDf, filterSpecs):
     for varName, varLims in filterSpecs.items():
         standardDf = standardDf[
@@ -356,7 +365,7 @@ def load_standard_fwf(sourceFilePath, removeNanInf=False):
     return standardDf
 
 
-def convert_irina_distr_to_standard_df(sourceFilePath, outFilePath=None):
+def convert_irina_distr_to_standard_df(sourceFilePath, filterSpecsSelector=None, outFilePath=None):
     standardDf = pd.read_csv(
         sourceFilePath, delim_whitespace=True, index_col=False,
         header=0, names=('x', 'px', 'y', 'py', 'pz', 't')
@@ -367,6 +376,8 @@ def convert_irina_distr_to_standard_df(sourceFilePath, outFilePath=None):
     standardDf['pdgId'] = -11
     standardDf['Q'] = pdgId_to_particle_const(standardDf['pdgId'], 'Q')
     standardDf = extend_standard_df(standardDf)
+    if filterSpecsSelector is not None:
+        standardDf = use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector)
     if outFilePath is not None:
         _, outFilePath = generate_fwf(standardDf, outFilePath=outFilePath)
     return standardDf, outFilePath
@@ -407,7 +418,8 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], outFwfPath=None):
 
 
 def convert_astra_to_standard_df(
-        sourceFilePath, discardLostParticles=True, zProjection=None, zCut=None,
+        sourceFilePath, discardLostParticles=True, filterSpecsSelector=None,
+        zProjection=None, zCut=None, removeNanInf=False,
         outFwfPath=None, verbose=False
     ):
     standardDf = pd.read_csv(
@@ -436,8 +448,11 @@ def convert_astra_to_standard_df(
         standardDf = standardDf[standardDf['statusFlag'] >= -6]
     standardDf.drop('statusFlag', axis=1, inplace=True)
     standardDf = extend_standard_df(standardDf, removeNanInf)
+    if filterSpecsSelector is not None:
+        standardDf = use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector)
     labelStr = ''
     # If requested, cut particles that did not reach zCut
+    # TODO: Use function filter_distr?
     if zCut is not None:
         cutInds = standardDf['z'] < zCut
         rejectedParticles = standardDf[cutInds]
@@ -471,7 +486,8 @@ def convert_astra_to_standard_df(
 
 def convert_rftrack_to_standard_df(
         rftrackDf=None, rftrackDfFormat='rftrack_Px_S', sourceFilePath=None, sourceFormat=None,
-        z=np.nan, t=np.nan, pdgId=-11, Qbunch=np.nan, outFwfPath=None
+        filterSpecsSelector=None, z=np.nan, t=np.nan, pdgId=-11, Qbunch=np.nan,
+        removeNanInf=False, outFwfPath=None
     ):
     if sourceFormat == 'rftrackYongke1' and not rftrackDfFormat == 'rftrack_xp_t':
         warnings.warn((
@@ -501,6 +517,8 @@ def convert_rftrack_to_standard_df(
     NparticlesPerBunch = standardDf.shape[0]
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = extend_standard_df(standardDf, removeNanInf)
+    if filterSpecsSelector is not None:
+        standardDf = use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector)
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
     return standardDf, outFwfPath
@@ -567,7 +585,8 @@ def convert_standard_df_to_astra(
 
 
 def convert_placet_to_standard_df(
-        sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, outFwfPath=None
+        sourceFilePath, filterSpecsSelector=None, z0=0, pdgId=-11, Qbunch=np.nan,
+        removeNanInf=False, outFwfPath=None
     ):
     if np.isnan(Qbunch):
         warnings.warn(
@@ -591,6 +610,8 @@ def convert_placet_to_standard_df(
     NparticlesPerBunch = standardDf.shape[0]
     standardDf['Q'] = Qbunch / NparticlesPerBunch                               # [C]
     standardDf = extend_standard_df(standardDf, removeNanInf)
+    if filterSpecsSelector is not None:
+        standardDf = use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector)
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
     return standardDf, outFwfPath
@@ -651,7 +672,10 @@ def convert_from_input_check(df, sourceFilePath, sourceFormat='standardDf'):
     return df
 
 
-def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, outFwfPath=None):
+def convert_sdds_to_standard_df(
+        sourceFilePath, filterSpecsSelector=None, z0=0, pdgId=-11, Qbunch=np.nan,
+        removeNanInf=False, outFwfPath=None
+    ):
     os.system('sddsconvert -ascii ' + sourceFilePath)
     standardDf = pd.read_csv(
         sourceFilePath, skiprows=24, delim_whitespace=True,
@@ -687,6 +711,8 @@ def convert_sdds_to_standard_df(sourceFilePath, z0=0, pdgId=-11, Qbunch=np.nan, 
     # Some extended variables already available
     standardDf = extend_standard_df(standardDf, removeNanInf)
     # sElegant = standardDf['betaRel'] * C * standardDf['t'] * 1e-6             # [mm]
+    if filterSpecsSelector is not None:
+        standardDf = use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector)
     if outFwfPath is not None:
         _, outFwfPath = generate_fwf(standardDf, outFilePath=outFwfPath)
     return standardDf, outFwfPath
