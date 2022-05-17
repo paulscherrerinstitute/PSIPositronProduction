@@ -32,20 +32,88 @@ class TestBeamDynamics(unittest.TestCase):
     """Unit testing for the class BeamDynamics."""
 
 
-    #%%
-    #
-    # bd.convert_irina_distr_to_standard_df(
-    #     'Geant4/FcceeTarget_StartingExample/run_Injector/ex_gen1.dat',
-    #     saveStandardCsv=True
-    # )
+    # @classmethod
+    # def setUpClass(cls):
+    #     cls.testData = loadourDataFunc(...)
 
 
-    #%%
-    #
-    # # zProjection = None
-    # # zCut = None
-    # # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference/QuadOverRf.ini'
-    # # astraFilePath = './Elegant/FCCee_WP1p3/QuadOverRf/AstraReference_VanishingLongEmit/QuadOverRf.ini'
+    def test_astra_to_standard_1(self):
+        """Test conversion from ASTRA format to standard data frame, not discarding any particle."""
+        discardLostParticles = True
+        zProjection = None
+        zCut = None
+        relFilePath = 'SimulationRuns/ASTRA/000012/RUN_1911_164058/RUN_1911_164058.1380.001'
+        astraFilePath = sd.build_data_path(relFilePath)
+        standardDf, outFwfPath = bd.convert_astra_to_standard_df(
+            astraFilePath, discardLostParticles=discardLostParticles, zProjection=zProjection, zCut=zCut,
+            outFwfPath=pl.Path(astraFilePath).stem, verbose=True
+        )
+        assert_file_generated(outFwfPath)
+        self.assertEqual(standardDf.shape, (14558,14))
+        self.assertAlmostEqual(standardDf.loc[0,'px'], 0.0)
+        self.assertAlmostEqual(standardDf.loc[30911,'py'], -1.726)
+        self.assertAlmostEqual(standardDf.loc[7954,'pz'], 57.33000000000001)
+
+
+    def test_rftrack_to_standard_yongke1(self):
+        """Test conversion from RF-Track format to standard data frame."""
+        relPath = 'SimulationRuns/DistrsFromExternalPartners/PositronsAt200MeV/YongkeDistrsV1'
+        # fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
+        # fileName = 'YongkeDistrsV1/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
+        fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
+        sourceFilePath = sd.build_data_path(relPath, fileName)
+        # TODO: Following 2 values are very approximative
+        z = 10e3   # [mm]
+        Qbunch = 25.e-9   # [C]
+        standardDf, outFwfPath = bd.convert_rftrack_to_standard_df(
+            sourceFilePath=sourceFilePath, sourceFormat='rftrackYongke1', rftrackDfFormat='rftrack_xp_t',
+            z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=pl.Path(sourceFilePath).stem
+        )
+        assert_file_generated(outFwfPath)
+        self.assertAlmostEqual(standardDf.loc[0,'px'], 2.286897262e-01)
+        self.assertAlmostEqual(standardDf.loc[54324,'py'], -1.931028202e+00)
+
+
+    def test_rftrack_back_and_forth(self):
+        """Test conversion from RF-Track format to standard data frame and back."""
+        relPath = 'SimulationRuns/DistrsFromExternalPartners/PositronsAt200MeV/YongkeDistrsV1'
+        # fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
+        # fileName = 'YongkeDistrsV1/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
+        fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
+        rftrackDfFormat = 'rftrack_xp_t'
+        sourceFilePath = sd.build_data_path(relPath, fileName)
+        rftDfOriginal = bd.load_rftrack_yongke_1(sourceFilePath)
+        # TODO: Following 2 values are very approximative
+        z = 10e3   # [mm]
+        Qbunch = 25.e-9   # [C]
+        standardDf, _ = bd.convert_rftrack_to_standard_df(
+            sourceFilePath=sourceFilePath, sourceFormat='rftrackYongke1', rftrackDfFormat=rftrackDfFormat,
+            z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=None
+        )
+        #TODO check t= vs z= in rftrack script
+        # with open(sd.build_data_path(REL_PATH, 'filterSpces.json'), 'r') as filterSpecsFile:
+        #     filterSpecsList = json.load(filterSpecsFile)
+        # filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
+        # beamIn = bd.filter_distr(beamIn, filterSpecs)
+        rftDf, _ = bd.convert_standard_df_to_rftrack(standardDf=standardDf, rftrackDfFormat=rftrackDfFormat)
+        for varName in bd.FILE_TYPES_SPECS[rftrackDfFormat]['columnOrder']:
+            for partId in (0, 7, 113, 4802):
+                self.assertAlmostEqual(rftDfOriginal.loc[partId,varName], rftDf.loc[partId,varName])
+
+
+    def test_plot_1(self):
+        """Test plottin of phase space."""
+        discardLostParticles = True
+        zProjection = 1380.
+        zCut = None
+        relFilePath = 'SimulationRuns/ASTRA/000012/RUN_1911_164058/RUN_1911_164058.1380.001'
+        astraFilePath = sd.build_data_path(relFilePath)
+        standardDf, _ = bd.convert_astra_to_standard_df(
+            astraFilePath, discardLostParticles=discardLostParticles, zProjection=zProjection, zCut=zCut
+        )
+        plotDefs = bd.set_plot_defs_from_distrs([standardDf], setName='angles-t')
+        ax = bd.plot_distr([standardDf], plotDefs, colors=['b'])
+
 
     # zProjection = 500.   # [mm]
     # zCut = 500.   # [mm]
@@ -57,6 +125,14 @@ class TestBeamDynamics(unittest.TestCase):
     # standardDf = bd.convert_astra_to_standard_df(
     #     astraFilePath, zProjection=zProjection, zCut=zCut,
     #     saveStandardFwf=True, verbose=True
+    # )
+
+
+    #%%
+    #
+    # bd.convert_irina_distr_to_standard_df(
+    #     'Geant4/FcceeTarget_StartingExample/run_Injector/ex_gen1.dat',
+    #     saveStandardCsv=True
     # )
 
 
@@ -161,52 +237,6 @@ class TestBeamDynamics(unittest.TestCase):
     # bd.convert_fcceett_to_standard_df(
     #     rootFilePath, pdgId=-11, saveStandardFwf=True
     # )
-
-
-    def test_rftrack_to_standard_yongke1(self):
-        """Test conversion from RF-Track format to standard data frame."""
-        relPath = 'SimulationRuns/DistrsFromExternalPartners/PositronsAt200MeV/YongkeDistrsV1'
-        # fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
-        # fileName = 'YongkeDistrsV1/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
-        fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
-        sourceFilePath = sd.build_data_path(relPath, fileName)
-        # TODO: Following 2 values are very approximative
-        z = 10e3   # [mm]
-        Qbunch = 25.e-9   # [C]
-        standardDf, outFwfPath = bd.convert_rftrack_to_standard_df(
-            sourceFilePath=sourceFilePath, sourceFormat='rftrackYongke1', rftrackDfFormat='rftrack_xp_t',
-            z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=pl.Path(sourceFilePath).stem
-        )
-        assert_file_generated(outFwfPath)
-        self.assertAlmostEqual(standardDf.loc[0,'px'], 2.286897262e-01)
-        self.assertAlmostEqual(standardDf.loc[54324,'py'], -1.931028202e+00)
-
-
-    def test_rftrack_back_and_forth(self):
-        """Test conversion from RF-Track format to standard data frame and back."""
-        relPath = 'SimulationRuns/DistrsFromExternalPartners/PositronsAt200MeV/YongkeDistrsV1'
-        # fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
-        # fileName = 'YongkeDistrsV1/CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
-        fileName = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
-        rftrackDfFormat = 'rftrack_xp_t'
-        sourceFilePath = sd.build_data_path(relPath, fileName)
-        rftDfOriginal = bd.load_rftrack_yongke_1(sourceFilePath)
-        # TODO: Following 2 values are very approximative
-        z = 10e3   # [mm]
-        Qbunch = 25.e-9   # [C]
-        standardDf, _ = bd.convert_rftrack_to_standard_df(
-            sourceFilePath=sourceFilePath, sourceFormat='rftrackYongke1', rftrackDfFormat=rftrackDfFormat,
-            z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=None
-        )
-        #TODO check t= vs z= in rftrack script
-        # with open(sd.build_data_path(REL_PATH, 'filterSpces.json'), 'r') as filterSpecsFile:
-        #     filterSpecsList = json.load(filterSpecsFile)
-        # filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
-        # beamIn = bd.filter_distr(beamIn, filterSpecs)
-        rftDf, _ = bd.convert_standard_df_to_rftrack(standardDf=standardDf, rftrackDfFormat=rftrackDfFormat)
-        for varName in bd.FILE_TYPES_SPECS[rftrackDfFormat]['columnOrder']:
-            for partId in (0, 7, 113, 4802):
-                self.assertAlmostEqual(rftDfOriginal.loc[partId,varName], rftDf.loc[partId,varName])
 
     
     #%%
