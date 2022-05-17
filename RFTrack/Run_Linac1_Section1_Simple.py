@@ -33,6 +33,7 @@ def load_fieldmap_rf_clic(fieldmapBasePath):
 #
 BUNCH_TYPE = 'FromRFTrack'
 REL_PATH = 'SimulationRuns/DistrsFromExternalPartners/PositronsAt200MeV/YongkeDistrsV1'
+# FILTER_SPECS_SELECTOR = None
 # FILE_NAME = 'CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
 # FILTER_SPECS_SELECTOR = ''
 FILE_NAME = 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
@@ -124,8 +125,6 @@ elif BUNCH_TYPE == 'FromRFTrack':
     N_MACROPARTICLES_DRIVE_BEAM = 10000
     PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
     PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
-    # TODO: Remove next line when code is working
-    # M0Original = bd.load_rftrack_yongke_1(DISTR_PATH).to_numpy()
     beamIn, _ = bd.convert_rftrack_to_standard_df(
         sourceFilePath=DISTR_PATH, sourceFormat='rftrackYongke1', rftrackDfFormat=RFTRACK_FORMAT,
         z=np.nan, pdgId=-11
@@ -133,11 +132,12 @@ elif BUNCH_TYPE == 'FromRFTrack':
     # TODO: Ask exact value to Yongke
     beamIn['z'] = beamIn.loc[0, 't'] * bd.C / 1e6   # [mm]
     beamIn['Q'] = Q_DRIVE_BEAM / N_MACROPARTICLES_DRIVE_BEAM
-    with open(sd.build_data_path(REL_PATH, 'filterSpecs.json'), 'r') as filterSpecsFile:
-        filterSpecsList = json.load(filterSpecsFile)
-    filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
+    if FILTER_SPECS_SELECTOR is not None:
+        with open(sd.build_data_path(REL_PATH, 'filterSpecs.json'), 'r') as filterSpecsFile:
+            filterSpecsList = json.load(filterSpecsFile)
+        filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
         refParticle = filterSpecsList[FILTER_SPECS_SELECTOR]['RefParticle1']
-    beamIn = bd.filter_distr(beamIn, filterSpecs)
+        beamIn = bd.filter_distr(beamIn, filterSpecs)
     M0 = bd.convert_standard_df_to_rftrack(standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT)[0].to_numpy()
     BUNCH_POPULATION = M0.shape[0]
     B06d = rft.Bunch6d(PARTICLE_MASS, BUNCH_POPULATION, PARTICLE_CHARGE, M0)
