@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import scipy.stats as scistats
+import scipy.interpolate as sciinterp
 try:
     import ROOT
 except ModuleNotFoundError:
@@ -851,7 +852,7 @@ def plot_phase_space_2d(
         ax, distr, varName1=None, varName2=None, var1Center=False, var2Center=False,
         title=None, legendLabel='',
         binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None,
-        markerStyle=None, markerSize=15, color='b', opacityHist=1.
+        markerStyle=None, markerSize=2, color=None, opacityHist=1.
 ):
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
@@ -859,8 +860,23 @@ def plot_phase_space_2d(
     for vName, vCenter in [[varName1, var1Center], [varName2, var2Center]]:
         if vCenter:
             distr[vName] = distr[vName] - distr[vName].mean()
+    x = distr[varName1]
+    y = distr[varName2]
+    if color is None:
+        # Calculate the point density
+        # xy = np.vstack([distr[varName1], distr[varName2]])
+        # color = scistats.gaussian_kde(xy)(xy)
+        # TODO: Check number of bins. Are small density region not plotted if bins is small (e.g. 100)?
+        data , x_e, y_e = np.histogram2d(x, y, bins=1000, density=True)
+        color = sciinterp.interpn(
+            (0.5*(x_e[1:]+x_e[:-1]), 0.5*(y_e[1:]+y_e[:-1])), data, np.vstack([x,y]).T,
+            method='splinef2d', bounds_error=False
+        )
+        # Sort the points by density, so that the densest points are plotted last
+        idx = color.argsort()
+        x, y, color = x.iloc[idx], y.iloc[idx], color[idx]
     pathColl = ax[0,0].scatter(
-        distr[varName1], distr[varName2],
+        x, y,
         s=markerSize, c=color, marker='.', alpha=opacityScatter
     )
     scatter_individual_marker_style(pathColl, markerStyle)
@@ -958,7 +974,7 @@ def plot_parameters(ax, distr, planeName, filterSpecs={}):
 
 
 def plot_distr(
-        distributions, plotDefs, markerStyle=None, markerSize=15,
+        distributions, plotDefs, colors=None, markerStyle=None, markerSize=15,
         title=None, legendLabels=None, figHeight=6.4, figWidth=9.6
 ):
     # TODO: Integrate handling of distributions and legendLabels in check_marker_specs?
@@ -975,7 +991,11 @@ def plot_distr(
         legendLabels = [''] * len(distributions)
     markerStyle = check_marker_specs(distributions, markerStyle, 'markerStyle')
     markerSize = check_marker_specs(distributions, markerSize, 'markerSize')
-    # TODO: Colors
+    if colors is None:
+        if len(distributions) == 1:
+            colors = [None]
+        else:
+            # TODO: Place default colors at the beginning of the module?
     defaultColors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     colors = defaultColors[:len(distributions)]
     axList = []
