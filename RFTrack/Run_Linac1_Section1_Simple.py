@@ -43,22 +43,54 @@ RFTRACK_FORMAT = 'rftrack_xp_t'
 
 R_APERTURE = 20e-3   # [mm]
 
+# SOLENOID_TYPE = 'HomogeneousChannel'
+# BZ_SOLENOID = 0.5   # [T]
+# L_SOLENOID = 0.65   # [m]
+# SEPARATION_SOLENOID = 0.05   # [m]
+#
 SOLENOID_TYPE = 'Analytical'
 BZ_SOLENOID = 0.5   # [T]
-L_SOLENOID = 0.65   # [m]
 R_IN_SOLENOID = 0.100   # [m]
-L_SEPARATION = 0.05   # [m]
+SEPARATION_SOLENOID = 0.3   # [m]
 #
 # SOLENOID_TYPE = 'SimulatedFieldmap'
 # FILE_PATH = '/afs/psi.ch/project/Pcubed/SimulationRuns/Fieldmaps/custom_solenoid_n_9_cavity.txt'
 # BZ_CORR_FACTOR = 0.955   # For L_SOLENOID = 0.65
 # BZ_SOLENOID = 0.5   # [T]
 # L_SOLENOID = 0.65   # [m]
-# L_SEPARATION = 0.05   # [m]
+# SEPARATION_SOLENOID = 0.05   # [m]
 
-N_SOLENOIDS = 124
+# E_GAIN_LINAC = 0.06e9   # [eV]
 
-EZ_ACC_DRIFT = 15e6   # [V/m]
+# RF_TYPE = 'HomogeneousAccel'
+# RF_GRADIENT = 15e6   # [V/m]
+#
+AUTOPHASING = False
+RF_TYPE = 'field_map_CLIC_Lband'
+RF_FREQ = 1.9986163867e+09   # [Hz]
+RF_N_CELLS = 30
+RF_N_PERIODS_PER_STRUCTURE = np.round(RF_N_CELLS/3)
+RF_L_STRUCTURE = RF_N_PERIODS_PER_STRUCTURE * bd.C / RF_FREQ   # [m]
+RF_N_STRUCTURES  = 58 #58
+RF_GRADIENT = 15.0E6   # [V/m]
+RF_GRADIENT_FIELDMAP = 11.23E6   # [V/m]
+RF_T0 = -70./360. / RF_FREQ * bd.C * 1e3   # [mm/c]
+RF_PHASE = 0   # [deg]
+RF_SEPARATION = 0.2   # [m]
+
+RF_HARMONIC_ON = False
+RF_HARMONIC_FREQ = 3 * RF_FREQ
+RF_HARMONIC_PHASE_ADV = 2./3.*np.pi   # [rad]
+RF_HARMONIC_N_CELLS = 120
+RF_HARMONIC_GRADIENT = 30e6   # [V/m]
+RF_HARMONIC_PHASE = 30.0   # [deg]
+
+L_SOLENOID = RF_L_STRUCTURE + RF_SEPARATION - SEPARATION_SOLENOID
+SPACING_SOLENOID = L_SOLENOID + SEPARATION_SOLENOID
+N_SOLENOIDS = RF_N_STRUCTURES + 1
+if RF_HARMONIC_ON:
+    N_SOLENOIDS += 1
+# N_SOLENOIDS = int(E_GAIN_LINAC/RF_GRADIENT/SPACING_SOLENOID)
 
 ### USER INPUT END ###
 
@@ -87,7 +119,7 @@ if BUNCH_TYPE == 'Gaussian':
     )
 elif BUNCH_TYPE == 'FromRFTrack':
     DISTR_PATH = sd.build_data_path(REL_PATH, FILE_NAME)
-    # TODO: Following value to be revised
+    # TODO: Following value to be reviewed
     Q_DRIVE_BEAM = 1.e-9   # [C]
     N_MACROPARTICLES_DRIVE_BEAM = 10000
     PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
@@ -218,9 +250,13 @@ if RF_TYPE == 'HomogeneousAccel':
     vol.add(drift, 0, 0, 0)
 else:
     vol.add(lat, 0, 0, 0)
-for solInd in range(0,N_SOLENOIDS):
-    vol.add(solenoid, 0, 0, solInd*L_SPACING, 'center')   # element, X, Y, Z in [m]
-vol.add(drift, 0, 0, 0)
+if not SOLENOID_TYPE == 'HomogeneousChannel':
+    solenoid = rft.Static_Magnetic_FieldMap_1d(solBzOnAxis, solFieldmapStep)
+    for solInd in range(0,N_SOLENOIDS):
+        vol.add(solenoid, 0, 0, solInd*SPACING_SOLENOID, 'center')   # element, X, Y, Z in [m]
+
+print('Setup complete, going to track...')
+
 # Limit tracking
 # vol.set_s0(0)   # [m]
 # vol.set_s1(10.) # [m]
@@ -229,9 +265,9 @@ vol.add(drift, 0, 0, 0)
 TO = rft.TrackingOptions()
 TO.dt_mm = 1.   # [mm/c]
 TO.odeint_algorithm = 'rk2'   # 'rkf45', 'leapfrog', ...
-TO.tt_dt_mm = 10.   # [mm/c], track the emittance every tt_dt_mm steps
+TO.tt_dt_mm = 10.   # [mm/c], track the emittance every tt_dt_mm (time)
 # Watch points
-# TO.wp_dt_mm = 1e3   # [mm/c], track the emittance every tt_dt_mm steps
+# TO.wp_dt_mm = 1e3   # [mm/c], save the distribution on disk every wp_dt_mm (time)
 # TO.t_max_mm = 1000   # [mm/c]
 TO.verbosity = 1   # 0 (default), 1 or 2
 
