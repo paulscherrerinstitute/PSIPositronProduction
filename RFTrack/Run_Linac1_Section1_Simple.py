@@ -290,7 +290,8 @@ captureEff = (M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)) / M0.shape[0]
 TT = vol.get_transport_table('%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E')
 beamOut, _ = bd.convert_rftrack_to_standard_df(
     rftrackDf=M1, rftrackDfFormat='rftrack_Px_S', t=B1.t/bd.C*1e6,
-    pdgId=-11, Qbunch=Q_DRIVE_BEAM*M1.shape[0]/N_MACROPARTICLES_DRIVE_BEAM
+    pdgId=-11, Qbunch=Q_DRIVE_BEAM*M1.shape[0]/N_MACROPARTICLES_DRIVE_BEAM,
+    outFwfPath='./DistrOut_Linac1_Section1_Simple'
 )
 
 # Prepare Bz for plotting
@@ -339,7 +340,8 @@ ax2[1].plot(TT[:,0]/1e3, TT[:,6])
 ax2[1].set_xlim(sLims)
 ax2[1].set_ylim(Elims)
 ax2[1].set_xlabel('s [m]')
-ax2[2].set_ylabel('Beam energy [MeV]')
+ax2[1].set_ylabel('Beam energy [MeV]')
+ax2[1].grid()
 ax2[2].plot(sCapture/1e3, captureEff)
 ax2[2].set_xlim(sLims)
 ax2[2].set_ylim([0, 1])
