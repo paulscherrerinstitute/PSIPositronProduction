@@ -118,7 +118,7 @@ def pdgId_to_particle_const(pdgId, constName):
     if not isinstance(pdgId, (pd.Series,np.ndarray)):
         flagSingleValue = True
         pdgId = [pdgId]
-    Erest = pd.Series([
+    Erest = np.array([
         PART_CONSTS[constName][pid] if pid in PART_CONSTS[constName].keys() else np.nan for pid in pdgId
     ])
     if flagSingleValue:
@@ -126,23 +126,41 @@ def pdgId_to_particle_const(pdgId, constName):
     return Erest
 
 
+def check_input_pd_or_np(inArray):
+    try:
+        outArray = inArray.to_numpy()
+    except:
+        if isinstance(inArray, np.ndarray):
+            outArray = inArray
+        else:
+            raise TypeError("inArray must be either numpy.ndarray or pandas.Series.")
+    return outArray
+
+
 def p_to_beta(p, pdgId):
+    p = check_input_pd_or_np(p)
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     beta = np.sqrt(p**2. / (p**2. + Erest**2.))
     return beta
 
 
 def pVect_to_p(px, py, pz):
+    px = check_input_pd_or_np(px)
+    py = check_input_pd_or_np(py)
+    pz = check_input_pd_or_np(pz)
     p = np.sqrt(px**2. + py**2. + pz**2.)
     return p
 
 
 def pTransv_to_slope(pTransv, pLong):
+    pTransv = check_input_pd_or_np(pTransv)
+    pLong = check_input_pd_or_np(pLong)
     slope = np.arctan(pTransv / pLong) * 1e3                                    # [mrad]
     return slope
 
 
 def p_to_Ekin(p, pdgId):
+    p = check_input_pd_or_np(p)
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     E = np.sqrt(p**2. + Erest**2.)
     Ekin = E - Erest
@@ -150,29 +168,34 @@ def p_to_Ekin(p, pdgId):
 
 
 def Ekin_to_p(Ekin, pdgId):
+    Ekin = check_input_pd_or_np(Ekin)
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     p = np.sqrt((Ekin+Erest)**2. - Erest**2.)
     return p
 
 
 def Ekin_to_gamma(Ekin, pdgId):
+    Ekin = check_input_pd_or_np(Ekin)
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     gamma = Ekin / Erest + 1
     return gamma
 
 
 def gamma_to_beta(gamma):
+    gamma = check_input_pd_or_np(gamma)
     beta = np.sqrt(1. - (1./gamma**2.))
     return beta
 
 
 def gamma_to_p(gamma, pdgId):
+    gamma = check_input_pd_or_np(gamma)
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     p = Erest * np.sqrt(gamma**2. - 1)
     return p
 
 
 def p_to_gamma(p, pdgId):
+    p = check_input_pd_or_np(p)
     Erest = pdgId_to_particle_const(pdgId, 'Erest')
     gamma = np.sqrt((p/Erest)**2. - 1.)
     return gamma
