@@ -83,20 +83,38 @@ elif BUNCH_TYPE == 'FromRFTrack':
     with open(sd.build_data_path(REL_PATH, 'filterSpecs.json'), 'r') as filterSpecsFile:
         filterSpecsList = json.load(filterSpecsFile)
     filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
+        refParticle = filterSpecsList[FILTER_SPECS_SELECTOR]['RefParticle1']
     beamIn = bd.filter_distr(beamIn, filterSpecs)
     M0 = bd.convert_standard_df_to_rftrack(standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT)[0].to_numpy()
     BUNCH_POPULATION = M0.shape[0]
     B06d = rft.Bunch6d(PARTICLE_MASS, BUNCH_POPULATION, PARTICLE_CHARGE, M0)
     B0 = rft.Bunch6dT(B06d)
-print(B0.t)   # Bunch6dT
+
+# TODO: Document following 2 lines
+# print(B0.t)   # Bunch6dT
 # print(B0.S)   # Bunch6d
 
 # B = load('../files/beam_S1200.dat.gz').M1;
 # B(:,5) -= mean(B(:,5));
-t0 = np.mean(B0.get_phase_space('%t0'))
-# TODO: Following line not working
-# P0 = rft. Bunch6dT([0, 0, 0, 0, 0, 200., rft.electronmass, -1, 0, t0])
-# B0 = Bunch6dT(RF_Track.electronmass, 300 * RF_Track.pC, -1, B); 
+T0_REF = 62.867e-9 * bd.C * 1e3   # [mm/c]
+E0_REF = 184.
+# TODO: other option could be: np.mean(B0.get_phase_space('%t0'))
+# TODO: Check that particle charge is correct in the following line
+P0 = rft. Bunch6dT(np.array([
+    refParticle['x'],
+    refParticle['xp'],
+    refParticle['y'],
+    refParticle['yp'],
+    0,   # z
+    refParticle['pz'],
+    rft.electronmass,
+    PARTICLE_CHARGE,
+    0,
+    refParticle['t'] * bd.C / 1e6   # [mm/c]
+]))
+# B0 = Bunch6dT(RF_Track.electronmass, 300 * RF_Track.pC, -1, B);
+
+
 if SOLENOID_TYPE == 'Analytical':
     zAxis, solBzOnAxis = bd.generate_solenoid_fieldmap(L_SOLENOID, BZ_SOLENOID, R_IN_SOLENOID)
     solFieldmapStep = zAxis[1] - zAxis[0]
@@ -133,8 +151,9 @@ TO.tt_dt_mm = 10.   # [mm/c], track the emittance every tt_dt_mm steps
 TO.verbosity = 1   # 0 (default), 1 or 2
 
 # Tracking
-# TODO: Uncomment when definition of P0 is working
-# finalMomentum = vol.autophase(P0)
+if AUTOPHASING:
+    finalMomentum = vol.autophase(P0)
+    print('Final momentum after autophasing: {:.1f} MeV/c'.format(finalMomentum))
 B1 = vol.track(B0, TO)
 M1 = B1.get_phase_space()   # x [mm], Px [MeV/c], y [mm], Py [MeV/c], S [mm], Pz [MeV/c]
 # M1 = B1.get_phase_space('%X %xp %Y %yp %S %P')   # x [mm] Px [MeV/c]   y Py S Pz
