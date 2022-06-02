@@ -485,30 +485,35 @@ def convert_astra_to_standard_df(
 
 
 def convert_rftrack_to_standard_df(
-        rftrackDf=None, rftrackDfFormat='rftrack_Px_S', sourceFilePath=None, sourceFormat=None,
-        filterSpecsSelector=None, z=np.nan, t=np.nan, pdgId=-11, Qbunch=np.nan,
+        rftrackDfFormat=None, rftrackDf=None,
+        sourceFilePath=None, sourceFormat='octave', octaveMatrixName=None,
+        filterSpecsSelector=None, z=np.nan, t=np.nan, pdgId=np.nan, Qbunch=np.nan,
         removeNanInf=False, outFwfPath=None
     ):
-    if sourceFormat == 'rftrackYongke1' and not rftrackDfFormat == 'rftrack_xp_t':
-        warnings.warn((
-            "The combination sourceFormat='{:s}' and " + \
-            "rftrackDfFormat='{:s}' is very unlikely."
-        ).format(sourceFormat, rftrackDfFormat))
+    # TODO: Group input parameters in dictionaries?
+    # E.g. {sourceFilePath, sourceFormat, octaveMatrixName}
     if np.isnan(Qbunch):
         warnings.warn(
             'Qbunch has not been declared. The charge Q of the (macro)particles cannot be determined.'
         )
-    rftrackDf = convert_from_input_check(rftrackDf, sourceFilePath, sourceFormat=sourceFormat)
-    if rftrackDfFormat == 'rftrack_Px_S':
-        standardDf = pd.DataFrame(
+    colNames = FILE_TYPES_SPECS[rftrackDfFormat]['columnOrder']
+    if isinstance(rftrackDf, np.ndarray):
+        rftrackDf = pd.DataFrame(
             data=rftrackDf,
-            columns=FILE_TYPES_SPECS['rftrack_Px_S']['columnOrder']
+            columns=colNames
         )
+    # TODO: Review use of convert_from_input_check to remove some parameters?
+    # This is the only use in a non-convert_standard_df_to_...-function.
+    rftrackDf = convert_from_input_check(
+        rftrackDf, sourceFilePath, sourceFormat=sourceFormat,
+        octaveMatrixName=octaveMatrixName, colNames=colNames
+    )
+    standardDf = rftrackDf[colNames].copy()
+    if rftrackDfFormat == 'rftrack_Px_S':
         # TODO: Just renaming s to z is consistent with the definition of z?
         standardDf.rename(columns={'s': 'z'}, inplace=True)
         standardDf['t'] = t                                                     # [ns]
     elif rftrackDfFormat == 'rftrack_xp_t':
-        standardDf = rftrackDf[FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder']].copy()
         # TODO: Check that in this case we really have a projection of all particles at the same z
         standardDf['z'] = z                                                     # [mm]
         standardDf['t'] = standardDf['t'] / C * 1e6                             # [ns]
@@ -635,46 +640,60 @@ def convert_standard_df_to_placet(
     return placetDf, outFilePath
 
 
-def load_rftrack_yongke_1(sourceFilePath):
+def find_octave_all_matrices(sourceFilePath):
     with open(sourceFilePath, 'r') as sourceFile:
-        startLine = None
-        endLine = None
+        matStartInd = []
+        matName = []
         for lineInd, line in enumerate(sourceFile):
-            if '# name: A_RF\n' == line:
-                startLine = lineInd
-            elif '# name:' in line and startLine is not None and endLine is None:
-                endLine = lineInd
+            if '# name:' in line:
+                matStartInd.append(lineInd)
+                matName.append(line[8:-1])
         totLines = lineInd
-    rftDf = pd.read_csv(
-        sourceFilePath, engine='python', delim_whitespace=True,
-        index_col=False, header=None,
-        names=FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder'],
-        skiprows=startLine+4, skipfooter=totLines-endLine+2
-    )
-    return rftDf
+    return matName, matStartInd, totLines
 
 
-def load_rftrack_octave_single_matrix(sourceFilePath):
-    # TODO: Factorize/reorganize, see load_rftrack_yongke()
-    # TODO: allow for input 'rftrack_xp_t' vs. 'rftrack_Px_s' etc.?
-    rftDf = pd.read_csv(
-        sourceFilePath, engine='python', delim_whitespace=True,
-        index_col=False, header=None,
-        names=FILE_TYPES_SPECS['rftrack_xp_t']['columnOrder'],
-        skiprows=5
-    )
-    return rftDf
+def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
+    matNamesAll, matStartInds, totLines = find_octave_all_matrices(sourceFilePath)
+    singleMatrixRequest = False
+    if matNamesToLoad is None:
+        matNamesToLoad = matNamesAll
+    elif isinstance(matNamesToLoad, str):
+        singleMatrixRequest = True
+        matNamesToLoad = [matNamesToLoad]
+    matList = {}
+    for mInd, mName in enumerate(matNamesToLoad):
+        skipRows = matStartInds[mInd] + 4
+        if mInd < len(matNamesAll)-1:
+            skipFooter = totLines - matStartInds[mInd+1] + 2
+        else:
+            skipFooter = 0
+        matDf = pd.read_csv(
+            sourceFilePath, engine='python', delim_whitespace=True,
+            index_col=False, header=None, names=colNames,
+            skiprows=skipRows, skipfooter=skipFooter
+        )
+        if colNames is not None:
+            matList[mName] = matDf
+        else:
+            matList[mName] = matDf.to_numpy()
+    if singleMatrixRequest:
+        return matList[mName]
+    return matList
 
 
-def convert_from_input_check(df, sourceFilePath, sourceFormat='standardDf'):
+def convert_from_input_check(
+        df, sourceFilePath, sourceFormat='standardDf',
+        octaveMatrixName=None, colNames=None
+):
     if sourceFilePath is not None:
         if df is None:
             if sourceFormat == 'standardDf':
                 df = load_standard_fwf(sourceFilePath)
-            elif sourceFormat == 'rftrackYongke1':
-                df = load_rftrack_yongke_1(sourceFilePath)
-            elif sourceFormat == 'rftrackOctaveSingleMatrix':
-                df = load_rftrack_octave_single_matrix(sourceFilePath)
+            elif sourceFormat == 'octave':
+                df = load_octave_matrices(
+                    sourceFilePath, matNamesToLoad=octaveMatrixName,
+                    colNames=colNames
+                )
         else:
             raise ValueError(
                 'Only one between df and sourceFilePath can be set different than None.'
