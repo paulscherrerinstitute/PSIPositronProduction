@@ -1,4 +1,5 @@
 **/*~
+**/*.dat
 **/*.sdf_txt
 # Python
 **/__pycache__
