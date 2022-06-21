@@ -1,0 +1,40 @@
+{
+    "CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50_MainBunch": {
+        "description": "Select most populated RF bucket.",
+        "filterSpecs": {
+            "x": [-25.0, 25.0],
+            "xp": [-30.0, 30.0],
+            "y": [-25.0, 25.0],
+            "yp": [-30.0, 30.0],
+            "t": [62.8, 63.1],
+            "pz": [0.0, 400.0]
+        },
+        "RefParticle1": {"x": 0, "xp": 0, "y": 0, "yp": 0, "t": 62.867, "pz": 184.0}
+    },
+    "CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50_FirstBunches": {
+        "description": "Select first RF buckets.",
+        "filterSpecs": {
+            "t": [62.7, 64.7],
+            "pz": [0.0, 1000.0]
+        },
+        "RefParticle1": {"x": 0, "xp": 0, "y": 0, "yp": 0, "t": 62.867, "pz": 184.0}
+    },
+    "CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50_MainBunch": {
+        "description": "Select most populated RF bucket.",
+        "filterSpecs": {
+            "x": [-25.0, 25.0],
+            "xp": [-30.0, 30.0],
+            "y": [-25.0, 25.0],
+            "yp": [-30.0, 30.0],
+            "t": [58.6, 58.9],
+            "pz": [0.0, 400.0]
+        }
+    },
+    "CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50_FirstBunches": {
+        "description": "Select first RF buckets.",
+        "filterSpecs": {
+            "t": [58.6, 59.9],
+            "pz": [0.0, 1000.0]
+        }
+    }
+}
