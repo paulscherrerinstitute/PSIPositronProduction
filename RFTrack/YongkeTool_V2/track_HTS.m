@@ -144,7 +144,7 @@
     T.backtrack_at_entrance = false; %% start tracking at s0
     T.odeint_algorithm = "rkf45"; %% 'rk2', 'rkf45', 'rk8pd'
     T.odeint_epsabs = 1e-5;
-    T.open_boundaries = true;
+    T.open_boundaries = false;
 
   disp('INFO:: tracking HTS with Volume . . .')
   tic;
