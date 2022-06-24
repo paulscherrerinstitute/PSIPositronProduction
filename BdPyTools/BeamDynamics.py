@@ -1361,3 +1361,59 @@ def generate_solenoid_fieldmap(L, B0, Rin):
     # T / mu0 / (1/m) = 795774.7150238460162655 A
     print(f'Solenoid current = {B0/n_L*795774.7150238460162655} A\n')
     return zAxis, BzOnAxis
+
+
+def generate_solenoid_fieldmap_wilson(zAxis, zCenter, RinCoil, RoutCoil, LhalfCoil, J):
+    """Create solenoid fieldmap, formula from Wilson, chapter 3, function from Jaap Kosse (PSI).
+
+    Parameters
+    ----------
+    zAxis : :obj:`float`
+        Sampling positions z of the fieldmap in [m].
+    zCenter : :obj:`float`
+        Position z of the coil center in [m].
+    RinCoil : :obj:`float`
+        Internal radius of the coil [m].
+    RoutCoil : :obj:`float`
+        Outer radius of the coil [m].
+    LhalfCoil : :obj:`float`
+        Half length of the coil [m].
+    J : :obj:`float`
+        Current density [A/m^2].
+
+    Returns
+    -------
+    zAxis : :obj:`float`
+        Sampling positions z of the fieldmap in [m].
+    BzOnAxis : :obj:`numpy.array`
+        Longitudinal magnetic field on axis in [T].
+
+    """
+    alpha = RoutCoil / RinCoil
+    beta1 = (LhalfCoil+zCenter - zAxis) / RinCoil
+    beta2 = (LhalfCoil-zCenter + zAxis) / RinCoil
+    BzOnAxis = 0.5 * J * RinCoil * (f_factor(alpha, beta1)+f_factor(alpha, beta2))
+    return zAxis, BzOnAxis
+
+
+def f_factor(alpha, beta):
+    """Compute F factor, help function to create solenoid fieldmap.
+
+    Formula from Wilson, chapter 3, function from Jaap Kosse (PSI).
+
+    Parameters
+    ----------
+    alpha : :obj:`float`
+        Parameter alpha (dimensionless).
+    beta : :obj:`float`
+        Parameter beta (dimensionless).
+
+    Returns
+    -------
+    F : :obj:`float`
+        F factor [N/A^2].
+
+    """
+    mu0 = 4 * np.pi * 1e-7   # Vacuum permeability [H/m = N/A^2]
+    F = mu0 * beta * np.log((alpha+(alpha**2.+beta**2.)**0.5) / (1.+(1.+beta**2.)**0.5))
+    return F
