@@ -314,10 +314,7 @@ def check_distribution_offsets(
 
 
 def use_filter_specs_selector(standardDf, sourceFilePath, filterSpecsSelector):
-    folderPath, _ = os.path.split(sourceFilePath)
-    with open(os.path.join(folderPath, 'filterSpecs.json'), 'r') as filterSpecsFile:
-        filterSpecsList = json.load(filterSpecsFile)
-    filterSpecs = filterSpecsList[filterSpecsSelector]['filterSpecs']
+    filterSpecs = get_json_entry(sourceFilePath, filterSpecsSelector, 'filterSpecs')
     standardDf = filter_distr(standardDf, filterSpecs)
     return standardDf
 
@@ -329,6 +326,15 @@ def filter_distr(standardDf, filterSpecs):
             & (standardDf[varName] <= varLims[1])
         ]
     return standardDf
+
+
+def get_json_entry(sourceFilePath, specsSelector, propertyName):
+    folderPath, _ = os.path.split(sourceFilePath)
+    # TODO: Rename standard file with better name?
+    with open(os.path.join(folderPath, 'filterSpecs.json'), 'r') as specsFile:
+        specsList = json.load(specsFile)
+    selectedProperty = specsList[specsSelector][propertyName]
+    return selectedProperty
 
 
 def export_sim_db_to_xlsx(jsonFilePath):
