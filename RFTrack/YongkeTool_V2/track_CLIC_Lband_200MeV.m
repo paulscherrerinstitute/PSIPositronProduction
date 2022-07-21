@@ -5,7 +5,8 @@
 
   %% Load beam
 
-  rf_input_file = 'rf_input/HTS_5coils_CLIC_Lband.dat';
+  % rf_input_file = 'rf_input/HTS_5coils_CLIC_Lband.dat';
+  rf_input_file = 'amd_output/HTS_5coils_CLIC_Lband.dat';
 
   load(rf_input_file); % TW / SW RF input in plain text format
 
@@ -32,7 +33,7 @@
   rf.n_wave = round(rf.n_cell/3); % Nb of waves per structure
   rf.Grd = [ 17.5 21.0 ]; % dec. acc. ave. gradients in MV/m
   rf.Phs = [ 171 171 ]; % dec. acc. phases in deg [default]
-  %rf.Phs = [ 171+180 171+180 ]; % dec. acc. phases in deg [FOR TEST ONLY]
+  % rf.Phs = [ 171+180 171+180 ]; % dec. acc. phases in deg [for test only]
   rf.fgap = 0; % front gap, distance to where 0.5 T starts in mm
   rf.cgap = 200; % cavity gap, distance between cavities in mm
   rf.Gap = [ rf.fgap ones(1,rf.n_cav-1)*rf.cgap ]; % al gaps in mm
@@ -75,13 +76,14 @@
     if i_rf == 1
       % decelerating
       RF.set_phid(rf.Phs(1)); % degree
-      RF.set_P_actual((rf.Grd(1)/11.23)**2); % average gradient in MV/m
+      RF.set_P_actual((rf.Grd(1)/11.23)^2); % average gradient in MV/m
     else
       % accelerating
       RF.set_phid(rf.Phs(2)); % degree
-      RF.set_P_actual((rf.Grd(2)/11.23)**2); % average gradient in MV/m
+      RF.set_P_actual((rf.Grd(2)/11.23)^2); % average gradient in MV/m
     endif
     RF.set_t0( rf.t0 + sum(rf.Gap(1:i_rf)) ); % mm/c
+    fprintf('Setting rf.t0 = %.1f mm/c\n', RF.get_t0())
     for i_wave = 1:rf.n_wave
       r_rf = rf.Ri;
       RF.set_aperture(r_rf*1e-3, r_rf*1e-3, "circular"); % meter
@@ -89,26 +91,60 @@
     endfor
   endfor
 
+# Prepare Ez and Bz for plotting
+zAxis = linspace(0, LAT.get_length(), 1000);   # [m]
+Ez = [];
+Bz = [];
+for z = zAxis
+    [E, B] = LAT.get_field(0, 0, z*1e3, 0);   # x,y,z,t (mm, mm/c)
+    Ez(end+1) = E(3);
+    Bz(end+1) = B(3);
+endfor
+emFields = [zAxis', Ez', Bz'];
+% save('-text', 'rf_output/LatestSim/EMFields.dat', 'emFields');
+outFile = fopen('rf_output/LatestSim/EMFields.dat', 'w');
+fprintf(outFile, 'z,Ez,Bz\n');
+dlmwrite(outFile, emFields, '-append');
+fclose(outFile);
+figure(1)
+%plot(zAxis, Bz)
+plotyy(zAxis, Bz, zAxis, Ez)
+
   printf("INFO_RF:: tracking all RF structures . . . \n");
+  T = TrackingOptions();
+  T.tt_dt_mm = 1.;   % [mm], track the emittance every tt_dt_mm (time)
+  T.verbosity = 1;
   tic
     B_RF = LAT.track(B_AMD_6d);
   toc
   
   A_RF   =   B_RF.get_phase_space("%x %xp %y %yp %t %Pc");
 
-  save('-text','rf_output/HTS_5coils_CLIC_Lband.dat','A_RF');
-
-% TODO: Is there a difference between sigma_X (working in volume) and sigma_x (working with lattice)?
-TT = LAT.get_transport_table('%mean_t %emitt_x %emitt_y %emitt_4d %sigma_x %sigma_y %mean_E');
+  save('-text','rf_output/LatestSim/HTS_5coils_CLIC_Lband.dat','A_RF');
+% TODO: Document difference between sigma_X (working with volume) and sigma_x (working with lattice)
+strTT = '%mean_t %emitt_x %emitt_y %emitt_4d %sigma_x %sigma_y %mean_E';
+TT = LAT.get_transport_table(strTT);
+% save('-text', 'rf_output/LatestSim/TransportTable.dat', 'TT');
+outFile = fopen('rf_output/LatestSim/TransportTable.dat', 'w');
+fprintf(outFile, [strrep(strrep(strTT,'%', ''),' ',',') '\n']);
+dlmwrite(outFile, TT, '-append');
+fclose(outFile);
 tLims = [TT(1,1), TT(end,1)] / 1e3;
 Elims = [0, TT(end,7)];
 % Compute capture efficiency
-Mlost = B_RF.get_lost_particles();   # Columns 1-6 like M1, t [mm/c] at which particle was lost, m [kg], Q [?] of particle type, Q of macro-particle [?]
-% TODO
-Mlost = sortrows(Mlost, 5);
-sCapture = Mlost(:, 5);
-captureEff = (size(A_AMD,1) - (1:size(Mlost,1))) / size(A_AMD,1);
-subplot(4, 1, 1)
+Mlost = B_RF.get_lost_particles();   # Columns 1-6 like A_RF, z [mm] at which particle was lost, m [kg], Q [?] of particle type, Q of macro-particle [?]
+% TODO: Check that index 7 is correct and that above comment is correct
+Mlost = sortrows(Mlost, 7);
+sCapture = Mlost(:, 7);
+captureEff = (size(A_AMD,1) - (1:size(Mlost,1))') / size(A_AMD,1);
+captureEfficiency = [sCapture, captureEff];
+% save('-text', 'rf_output/LatestSim/CaptureEfficiency.dat', 'captureEfficiency');
+outFile = fopen('rf_output/LatestSim/CaptureEfficiency.dat', 'w');
+fprintf(outFile, 's,CaptureEfficiency\n');
+dlmwrite(outFile, captureEfficiency, '-append');
+fclose(outFile);
+figure(2)
+subplot(5, 1, 1)
 plot(TT(:,1)/1e3, TT(:,7))
 xlim(tLims)
 ylim(Elims)
@@ -124,6 +160,7 @@ ylabel('Capture efficiency')
 grid()
 subplot(4, 1, 3)
 plot(TT(:,1)/1e3, TT(:,2))
+hold on;
 plot(TT(:,1)/1e3, TT(:,3))
 plot(TT(:,1)/1e3, TT(:,4))
 xlim(tLims)
@@ -133,6 +170,7 @@ legend('emitt x', 'emitt y', 'emitt 4d')
 grid()
 subplot(4, 1, 4)
 plot(TT(:,1)/1e3, TT(:,5))
+hold on
 plot(TT(:,1)/1e3, TT(:,6))
 xlim(tLims)
 xlabel('s [m]')

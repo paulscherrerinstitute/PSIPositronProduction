@@ -79,6 +79,13 @@
   amd.Z_axis  = amd.field.Z(1,:); % on-axis Z
   amd.Bz_axis = amd.field.Bz(1,:); % on-axis Bz
 
+  % Uncomment following lines to save the 1D fieldmap of the AMD
+  % Z = amd.Z_axis;
+  % Bz = amd.Bz_axis;
+  % defaultSavePrecision = save_precision(6);
+  % save('-text', strrep(amd.fieldmap_file, '.dat', '_1D.dat'), 'Z', 'Bz');
+  % return
+
   % Get effective field and length used in tracking, starts from target exit, stops at constant solenoid field value
 
   amd.zfte = amd.Ztc; % target exit position in field map in mm
@@ -147,6 +154,7 @@
     T.open_boundaries = false;
 
   disp('INFO:: tracking HTS with Volume . . .')
+  fprintf('Tracking ends at s1 = %.4f m or at t_max = %.1f mm/c.', V.get_s1, T.t_max_mm)
   tic;
     B_target_6dT = Bunch6dT(B_target_6d);
     B_AMD_6dT = V.track(B_target_6dT,T);
@@ -183,5 +191,6 @@
 
 
   outfname = ['amd_output/HTS_5coils_' linac_type '.dat'];
+   save_precision (defaultSavePrecision);
   %save('-text',outfname,'A_AMD','A_AMD_LOSS','A_HTS','amd','target');
   save('-text',outfname,'A_AMD');
