@@ -130,7 +130,7 @@ def pdgId_to_particle_const(pdgId, constName):
 def check_input_pd_or_np(inArray):
     try:
         outArray = inArray.to_numpy()
-    except:
+    except AttributeError:
         if isinstance(inArray, np.ndarray):
             outArray = inArray
         else:
