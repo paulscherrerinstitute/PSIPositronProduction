@@ -1150,10 +1150,11 @@ def check_marker_specs(distributions, markerSpecs, specName):
     return markerSpecs
 
 
-def set_plot_defs_from_distrs(distrList, setName):
+def set_plot_defs_from_distrs(distrList, setNames):
     distrAll = pd.concat(distrList)
     distrAll = check_nan_inf_in_distr(distrAll, True)
-    plotDefsTransvPlane = [
+    plotDefs = {}
+    plotDefs['TransvPlane'] = [
         {
             'varName1': 'x', 'varName2': 'y',
             'lims1': (distrAll['x'].min(), distrAll['x'].max()),
@@ -1161,7 +1162,7 @@ def set_plot_defs_from_distrs(distrList, setName):
             'opacityHist': 0.6,
         }
     ]
-    plotDefsTransvPsAngles = [
+    plotDefs['TransvPsAngles'] = [
         {
             'varName1': 'x', 'varName2': 'xp',
             'lims1': (distrAll['x'].min(), distrAll['x'].max()),
@@ -1175,7 +1176,7 @@ def set_plot_defs_from_distrs(distrList, setName):
             'opacityHist': 0.6,
         }
     ]
-    plotDefsLongPsZ = [
+    plotDefs['LongPsZ'] = [
         {
             'varName1': 'z', 'varName2': 'pz',
             'lims1': (distrAll['z'].min(), distrAll['z'].max()),
@@ -1189,7 +1190,7 @@ def set_plot_defs_from_distrs(distrList, setName):
             'opacityHist': 0.6,
         }
     ]
-    plotDefsLongPsT = [
+    plotDefs['LongPsT'] = [
         {
             'varName1': 't', 'varName2': 'pz',
             'lims1': (distrAll['t'].min(), distrAll['t'].max()),
@@ -1203,14 +1204,30 @@ def set_plot_defs_from_distrs(distrList, setName):
             'opacityHist': 0.6,
         }
     ]
-    if setName == 'angles-t':
-        return plotDefsTransvPlane + plotDefsTransvPsAngles + plotDefsLongPsT
-    elif setName == 'angles-z':
-        return plotDefsTransvPlane + plotDefsTransvPsAngles + plotDefsLongPsZ
-    elif setName == 'angles-z-t':
-        return plotDefsTransvPlane + plotDefsTransvPsAngles + plotDefsLongPsZ + plotDefsLongPsT
-    else:
-        raise ValueError('Unknown setName = {:s}.'.format(setName))
+    plotDefs['CoordsVsT'] = [
+        {
+            'varName1': 't', 'varName2': 'x',
+            'lims1': (distrAll['t'].min(), distrAll['t'].max()),
+            'lims2': (distrAll['x'].min(), distrAll['x'].max()),
+            'opacityHist': 0.6,
+        },
+        {
+            'varName1': 't', 'varName2': 'y',
+            'lims1': (distrAll['t'].min(), distrAll['t'].max()),
+            'lims2': (distrAll['y'].min(), distrAll['y'].max()),
+            'opacityHist': 0.6,
+        },
+        {
+            'varName1': 't', 'varName2': 'z',
+            'lims1': (distrAll['t'].min(), distrAll['t'].max()),
+            'lims2': (distrAll['z'].min(), distrAll['z'].max()),
+            'opacityHist': 0.6,
+        },
+    ]
+    plotDefsCollection = []
+    for setName in setNames:
+        plotDefsCollection += plotDefs[setName]
+    return plotDefsCollection
 
 
 def generate_fieldmap_astra_ideal_tw(fileBasePath, freq, Lstructure, zRes):
