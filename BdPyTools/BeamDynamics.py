@@ -908,10 +908,13 @@ def scatter_individual_marker_style(pathCollectionObj, markerStyles):
         markerStyles = [markerStyles] * pathCollectionObj.get_transforms().shape[0]
     markerPaths = []
     for m in markerStyles:
-        markerObj = pltMarkers.MarkerStyle(m)
+        markerObj = pltMarkers.MarkerStyle(m, 'none')
         markerPath = markerObj.get_path().transformed(markerObj.get_transform())
         markerPaths.append(markerPath)
     pathCollectionObj.set_paths(markerPaths)
+    # Next line: Explicitly set the edge color before removing the facecolor
+    pathCollectionObj.set_edgecolor(pathCollectionObj.get_facecolor())
+    pathCollectionObj.set_facecolor('none')
 
 
 def plot_phase_space_2d(
