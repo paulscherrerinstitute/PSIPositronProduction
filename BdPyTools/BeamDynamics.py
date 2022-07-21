@@ -674,7 +674,7 @@ def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
     for mInd, mName in enumerate(matNamesToLoad):
         skipRows = matStartInds[mInd] + 4
         if mInd < len(matNamesAll)-1:
-            skipFooter = totLines - matStartInds[mInd+1] + 2
+            skipFooter = totLines - matStartInds[mInd+1] + 1
         else:
             skipFooter = 0
         matDf = pd.read_csv(
@@ -685,7 +685,7 @@ def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
         if colNames is not None:
             matList[mName] = matDf
         else:
-            matList[mName] = matDf.to_numpy()
+            matList[mName] = matDf.to_numpy().squeeze()
     if singleMatrixRequest:
         return matList[mName]
     return matList
