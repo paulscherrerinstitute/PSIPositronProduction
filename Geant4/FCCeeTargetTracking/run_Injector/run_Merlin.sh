@@ -51,3 +51,5 @@ module load anaconda/2019.07
 conda activate hep_root
 source ../../../RepoSetup/Set_Pythonpath.sh
 python convert_fcceett_to_standard_df.py ${output_filename}.root
+
+echo "Job finished!"
