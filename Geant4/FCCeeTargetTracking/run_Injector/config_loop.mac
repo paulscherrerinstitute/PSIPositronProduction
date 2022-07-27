@@ -1,0 +1,44 @@
+
+## Crystal target (in this case it is not used)
+/xtal/setSize 100 100 0 mm 
+
+## Amorphous target 
+## and distance (in this case is 0) between two targets 
+## and dipole magnetic field (in this case is 0)
+/amorphous/setDistance 0 0 0 m 
+/amorphous/setSize 100 100 TARGET_THICKNESS mm 
+/dipole/setMagField 0 0 0 tesla 
+
+## AMD options (in this case, AMD is not simulated)
+## (Please keep it anyway to avoid problems)
+/amd/setFrontGapSize 100 100 0 mm 
+/amd/setLength 0 mm 
+/amd/LinFringe/isActive 0 
+
+/run/initialize 
+
+## Primary electron parameters
+/gun/primaryEnergy E_DRIVE_BEAM MeV 
+/gun/sigmaUserE    0.000001 MeV 
+/gun/sigmaUserXY   1.0 mm  
+/gun/sigmaUserPxy  0.000001 MeV 
+/gun/sigmaUserT    10
+
+/output/filename FCCeeTargetTracking.root
+
+/tracking/verbose 0 
+
+## Mesh for PEDD calculation (in case you need)
+/score/create/boxMesh Mesh_amorph 
+/score/mesh/boxSize 50.25 50.25 9.00 mm 
+/score/mesh/nBin 201 201 36 
+/score/mesh/translate/xyz 0 0 0.00875 m 
+/score/quantity/energyDeposit eDep_amorph 
+/score/close 
+
+## Simulate 10000 electrons
+/run/beamOn 10000 
+
+## Mesh for PEDD calculation (in case you need)
+/score/dumpQuantityToFile Mesh_amorph eDep_amorph FCCeeTargetTracking_amor.dat
+

@@ -2,6 +2,12 @@
 
 function do_compile(){
 
+  module purge
+  module load gcc/7.3.0
+  module load geant4/10.5_multithreaded
+  module load root/6.12.06
+  source geant4.sh
+
   PD_RUN=$(pwd)
   
   cd ..
