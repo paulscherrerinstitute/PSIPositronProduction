@@ -3,8 +3,83 @@ channels:
   - http://conda-pkg.intranet.psi.ch
   - defaults
 dependencies:
-  - python=3.8
+  - python
   - jupyter
   - pandas
   - matplotlib
+  - pyparsing
+  - tk
+  - certifi
+  - ipykernel
+  - jinja2
+  - nbclient
+  - parso
+  - pygments
+  - jedi
+  - numexpr
+  - nest-asyncio
+  - widgetsnbextension
+  - zlib
+  - attrs
+  - kiwisolver
+  - sqlite
+  - testpath
+  - qtconsole
+  - prompt-toolkit
+  - pyzmq
+  - argon2-cffi
+  - mistune
+  - ca-certificates
+  - terminado
+  - pip
+  - pyrsistent
+  - numpy-base
+  - pywin32
+  - bleach
+  - openssl
+  - pandocfilters
+  - wheel
+  - zeromq
+  - notebook
+  - zipp
+  - jupyter_client
+  - entrypoints
+  - nbconvert
+  - nbformat
+  - send2trash
+  - sip
+  - colorama
+  - jsonschema
+  - packaging
+  - cycler
+  - numpy
+  - importlib-metadata
+  - pytz
+  - importlib_metadata
+  - cffi
+  - ipython
+  - jpeg
+  - pywinpty
+  - markupsafe
+  - jupyter_console
+  - mkl_fft
+  - prometheus_client
+  - mkl
+  - decorator
+  - pillow
+  - intel-openmp
+  - setuptools
+  - traitlets
+  - pycparser
+  - qtpy
+  - zstd
+  - bottleneck
+  - icu
+  - jupyter_core
+  - matplotlib-base
+  - prompt_toolkit
+  - ipywidgets
+  - jupyterlab
+  - scipy
+  - ipympl
 prefix: C:\Anaconda\envs\JupyterNb

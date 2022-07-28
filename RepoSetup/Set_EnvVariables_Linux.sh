@@ -4,11 +4,11 @@
 function update_path() {
     updatedPath=${!1}
     for mrd in "${@:2}"; do
-	dirToAdd="${SCRIPT_DIR}/${mrd}"
-	if [[ ":${updatedPath}:" != *":${dirToAdd}:"* ]]; then
-	    updatedPath="${dirToAdd}:${updatedPath}"
-	    echo "Added ${dirToAdd} to $1."
-	fi
+        dirToAdd="${SCRIPT_DIR}/${mrd}"
+        if [[ ":${updatedPath}:" != *":${dirToAdd}:"* ]]; then
+            updatedPath="${dirToAdd}:${updatedPath}"
+            echo "Added ${dirToAdd} to $1."
+        fi
     done
     [[ "${updatedPath: -1}" == ":" ]] && updatedPath="${updatedPath::-1}"
     export "${1}=${updatedPath}"
