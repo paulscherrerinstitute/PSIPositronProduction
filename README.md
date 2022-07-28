@@ -12,63 +12,36 @@ Most of the codes have been developed to
 
 ## Getting started
 
-### Prerequisites
-
-
-#### For the analysis of simulation results
-
-* Python3
-* Jupyter lab (or Jupyter notebooks)
-
-The latest versions can be easily installed with conda.
-A conda environment file is available at `GIT_PSIPositronProduction/RepoSetup/Conda/JupyterNb.yml`:
-
-```shell
-$ cd GIT_PSIPositronProduction/RepoSetup/Conda
-$ conda env create -f JupyterNb.yml
-```
-
-For more details, see:
-
-https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file
-
-#### To build Geant4 simulations
-
-* Geant4, version 10.04.p03
-
-See [How to build Geant4 on PSI RHEL7](Geant4OnPsiRhel7.md).
-
-
-#### To edit codes with VSCode
-
-The installation of VSCode on Linux or Windows is generally very simple.
-
-This is not true if you are running a PSI RHEL7 Linux system. See [How to build VSCode from source on PSI RHEL7](VSCodeOnPsiRhel7.md) if you want (try) to keep going with VSCode on RHEL7...
-
 
 ### Clone the repository
 
 **Warning**
-In addition to a common installation of [Git](https://git-scm.com), you also need [Git Large File Storage](https://git-lfs.github.com) in order to download the large data files (usually compressed as `.tar.xz`) in the subfolder `GIT_PSIPositronProduction/Data`
+In addition to a common installation of [Git](https://git-scm.com), you also need [Git Large File Storage](https://git-lfs.github.com) in order to download the large data files (usually compressed as `.tar.xz`) in the subfolder `GIT_PSIPositronProduction/Data`. Important: Execute the git-lfs installer as administrator.
 
-Clone the repository with:
-
-```shell
-$ git clone git@github.com:paulscherrerinstitute/PSIPositronProduction.git GIT_PSIPositronProduction
-```
-
-or
+If you have no [github.com](https://github.com) account yet and you only want to download the code, execute the following command in a shell (Git Bash in Windows):
 
 ```shell
 $ git clone https://github.com/paulscherrerinstitute/PSIPositronProduction.git GIT_PSIPositronProduction
 ```
 
+If you already have an account and an SSH key set up, run:
+
+```shell
+$ git clone git@github.com:paulscherrerinstitute/PSIPositronProduction.git GIT_PSIPositronProduction
+```
+
 In this documentation, we indicate the root folder of the repository with `GIT_PSIPositronProduction`.
 
 
-### Initial configuration
+### Initial configuration of the repository
 
-Some environment variables must be set. Follow the procedure for your operating system.
+Some environment variables must be set:
+
+* P3_REPO
+* PYTHONPATH
+* JUPYTER_PATH
+
+Follow the procedure for your operating system.
 
 
 #### Linux
@@ -102,6 +75,43 @@ This batch script does not check whether the desired paths are already present i
 It is a good practice to also do this after execution of the script. Important: open a NEW command window!
 
 
+## Prerequisites
+
+
+### For the analysis of simulation results
+
+* Python3 and
+* Jupyter lab (or Jupyter notebooks)
+
+The latest versions can be easily installed with conda (use Anaconda on Windows).
+A conda environment file is available at `GIT_PSIPositronProduction/RepoSetup/Conda/JupyterNb.yml`.
+In a shell (Anaconda prompt in Windows) execute:
+
+```shell
+$ cd GIT_PSIPositronProduction/RepoSetup/Conda
+$ conda env create -f JupyterNb.yml
+```
+
+**Note**
+In Windows, this can also be done from the Anaconda Navigator GUI, following the procedure under Environments > Import.
+
+For more details, see:
+
+https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file
+
+### To build Geant4 simulations
+
+* Geant4, version 10.04.p03
+
+See [How to build Geant4 on PSI RHEL7](Geant4OnPsiRhel7.md).
+
+
+### To edit codes with VSCode
+
+The installation of VSCode on Linux or Windows is generally very simple.
+
+This is not true if you are running a PSI RHEL7 Linux system. See [How to build VSCode from source on PSI RHEL7](VSCodeOnPsiRhel7.md) if you want (try) to keep going with VSCode on RHEL7...
+
 
 ## Features
 
@@ -111,6 +121,7 @@ It is a good practice to also do this after execution of the script. Important: 
 To run an analysis:
 
 * Open the Jupyter notebook in JupyterLab (recommended) or JupyterNotebook.
+* Check which data files are required by the analysis and make sure that all necessary `.tar.xz` files stored in `GIT_PSIPositronProduction/Data` have been decompressed (usually to a `.dat` file).
 * In the menu: Run > Run All Cells.
 * Wait for the evaluation up to the last cell.
 
