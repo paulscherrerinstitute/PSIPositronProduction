@@ -35,7 +35,7 @@ AMD_R_APERTURE = 20e-3   # [m]
 # TODO: This is an old value
 AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
 
-TRACK_AFTER_AMD = False
+TRACK_AFTER_AMD = True
 
 RF_FIELDMAP_DIM = '3D'
 RF_N_STRUCTURES = 11  # 11
@@ -44,7 +44,8 @@ RF_N_PERIODS_PER_STRUCTURE = np.round(RF_N_CELLS/rfttools.RF_CLIC_CELLS_PER_PERI
 RF_L_STRUCTURE = RF_N_PERIODS_PER_STRUCTURE * bd.C/rfttools.RF_CLIC_FREQ  # [m]
 RF_L_FLANGE = 0.05461  # [m]
 RF_L_MECH_MARGIN = 0.01  # [m]
-RF_T0 = 17.5 + 287.2  # [mm/c]
+# RF_T0 = 17.5 + 287.2  # [mm/c], optimal for older AMD fiel dmap
+RF_T0 = 17.5 + 225.3  # [mm/c], optimal for current AMD field map
 RF_PHASE_1ST = 171.  # [deg]
 RF_PHASE_AFTER_1ST = 171.  # [deg]
 RF_GRADIENT_1ST = 17.5e6  # [V/m]
@@ -64,14 +65,14 @@ SOL_J = 3.54e6   # [A/m2]
 SOL_HOMOG_BZ = 0.5   # [T]
 
 FINAL_L = 0.   # [m]
-T_ADD_NON_RELATIVISTIC = np.Inf  # 1000.  # [mm/c]
+T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
 N_RF_STRUCT_1ST_TRACKING = RF_N_STRUCTURES
 N_RF_CELLS_LONG_PS_CUT = 1 + 2 * rfttools.RF_CLIC_CELLS_PER_PERIOD
 # E.g.: 1 + 2 * ... = keep 3 positron buckets
 
 splitTracking = RF_N_STRUCTURES > N_RF_STRUCT_1ST_TRACKING
 
-OUT_REL_PATH = './Results_AMD/LatestSim/'
+OUT_REL_PATH = './Results_CaptureLinac/LatestSim/'
 
 # TODO
 # rf.R1i  = 20; % mm
@@ -258,7 +259,7 @@ B1_6d = vol.get_bunch_at_s1()
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
 bd.convert_rftrack_to_standard_df(
     rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', pdgId=-11,
-    outFwfPath='./Results_AMD/LatestSim/DistrOut_After1stTracking_6d'
+    outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_After1stTracking_6d'
 )
 Bend_6dT = B1_6dT
 
@@ -269,7 +270,7 @@ if splitTracking:
     B1_6dT = rft.Bunch6dT(B1_6d)
     bd.convert_rftrack_to_standard_df(
         rftrackDf=M1_6d_frontBuckets, rftrackDfFormat='rftrack_xp_t', pdgId=-11,
-        outFwfPath='./Results_AMD/LatestSim/DistrOut_FrontBuckets_After1stTracking_6d'
+        outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_FrontBuckets_After1stTracking_6d'
     )
     vol.set_s1(zFinalInVolume)
     T0.t_max_mm = zFinalInVolume * 1e3 + T_ADD_NON_RELATIVISTIC
@@ -281,7 +282,7 @@ if splitTracking:
     M2_6d = B2_6d.get_phase_space("%x %xp %y %yp %t %Pc")
     bd.convert_rftrack_to_standard_df(
         rftrackDf=M2_6d, rftrackDfFormat='rftrack_xp_t', pdgId=-11,
-        outFwfPath='./Results_AMD/LatestSim/DistrOut_After2ndTracking_6d'
+        outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_After2ndTracking_6d'
     )
     Bend_6dT = B2_6dT
 # A_AMD_LOSS = B_AMD_6dT.get_lost_particles();
@@ -289,10 +290,10 @@ if splitTracking:
 # TODO: Qbunch
 # bd.convert_rftrack_to_standard_df(
 #     rftrackDf=M1_6dT, rftrackDfFormat='rftrack_Px_S', pdgId=-11,
-#     outFwfPath='./Results_AMD/LatestSim/DistrOut_AMD_6dT'
+#     outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_AMD_6dT'
 # )
 
-fig1, ax1 = plt.subplots(5, 1)
+fig1, ax1 = plt.subplots(6, 1)
 rfttools.save_plot_transport(ax1, vol, B0_6dT, Bend_6dT, OUT_REL_PATH)
 plt.show(block=False)
 input("Press Enter to continue...")

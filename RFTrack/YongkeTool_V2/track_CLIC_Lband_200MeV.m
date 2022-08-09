@@ -12,7 +12,8 @@
 
   %% t0 at RF entrance
 
-  rf.t0 = 17.5 + 287.2; % mm/c
+  % rf.t0 = 17.5 + 287.2; % mm/c, for old AMD fieldmap
+  rf.t0 = 17.5 + 225.3; % mm/c, for latest AMD fieldmap
   printf("INFO_RF:: reference time at RF entrance: %.2f mm/c \n", rf.t0);
   
   Bunch.mass       = RF_Track.electronmass; % MeV/c/c

@@ -151,6 +151,7 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     ax[0].set_ylabel('Bz [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
     # ax[0].grid()
     ax[1].plot(emFields['z']+sShiftEMFields, emFields['Ez']/1e6, '--')  # , color=DEFAULT_COLOR_CYCLE[0]
+    ax[1].set_xlim(sLims)
     ax[1].set_ylim(EzLims/1e6)
     ax[1].set_ylabel('Ez [MV/m]')  # , color=DEFAULT_COLOR_CYCLE[0]
     ax[2].plot(s, transpTab['mean_E'])
@@ -160,6 +161,7 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     ax[2].set_ylabel('E [MeV]')
     # ax[2].grid()
     ax[3].plot(captureEff['s']/1e3+sShiftEMFields, captureEff['CaptureEfficiency'], '--')
+    ax[3].set_xlim(sLims)
     ax[3].set_ylim([0, 1])
     ax[3].set_ylabel('Capture eff.')
     noMarkers = 20
@@ -175,5 +177,6 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     # ax[4].grid()
     p = ax[5].plot(s, transpTab[sigmaXName], '--v', markevery=markEvery)
     ax[5].plot(s, transpTab[sigmaYName], '--^', markevery=markEvery, color=p[0].get_color())
+    ax[5].set_xlim(sLims)
     ax[5].set_ylim(sigmaLims)
     ax[5].set_ylabel('Sigma [mm]')
