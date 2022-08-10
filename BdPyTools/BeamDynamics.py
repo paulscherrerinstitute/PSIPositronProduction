@@ -651,19 +651,60 @@ def convert_standard_df_to_placet(
 
 
 def find_octave_all_matrices(sourceFilePath):
+    KNOWN_OCTAVE_TYPES = {
+        # typeName: headerLength
+        'scalar': 2,
+        'matrix': 4,
+        'complex matrix': 4,
+    }
     with open(sourceFilePath, 'r') as sourceFile:
-        matStartInd = []
-        matName = []
-        for lineInd, line in enumerate(sourceFile):
+        matList = []
+        matIndToCheckEnd = -1
+        lineInd = -1
+        for line in sourceFile:
+            lineInd += 1
             if '# name:' in line:
-                matStartInd.append(lineInd)
-                matName.append(line[8:-1])
+                startInd = lineInd
+                typeLine = next(sourceFile)
+                lineInd += 1
+                matIndToCheckEnd = len(matList) - 1
+                for type, hLength in KNOWN_OCTAVE_TYPES.items():
+                    if '# type: ' + type == typeLine[:-1]:
+                        # for ind in range(hLength - 1):
+                        #     firstNumericLine = next(sourceFile)
+                        #     lineInd += 1
+                        # if '(' in firstNumericLine and ')' in firstNumericLine:
+                        #     numType = 'complex'
+                        # else:
+                        #     numType = 'real'
+                        mat = {
+                            'name': line[8:-1],
+                            'type': type,
+                            'startInd': startInd,
+                            'headerLength': hLength,
+                            'endInd': None,
+                            # 'numType': numType
+                        }
+                        matList.append(mat)
+                if matIndToCheckEnd >= 0 and matList[matIndToCheckEnd]['endInd'] is None:
+                    matList[matIndToCheckEnd]['endInd'] = startInd - 3
+                    matList[matIndToCheckEnd]['maxRows'] = (
+                        matList[matIndToCheckEnd]['endInd'] - matList[matIndToCheckEnd]['startInd']
+                        - matList[matIndToCheckEnd]['headerLength'] + 1
+                    )
         totLines = lineInd
-    return matName, matStartInd, totLines
+        matList[-1]['endInd'] = totLines - 2
+        for mat in matList:
+            mat['skipRows'] = mat['startInd'] + mat['headerLength']
+            mat['skipFooter'] = totLines - mat['endInd'] - 2
+    return matList
 
 
 def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
-    matNamesAll, matStartInds, totLines = find_octave_all_matrices(sourceFilePath)
+    matDefList = find_octave_all_matrices(sourceFilePath)
+    matNamesAll = [mat['name'] for mat in matDefList]
+    matStartInds = [mat['startInd'] for mat in matDefList]
+    matHeaderLengths = [mat['headerLength'] for mat in matDefList]
     singleMatrixRequest = False
     if matNamesToLoad is None:
         matNamesToLoad = matNamesAll
@@ -671,23 +712,28 @@ def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
         singleMatrixRequest = True
         matNamesToLoad = [matNamesToLoad]
     matList = {}
-    for mInd, mName in enumerate(matNamesToLoad):
-        skipRows = matStartInds[mInd] + 4
-        if mInd < len(matNamesAll)-1:
-            skipFooter = totLines - matStartInds[mInd+1] + 1
-        else:
-            skipFooter = 0
-        matDf = pd.read_csv(
-            sourceFilePath, engine='python', delim_whitespace=True,
-            index_col=False, header=None, names=colNames,
-            skiprows=skipRows, skipfooter=skipFooter
-        )
-        if colNames is not None:
-            matList[mName] = matDf
-        else:
-            matList[mName] = matDf.to_numpy().squeeze()
+    for matDef in matDefList:
+        if matDef['name'] in matNamesToLoad:
+            if matDef['type'] in ['scalar', 'matrix']:
+                matDf = pd.read_csv(
+                    sourceFilePath, engine='python', delim_whitespace=True,
+                    index_col=False, header=None, names=colNames,
+                    skiprows=matDef['skipRows'], skipfooter=matDef['skipFooter']
+                )
+            elif matDef['type'] == 'complex matrix':
+                matNp = np.loadtxt(
+                    sourceFilePath, skiprows=matDef['skipRows'], max_rows=matDef['maxRows'],
+                    dtype=np.complex128, converters={0: lambda s: np.fromstring(
+                        s.decode("latin1").replace('(', '').replace(')', ''), sep=','
+                    ).view(np.complex128)}
+                )
+                matDf = pd.DataFrame(data=matNp, columns=colNames)
+            if colNames is not None:
+                matList[matDef['name']] = matDf
+            else:
+                matList[matDef['name']] = matDf.to_numpy().squeeze()
     if singleMatrixRequest:
-        return matList[mName]
+        return matList[matNamesToLoad[0]]
     return matList
 
 
@@ -1423,7 +1469,7 @@ def generate_solenoid_fieldmap_wilson(zAxis, zCenter, RinCoil, RoutCoil, LhalfCo
     beta1 = (LhalfCoil+zCenter - zAxis) / RinCoil
     beta2 = (LhalfCoil-zCenter + zAxis) / RinCoil
     BzOnAxis = 0.5 * J * RinCoil * (f_factor(alpha, beta1)+f_factor(alpha, beta2))
-    return zAxis, BzOnAxis
+    return BzOnAxis
 
 
 def f_factor(alpha, beta):
