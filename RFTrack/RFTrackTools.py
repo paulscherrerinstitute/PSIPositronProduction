@@ -19,6 +19,8 @@ RF_CLIC_L_CELL = bd.C / RF_CLIC_FREQ / RF_CLIC_CELLS_PER_PERIOD  # [m]
 
 
 def load_fieldmap_rf_clic():
+    # TODO: Integrate reading of a 3 dimensional array in load_octave_matrices()
+    # and thenuse that function
     meshAxes = ['ra', 'ta', 'za']
     meshes = {}
     for meshAx in meshAxes:
@@ -35,8 +37,8 @@ def load_fieldmap_rf_clic():
                 s.decode("latin1").replace('(', '').replace(')', ''), sep=','
             ).view(np.complex128)}
         )
-        rfFields[complComp] = rfFields[complComp].reshape(matDimensions) \
-            .transpose()   # .astype(np.complex128)
+        rfFields[complComp] = rfFields[complComp].reshape(matDimensions).transpose()
+        # .astype(np.complex128)
     return rfFields, meshes
 
 
@@ -45,14 +47,14 @@ def rf_clic_single_period(rfFieldmapDim):
     # TODO: Data location and path construction
     rfFields, rfMesh = load_fieldmap_rf_clic()
     if rfFieldmapDim == '1D':
-        rf = rft.RF_FieldMap_1d(
+        rfPeriod = rft.RF_FieldMap_1d(
             rfFields['Ez'][0, 0, :],
             rfMesh['za'][1] - rfMesh['za'][0],
             rfMesh['za'][-1],
             RF_CLIC_FREQ, +1
         )
     elif rfFieldmapDim == '3D':
-        rf = rft.RF_FieldMap(
+        rfPeriod = rft.RF_FieldMap(
             rfFields['Ex'], rfFields['Ey'], rfFields['Ez'],
             rfFields['Bx'], rfFields['By'], rfFields['Bz'],
             rfMesh['ra'][0], rfMesh['ta'][0],
@@ -62,10 +64,54 @@ def rf_clic_single_period(rfFieldmapDim):
             rfMesh['za'][-1],
             RF_CLIC_FREQ, +1
         )
-        rf.set_cylindrical(True)
+        rfPeriod.set_cylindrical(True)
     else:
         raise ValueError('Invalid rfFieldmapDim={:s}.'.format(rfFieldmapDim))
-    return rf
+    return rfPeriod
+
+
+def rf_struct_from_single_period(
+        fieldmapFilePath, fieldmapDim, totPeriods, inputPower, t0, phase,
+        aperture=None, additionalHomogBz=None
+):
+    rfPeriod = rf_clic_single_period(fieldmapDim)
+    rfPeriod.set_P_actual(inputPower)
+    rfPeriod.set_t0(t0)
+    rfPeriod.set_phid(phase)
+    if aperture is not None:
+        rfPeriod.set_aperture(aperture, aperture, 'circular')
+    if additionalHomogBz is not None:
+        rfPeriod.set_static_Bfield(0, 0, additionalHomogBz)
+    structLat = rft.Lattice()
+    for rfPeriodInd in np.arange(totPeriods):
+        structLat.append(rfPeriod)
+    return structLat
+
+
+def rf_struct_from_full_fieldmap(
+        fieldmapFilePath, fieldmapDim, inputPower, t0, phase,
+        aperture=None, additionalHomogBz=None
+):
+    rfField = bd.load_octave_matrices(fieldmapFilePath)
+    dz = (rfField['Z'][1] - rfField['Z'][0]) * 1e-3  # [m]
+    structL = (rfField['Z'][-1] - rfField['Z'][0]) * 1e-3  # [m]
+    rfStruct = rft.RF_FieldMap_1d(rfField['E'], dz, structL, rfField['frequency'], +1)
+    rfStruct.set_P_actual(inputPower)
+    rfStruct.set_t0(t0)
+    rfStruct.set_phid(phase)
+    if aperture is not None:
+        rfStruct.set_aperture(aperture, aperture, 'circular')
+    if additionalHomogBz is not None:
+        rfStruct.set_static_Bfield(0, 0, additionalHomogBz)
+    return rfStruct
+
+
+def solenoid_from_analytical_formula(L, R_IN_COIL, R_OUT_COIL, J, extensionFactor=5., dz=1e-3):
+    z = np.arange(-L*extensionFactor, L*extensionFactor, dz)
+    BzOnAxis = bd.generate_solenoid_fieldmap_wilson(z, 0., R_IN_COIL, R_OUT_COIL, L/2., J)
+    dz = z[1] - z[0]
+    solenoid = rft.Static_Magnetic_FieldMap_1d(BzOnAxis, dz)
+    return solenoid
 
 
 def save_plot_transport(ax, vol, beam0, beam1, outRelPath):
@@ -126,7 +172,10 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
         sigmaXName = 'sigma_x'
         sigmaYName = 'sigma_y'
     # TODO: Recognize when axis is empty (xlim = [0, 1])
-    sLims = np.array([np.min([ax[0].get_xlim()[0], s.min()]), np.max([ax[0].get_xlim()[1], s.max()])])
+    sLims = np.array([
+        np.min([ax[0].get_xlim()[0], s.min()]),
+        np.max([ax[0].get_xlim()[1], s.max()])
+    ])
     BzLims = np.array([0, np.max([ax[0].get_ylim()[1], emFields['Bz'].max()])])
     EzLims = np.array([
         np.min([ax[1].get_ylim()[0], emFields['Ez'].min()]),
@@ -150,7 +199,8 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     ax[0].set_xlabel('s [m]')
     ax[0].set_ylabel('Bz [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
     # ax[0].grid()
-    ax[1].plot(emFields['z']+sShiftEMFields, emFields['Ez']/1e6, '--')  # , color=DEFAULT_COLOR_CYCLE[0]
+    ax[1].plot(emFields['z']+sShiftEMFields, emFields['Ez']/1e6, '--')
+    # , color=DEFAULT_COLOR_CYCLE[0]
     ax[1].set_xlim(sLims)
     ax[1].set_ylim(EzLims/1e6)
     ax[1].set_ylabel('Ez [MV/m]')  # , color=DEFAULT_COLOR_CYCLE[0]
