@@ -1,0 +1,8 @@
+
+Example run of new large R Lband as baseline (0.5 T constant solenoid field):
+
+> octave-cli track_AMD_HTS.m
+
+> octave-cli track_RF_200MeV_LargeR_Lband.m
+
+> octave-cli track_PositronLinac.m
