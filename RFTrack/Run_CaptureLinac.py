@@ -312,7 +312,6 @@ trackingOpts.wp_dt_mm = 0.5e3   # [mm/c], save the distr. on disk every wp_dt_mm
 trackingOpts.backtrack_at_entrance = False
 trackingOpts.odeint_algorithm = 'rkf45'   # Options: 'rk2', 'rkf45', 'rk8pd'
 trackingOpts.odeint_epsabs = 1e-5
-trackingOpts.open_boundaries = False
 trackingOpts.verbosity = 1   # 0 (default), 1 or 2
 
 vol.set_s0(0)
