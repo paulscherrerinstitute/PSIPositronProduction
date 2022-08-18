@@ -138,11 +138,15 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath):
     # Columns of Mlost like columns 1-6 of M0, in addition:
     # t [mm/c] at which particle was lost, m [kg],
     # Q [?] of particle type, Q of macro-particle [?]
-    Mlost = Mlost[Mlost[:, 4].argsort()]
-    sCapture = Mlost[:, 4]
-    captureEff = (
-        M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)
-    ) / M0.shape[0]
+    try:
+        Mlost = Mlost[Mlost[:, 4].argsort()]
+        sCapture = Mlost[:, 4]
+        captureEff = (
+            M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)
+        ) / M0.shape[0]
+    except IndexError:
+        sCapture = np.array(TT[[0, -1], 0])
+        captureEff = np.ones(sCapture.shape)
     captureEfficiency = pd.DataFrame(
         np.row_stack([sCapture, captureEff]).T, columns=['s', 'CaptureEfficiency']
     )
@@ -216,6 +220,8 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     ax[3].set_ylabel('Capture eff.')
     noMarkers = 20
     markEvery = int(len(s) / noMarkers)
+    if markEvery < 1:
+        markEvery = 1
     p = ax[4].plot(s, transpTab['emitt_x']/1e3, '-v', markevery=markEvery)
     ax[4].plot(s, transpTab['emitt_y']/1e3, '-^', markevery=markEvery, color=p[0].get_color())
     ax[4].plot(s, transpTab['emitt_4d']/1e3, '-', markevery=markEvery, color=p[0].get_color())
