@@ -95,13 +95,13 @@
   % reference particle
   rf.P0_ref = [ 0 0 0 0 rf.t0 100 ];
 
-  code.optimise = 0; % save more / less info
+  code.optimise = 1; % save more / less info
 
   for i_rf = 1 : rf.n_cav
     RF_GAP.set_length(rf.Gap_ext(i_rf)*1e-3); %% [m]
     LAT.append(RF_GAP);
     RF.set_phid(rf.Phs(i_rf)); % degree
-    RF.set_P_actual((rf.Grd(i_rf)/20.0)**2); % average gradient in MV/m
+    RF.set_P_actual((rf.Grd(i_rf)/20.0)^2); % average gradient in MV/m
     LAT.append(RF);
 
     e_ap = LAT.autophase(Bunch6d(RF_Track.electronmass, 0, +1, rf.P0_ref));
@@ -157,9 +157,26 @@
     endif
   endfor
 
+# Prepare Ez and Bz for plotting
+zAxis = linspace(0, LAT.get_length(), 10000);   # [m]
+Ez = [];
+Bz = [];
+for z = zAxis
+    [E, B] = LAT.get_field(0, 0, z*1e3, 0);   # x,y,z,t (mm, mm/c)
+    Ez(end+1) = E(3);
+    Bz(end+1) = B(3);
+endfor
+emFields = [zAxis', Ez', Bz'];
+outFile = fopen('Dat/LatestSim/EMFields.dat', 'w');
+fprintf(outFile, 'z,Ez,Bz\n');
+dlmwrite(outFile, emFields, '-append');
+fclose(outFile);
+figure(1)
+plotyy(zAxis, Bz, zAxis, Ez)
+
   printf("INFO_RF:: tracking all RF structures . . . \n");
   tic
-    B_RF = LAT.track(B_AMD_6d);
+    B_RF = LAT.track(B_AMD_6d);  # Bunch6d(RF_Track.electronmass, 0, +1, rf.P0_ref)
   toc
   
   A_RF   =   B_RF.get_phase_space("%x %xp %y %yp %t %Pc");
@@ -214,6 +231,7 @@
   outfname = rf_input_file;
   outfname = strrep(outfname,'AMDOutput','RF200MeVOutput');
   outfname = strrep(outfname,'.dat','_LargeRLband.dat');
+  outfname = strrep(outfname,'Dat/','Dat/LatestSim/');
   if (code.optimise)
     save('-text',outfname,'A_RF','target','amd','rf');
   elseif (rf.n_cav >= 3)
@@ -224,3 +242,63 @@
     save('-text',outfname,'A_RF_1','A_RF','A_RF_TT','target','amd','rf');
   endif
 
+% TODO: Document difference between sigma_X (working with volume) and sigma_x (working with lattice)
+strTT = '%mean_t %emitt_x %emitt_y %emitt_4d %sigma_x %sigma_y %mean_E';
+TT = LAT.get_transport_table(strTT);
+outFile = fopen('Dat/LatestSim/TransportTable.dat', 'w');
+fprintf(outFile, [strrep(strrep(strTT,'%', ''),' ',',') '\n']);
+dlmwrite(outFile, TT, '-append');
+fclose(outFile);
+tLims = [TT(1,1), TT(end,1)] / 1e3;
+Elims = [0, TT(end,7)];
+% Compute capture efficiency
+Mlost = B_RF.get_lost_particles();   # Columns 1-6 like A_RF, z [mm] at which particle was lost, m [kg], Q [?] of particle type, Q of macro-particle [?]
+% TODO: Check that index 7 is correct and that above comment is correct
+if (~isempty(Mlost))
+  Mlost = sortrows(Mlost, 7);
+  sCapture = Mlost(:, 7);
+  captureEff = (size(A_AMD,1) - (1:size(Mlost,1))') / size(A_AMD,1);
+else
+  sCapture = TT([1 end],1)/1e3;
+  captureEff = [1.; 1.];
+endif
+captureEfficiency = [sCapture, captureEff];
+outFile = fopen('Dat/LatestSim/CaptureEfficiency.dat', 'w');
+fprintf(outFile, 's,CaptureEfficiency\n');
+dlmwrite(outFile, captureEfficiency, '-append');
+fclose(outFile);
+figure(2)
+subplot(5, 1, 1)
+plot(TT(:,1)/1e3, TT(:,7))
+xlim(tLims)
+ylim(Elims)
+xlabel('s [m]')
+ylabel('Beam energy [MeV]')
+grid()
+subplot(4, 1, 2)
+plot(sCapture/1e3, captureEff)
+xlim(tLims)
+ylim([0, 1])
+xlabel('s [m]')
+ylabel('Capture efficiency')
+grid()
+subplot(4, 1, 3)
+plot(TT(:,1)/1e3, TT(:,2))
+hold on;
+plot(TT(:,1)/1e3, TT(:,3))
+plot(TT(:,1)/1e3, TT(:,4))
+xlim(tLims)
+xlabel('s [m]')
+ylabel('emitt [pi mm mrad]')
+legend('emitt x', 'emitt y', 'emitt 4d')
+grid()
+subplot(4, 1, 4)
+plot(TT(:,1)/1e3, TT(:,5))
+hold on
+plot(TT(:,1)/1e3, TT(:,6))
+xlim(tLims)
+xlabel('s [m]')
+ylabel('sigma [mm]')
+legend('sigma x', 'sigma y')
+grid()
+waitforbuttonpress()

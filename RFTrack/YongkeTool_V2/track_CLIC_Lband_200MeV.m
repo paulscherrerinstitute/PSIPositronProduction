@@ -122,10 +122,10 @@ plotyy(zAxis, Bz, zAxis, Ez)
   A_RF   =   B_RF.get_phase_space("%x %xp %y %yp %t %Pc");
 
   save('-text','rf_output/LatestSim/HTS_5coils_CLIC_Lband.dat','A_RF');
+
 % TODO: Document difference between sigma_X (working with volume) and sigma_x (working with lattice)
 strTT = '%mean_t %emitt_x %emitt_y %emitt_4d %sigma_x %sigma_y %mean_E';
 TT = LAT.get_transport_table(strTT);
-% save('-text', 'rf_output/LatestSim/TransportTable.dat', 'TT');
 outFile = fopen('rf_output/LatestSim/TransportTable.dat', 'w');
 fprintf(outFile, [strrep(strrep(strTT,'%', ''),' ',',') '\n']);
 dlmwrite(outFile, TT, '-append');
@@ -139,7 +139,6 @@ Mlost = sortrows(Mlost, 7);
 sCapture = Mlost(:, 7);
 captureEff = (size(A_AMD,1) - (1:size(Mlost,1))') / size(A_AMD,1);
 captureEfficiency = [sCapture, captureEff];
-% save('-text', 'rf_output/LatestSim/CaptureEfficiency.dat', 'captureEfficiency');
 outFile = fopen('rf_output/LatestSim/CaptureEfficiency.dat', 'w');
 fprintf(outFile, 's,CaptureEfficiency\n');
 dlmwrite(outFile, captureEfficiency, '-append');

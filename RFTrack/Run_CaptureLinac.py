@@ -2,123 +2,55 @@ import RF_Track as rft
 import RFTrackTools as rfttools
 import BeamDynamics as bd
 import SimulationData as sd
+import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import json
 
 
 # INPUT reproducing YonkeTool_V2, CLIC TW L-band, 0.5 T ###########################################
-BUNCH_FILEPATH = 'RFTrack/YongkeTool_V2/amd_input/E6GeV_SpotSize0.5mm_Target5X0.dat'
-RFTRACK_FORMAT = 'rftrack_xp_t'
-BUNCH_PDGID = -11
-PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
-PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
-BUNCH_Z = 0.
-BUNCH_DOWNSAMPLING = 10
-#
-VOL_R_APERTURE = 1.  # [m]
-#
-TARGET_L = 17.5  # [mm]
-TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +41e-3   # [m], YonkeTool_V2, CLIC TW L-band, 0.5 T
-#
-AMD_FIELDMAP_2D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022.dat'
-AMD_FIELDMAP_1D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022_1D.dat'
-USE_AMD_FIELDMAP_3D = False
-AMD_R_APERTURE = 20e-3   # [m]
-AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
-#
-TRACK_AFTER_AMD = True
-#
-INITIAL_L = 0.   # [m]
-
-# TODO: Use following parameter
-RF_FIELDMAP = None
-RF_FIELDMAP_DIM = '3D'
-RF_FIELDMAP_TYPE = 'SinglePeriod'
-RF_FIELDMAP_GRAD = rfttools.RF_CLIC_GRADIENT
-RF_N_STRUCTURES = 11
-RF_N_CELLS = 30
-RF_N_PERIODS_PER_STRUCTURE = np.round(RF_N_CELLS/rfttools.RF_CLIC_CELLS_PER_PERIOD)
-RF_L_STRUCTURE = RF_N_PERIODS_PER_STRUCTURE * bd.C/rfttools.RF_CLIC_FREQ  # [m]
-RF_L_FLANGE = 0.05461  # [m]
-RF_L_MECH_MARGIN = 0.01  # [m]
-RF_T0 = TARGET_L + 225.3  # [mm/c], optimal for current AMD field map
-RF_PHASES = (171., 171.)  # [deg]
-RF_GRADIENTS = (17.5e6, 21e6)  # [V/m]
-RF_SEPARATION = 0.2   # [m]
-RF_R_APERTURE = 20e-3   # [m]
-#
-AUTOPHASING = False
-#
-SOLENOID_TYPE = 'HomogeneousChannel'
-SOL_HOMOG_BZ = 0.5   # [T]
-# or
-# SOLENOID_TYPE = 'Analytical'
-# SOL_R_IN_COIL = 0.130   # [m]
-# SOL_R_OUT_COIL = 0.250   # [m]
-# SOL_L = RF_L_STRUCTURE - RF_L_FLANGE - rfttools.RF_CLIC_L_CELL - RF_L_MECH_MARGIN
-# SOL_J = 3.54e6   # [A/m2]
-# SOL_HOMOG_BZ = 0.5   # [T]
-#
-FINAL_L = 0.   # [m]
-#
-T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
-N_RF_STRUCT_1ST_TRACKING = RF_N_STRUCTURES
-N_RF_CELLS_LONG_PS_CUT = 1 + 2 * rfttools.RF_CLIC_CELLS_PER_PERIOD
-# E.g.: 1 + 2 * ... = keep 3 positron buckets
-###################################################################################################
-
-
-# INPUT reproducing YonkeTool_V3, LargeR TW L-band, 0.5 T #########################################
-# BUNCH_FILEPATH = 'RFTrack/YongkeTool_V3/Dat/' + \
-#     'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
+# BUNCH_FILEPATH = 'RFTrack/YongkeTool_V2/amd_input/E6GeV_SpotSize0.5mm_Target5X0.dat'
 # RFTRACK_FORMAT = 'rftrack_xp_t'
 # BUNCH_PDGID = -11
 # PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
 # PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
 # BUNCH_Z = 0.
-# BUNCH_DOWNSAMPLING = 1
+# BUNCH_DOWNSAMPLING = 10
 # #
 # VOL_R_APERTURE = 1.  # [m]
 # #
 # TARGET_L = 17.5  # [mm]
-# TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +30e-3   # [m], YonkeTool_V3, LargeR TW L-band, 0.5 T
-# #
-# # TODO
-# # target.Ne = 1e4;	% no. of e- simulated
-# # target.Np = 4.37e10;	% no. of e+ required
+# TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +41e-3   # [m], YonkeTool_V2, CLIC TW L-band, 0.5 T
 # #
 # AMD_FIELDMAP_2D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022.dat'
 # AMD_FIELDMAP_1D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022_1D.dat'
-# USE_AMD_FIELDMAP_3D = False
-# AMD_R_APERTURE = 30e-3   # [m]
-# # TODO: Old value in the following line
+# USE_AMD_FIELDMAP_3D = True
+# AMD_R_APERTURE = 20e-3   # [m]
 # AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
 # #
 # TRACK_AFTER_AMD = True
 # #
 # INITIAL_L = 0.   # [m]
 # #
-# RF_FIELDMAP = 'RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
-# RF_FIELDMAP_DIM = '1D'
-# RF_FIELDMAP_TYPE = 'Full'
-# RF_FIELDMAP_GRAD = 20e6  # [V/m]
-# RF_N_STRUCTURES = 2  # 5
-# # RF_L_STRUCTURE = xxx  # [m]
-# # RF_L_FLANGE = xxx  # [m]
-# # RF_L_MECH_MARGIN = xxx  # [m]
-# RF_PHASES = (-125.7, -127.8, -132.0, -102.9, -95.0)  # [deg]
-# RF_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
+# # TODO: Use following parameter
+# RF_FIELDMAP = None
+# RF_FIELDMAP_DIM = '3D'
+# RF_FIELDMAP_TYPE = 'SinglePeriod'
+# RF_FIELDMAP_GRAD = rfttools.RF_CLIC_GRADIENT
+# RF_N_STRUCTURES = 11
+# RF_N_CELLS = 30
+# RF_N_PERIODS_PER_STRUCTURE = np.round(RF_N_CELLS/rfttools.RF_CLIC_CELLS_PER_PERIOD)
+# RF_L_STRUCTURE = RF_N_PERIODS_PER_STRUCTURE * bd.C/rfttools.RF_CLIC_FREQ  # [m]
+# RF_L_FLANGE = 0.05461  # [m]
+# RF_L_MECH_MARGIN = 0.01  # [m]
+# RF_T0 = TARGET_L + 225.3  # [mm/c], optimal for current AMD field map
+# RF_PHASES = (171., 171.)  # [deg]
+# RF_GRADIENTS = (17.5e6, 21e6)  # [V/m]
 # RF_SEPARATION = 0.2   # [m]
-# RF_R_APERTURE = 30e-3   # [m]
+# RF_R_APERTURE = 20e-3   # [m]
 # #
-# AUTOPHASING = True
-# P0_REF = 100.  # [MeV/c]
-# #
-# # TODO
-# # rf.l_cav = 3.24e3; % structure full length in mm (including two ~120 mm drift tubes)
-# # rf.cgap = 0; % cavity gap,
-# # distance between cavities in mm (already included in field map ~ 120 mm)
+# AUTOPHASING = False
 # #
 # SOLENOID_TYPE = 'HomogeneousChannel'
 # SOL_HOMOG_BZ = 0.5   # [T]
@@ -134,7 +66,72 @@ N_RF_CELLS_LONG_PS_CUT = 1 + 2 * rfttools.RF_CLIC_CELLS_PER_PERIOD
 # #
 # T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
 # N_RF_STRUCT_1ST_TRACKING = RF_N_STRUCTURES
-# # N_RF_CELLS_LONG_PS_CUT = 1 + 2 * RF_CELLS_PER_PERIOD
+# N_RF_CELLS_LONG_PS_CUT = 1 + 2 * rfttools.RF_CLIC_CELLS_PER_PERIOD
+# # E.g.: 1 + 2 * ... = keep 3 positron buckets
+###################################################################################################
+
+
+# INPUT reproducing YonkeTool_V3, LargeR TW L-band, 0.5 T #########################################
+BUNCH_FILEPATH = 'RFTrack/YongkeTool_V3/Dat/' + \
+    'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
+RFTRACK_FORMAT = 'rftrack_xp_t'
+BUNCH_PDGID = -11
+PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
+PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
+BUNCH_Z = 0.
+BUNCH_DOWNSAMPLING = 1
+#
+VOL_R_APERTURE = 1.  # [m]
+#
+TARGET_L = 17.5  # [mm]
+TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +30e-3   # [m], YonkeTool_V3, LargeR TW L-band, 0.5 T
+#
+# TODO
+# target.Ne = 1e4;	% no. of e- simulated
+# target.Np = 4.37e10;	% no. of e+ required
+#
+AMD_FIELDMAP_2D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022.dat'
+AMD_FIELDMAP_1D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022_1D.dat'
+USE_AMD_FIELDMAP_3D = True
+AMD_R_APERTURE = 30e-3   # [m]
+# TODO: Old value in the following line
+AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
+#
+TRACK_AFTER_AMD = True
+#
+RF_FIELDMAP = 'RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+RF_FIELDMAP_DIM = '1D'
+RF_FIELDMAP_TYPE = 'Full'
+RF_FIELDMAP_GRAD = 20e6  # [V/m]
+RF_N_STRUCTURES = 5  # 5
+RF_L_STRUCTURE = 3.240  # [m]
+# Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
+# RF_L_FLANGE = xxx  # [m]
+# RF_L_MECH_MARGIN = xxx  # [m]
+RF_PHASES = (-125.7, -127.8, -132.0, -102.9, -95.0)  # [deg]
+RF_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
+RF_SEPARATION = RF_L_STRUCTURE - 3.207140  # [m], struct. separation partially included in fieldmap
+RF_R_APERTURE = 30e-3   # [m]
+#
+AUTOPHASING = True
+P0_REF = 100.  # [MeV/c]
+#
+SOLENOID_TYPE = 'HomogeneousChannel'
+SOL_HOMOG_BZ = 0.5   # [T]
+# or
+# SOLENOID_TYPE = 'Analytical'
+# SOL_R_IN_COIL = 0.130   # [m]
+# SOL_R_OUT_COIL = 0.250   # [m]
+# SOL_L = RF_L_STRUCTURE - RF_L_FLANGE - rfttools.RF_CLIC_L_CELL - RF_L_MECH_MARGIN
+# SOL_J = 3.54e6   # [A/m2]
+# SOL_HOMOG_BZ = 0.5   # [T]
+#
+INITIAL_L = RF_SEPARATION / 2.  # [m]
+FINAL_L = 0.   # [m]
+#
+T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
+N_RF_STRUCT_1ST_TRACKING = RF_N_STRUCTURES
+# N_RF_CELLS_LONG_PS_CUT = 1 + 2 * RF_CELLS_PER_PERIOD
 ###################################################################################################
 
 
@@ -176,7 +173,11 @@ B0_6dT = rft.Bunch6dT(B0_6d)
 TARGET_EXIT_Z_IN_VOLUME = 0.   # [m]
 vol = rft.Volume()
 vol.set_aperture(VOL_R_APERTURE, VOL_R_APERTURE, 'circular')
+beamlineSetup = pd.DataFrame(
+    columns=['ElementType', 'zWrtTargetExit', 'MechanicalLength', 'Fieldmap']
+)
 
+# TODO: Clean distinction between AMD_FIELDMAP_1D AND _2D
 if USE_AMD_FIELDMAP_3D:
     amdFieldmap = bd.load_octave_matrices(AMD_FIELDMAP_2D)
     amdDz = amdFieldmap['Z'][0, 1] - amdFieldmap['Z'][0, 0]  # [mm]
@@ -222,8 +223,16 @@ elif SOLENOID_TYPE == 'Analytical':
     amd.set_length(amdFieldLengthAnalytical*1e-3)
     # TODO: Is the following line necessary in volume?
     amd.set_nsteps(int(amdFieldLengthAnalytical*2.))
-# amd.set_odeint_algorithm('rkf45')
 vol.add(amd, 0, 0, TARGET_EXIT_Z_IN_VOLUME, 'entrance')
+beamlineSetup.loc[len(beamlineSetup.index)] = [
+    'AMD',
+    TARGET_EXIT_Z_IN_VOLUME - TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD,
+    AMD_L_HALF_MECHANICAL * 2.,
+    os.path.basename(AMD_FIELDMAP_2D)
+]
+beamlineSetup.loc[len(beamlineSetup.index)] = [
+    'TargetExit', TARGET_EXIT_Z_IN_VOLUME, 0., ''
+]
 zFinalInVolume = amdExitZInVolume
 
 AMD_MECH_EXIT_Z_IN_VOLUME = \
@@ -243,7 +252,11 @@ if TRACK_AFTER_AMD:
     if not AUTOPHASING:
         tRf = RF_T0  # [mm/c]
     else:
-        tRf = TARGET_L + amdFieldLength  # [mm/c]
+        t0RefPart = TARGET_L + amdFieldLength  # [mm/c]
+        refPart = np.array([
+            0., 0., 0., 0., 236.300, P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, +1., t0RefPart
+        ])
+        tRf = 0.
     rfGap = rft.Drift(RF_SEPARATION)
     rfGap.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
     if SOLENOID_TYPE == 'HomogeneousChannel':
@@ -258,8 +271,10 @@ if TRACK_AFTER_AMD:
             rfPower = (RF_GRADIENTS[-1] / RF_FIELDMAP_GRAD) ** 2.
         try:
             rfPhase = RF_PHASES[structInd]
+            # rfPhase = 0
         except IndexError:
             rfPhase = RF_PHASES[-1]
+            # rfPhase = 0
         print('Setting rf.t0 = {:f} mm/c'.format(tRf))
         if RF_FIELDMAP_TYPE == 'SinglePeriod':
             # TODO: Load fieldmaps only once.
@@ -273,36 +288,45 @@ if TRACK_AFTER_AMD:
                 aperture=RF_R_APERTURE, additionalHomogBz=rfHomogBz
             )
         lat.append(rf)
-        # TODO: Get value form RF-Track object rf
-        zFinalInVolume += RF_L_STRUCTURE / 2.
+        zFinalInVolume += rf.get_length() / 2.
+        beamlineSetup.loc[len(beamlineSetup.index)] = [
+            'RF', zFinalInVolume, RF_L_STRUCTURE, os.path.basename(RF_FIELDMAP)
+        ]
         if SOLENOID_TYPE == 'Analytical':
             solenoid = rfttools.solenoid_from_analytical_formula(
                 SOL_L, SOL_R_IN_COIL, SOL_R_OUT_COIL, SOL_J
             )
             vol.add(solenoid, 0., 0., zFinalInVolume, 'center')
-        zFinalInVolume += RF_L_STRUCTURE / 2.
-        if AUTOPHASING:
-            refPart = rft.Bunch6dT(np.array([
-                0., 0., 0., 0., 0., P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, 0., RF_T0
-            ]))
-            pzFinalAutophasing = vol.autophase(refPart)
+        zFinalInVolume += rf.get_length() / 2.
         if splitTracking and structInd == N_RF_STRUCT_1ST_TRACKING - 1:
             zStop1stTracking = zFinalInVolume
         if structInd < RF_N_STRUCTURES-1:
             lat.append(rfGap)
-            # TODO: Get value form RF-Track object
-            zFinalInVolume += RF_SEPARATION
-            tRf += RF_SEPARATION * 1e3   # [mm/c]
+            zFinalInVolume += rfGap.get_length()
+            if not AUTOPHASING:
+                tRf += rfGap.get_length() * 1e3   # [mm/c]
     vol.add(lat, 0, 0, amdExitZInVolume, 'entrance')
+    if AUTOPHASING:
+        vol.unset_t0()
+        pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart))
+        print('Intermediate pzFinalAutophasing = {:e} MeV/c'.format(pzFinalAutophasing))
 
 if FINAL_L > 0:
     finalDrift = rft.Drift(FINAL_L)
     if SOLENOID_TYPE == 'HomogeneousChannel':
         finalDrift.set_static_Bfield(0, 0, SOL_HOMOG_BZ)
     vol.add(finalDrift, 0, 0, zFinalInVolume, 'entrance')
-    zFinalInVolume += FINAL_L
+    zFinalInVolume += finalDrift.get_length()
 if not splitTracking:
     zStop1stTracking = zFinalInVolume
+
+beamlineSetup['zWrtAmdPeakField'] = \
+    beamlineSetup['zWrtTargetExit'] + TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD
+beamlineSetup[[
+    'ElementType', 'zWrtTargetExit', 'zWrtAmdPeakField', 'MechanicalLength', 'Fieldmap'
+]].to_csv('./Results_CaptureLinac/LatestSim/BeamlineSetup.dat', index=None)
+
+print('Final pzFinalAutophasing = {:.3f} MeV/c'.format(pzFinalAutophasing))
 
 trackingOpts = rft.TrackingOptions()
 trackingOpts.dt_mm = 0.2
@@ -320,7 +344,7 @@ trackingOpts.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
 print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
     zStop1stTracking, trackingOpts.t_max_mm)
 )
-B1_6dT = vol.track(B0_6dT, trackingOpts)
+B1_6dT = vol.track(B0_6dT, trackingOpts)  # rft.Bunch6dT(refPart)
 M1_6dT = B1_6dT.get_phase_space()
 B1_6d = vol.get_bunch_at_s1()
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
@@ -331,8 +355,6 @@ bd.convert_rftrack_to_standard_df(
 Bend_6dT = B1_6dT
 
 if splitTracking:
-    # TODO: Use trackingOpts = true (above) to correctly continue simulations in Volume()
-    # with a 6dT bunch! Verify with Andrea my special case.
     tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * rfttools.RF_CLIC_L_CELL*1e3  # [mm/c]
     M1_6d_frontBuckets = M1_6d[M1_6d[:, 4] < tCut, :]
     B1_6d.set_phase_space(M1_6d_frontBuckets)
