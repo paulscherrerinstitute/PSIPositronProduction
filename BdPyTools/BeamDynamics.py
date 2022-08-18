@@ -732,6 +732,8 @@ def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
                 matList[matDef['name']] = matDf
             else:
                 matList[matDef['name']] = matDf.to_numpy().squeeze()
+                if matList[matDef['name']].shape == ():
+                    matList[matDef['name']] = matList[matDef['name']].item()
     if singleMatrixRequest:
         return matList[matNamesToLoad[0]]
     return matList
