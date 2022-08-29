@@ -490,7 +490,7 @@ def convert_astra_to_standard_df(
 def convert_rftrack_to_standard_df(
         rftrackDfFormat=None, rftrackDf=None,
         sourceFilePath=None, sourceFormat='octave', octaveMatrixName=None,
-        filterSpecsSelector=None, z=np.nan, t=np.nan, pdgId=np.nan, Qbunch=np.nan,
+        filterSpecsSelector=None, s=np.nan, t=np.nan, pdgId=np.nan, Qbunch=np.nan,
         removeNanInf=False, outFwfPath=None
 ):
     # TODO: Group input parameters in dictionaries?

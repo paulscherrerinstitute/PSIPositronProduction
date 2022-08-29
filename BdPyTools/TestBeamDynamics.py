@@ -99,11 +99,11 @@ class TestBeamDynamics(unittest.TestCase):
         sourceFilePath = 'Data/PositronsAt200MeV/YongkeDistrsV1/' + \
             'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
         # TODO: Following 2 values are very approximative
-        z = 10e3   # [mm]
+        s = 10e3   # [mm]
         Qbunch = 25.e-9   # [C]
         standardDf, outFwfPath = bd.convert_rftrack_to_standard_df(
             sourceFilePath=sourceFilePath, octaveMatrixName=octaveMatrixName,
-            rftrackDfFormat='rftrack_xp_t', z=z, pdgId=-11, Qbunch=Qbunch,
+            rftrackDfFormat='rftrack_xp_t', s=s, pdgId=-11, Qbunch=Qbunch,
             outFwfPath=pl.Path(sourceFilePath).stem
         )
         assert_file_generated(outFwfPath)
@@ -123,11 +123,11 @@ class TestBeamDynamics(unittest.TestCase):
             sourceFilePath, matNamesToLoad='A_RF', colNames=colNames
         )
         # TODO: Following 2 values are very approximative
-        z = 10e3   # [mm]
+        s = 10e3   # [mm]
         Qbunch = 25.e-9   # [C]
         standardDf, _ = bd.convert_rftrack_to_standard_df(
             sourceFilePath=sourceFilePath, octaveMatrixName=octaveMatrixName,
-            rftrackDfFormat=rftrackDfFormat, z=z, pdgId=-11, Qbunch=Qbunch, outFwfPath=None
+            rftrackDfFormat=rftrackDfFormat, s=s, pdgId=-11, Qbunch=Qbunch, outFwfPath=None
         )
         # TODO check t= vs z= in rftrack script
         # with open(sd.build_data_path(REL_PATH, 'filterSpces.json'), 'r') as filterSpecsFile:
