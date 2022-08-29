@@ -118,6 +118,14 @@ def solenoid_from_analytical_formula(L, R_IN_COIL, R_OUT_COIL, J, extensionFacto
     return solenoid
 
 
+def solenoid_from_fieldmap(fieldmapFilePath, fieldmapCurrent, setCurrent):
+    solField = bd.load_octave_matrices(fieldmapFilePath)
+    dz = solField['Z'][1] - solField['Z'][0]  # [m]
+    BzOnAxis = solField['Bz'] / fieldmapCurrent * setCurrent  # [T]
+    solenoid = rft.Static_Magnetic_FieldMap_1d(BzOnAxis, dz)
+    return solenoid
+
+
 def save_plot_transport(ax, vol, beam0, beam1, outRelPath):
     # Prepare Ez and Bz for plotting
     zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
