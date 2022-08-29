@@ -71,12 +71,14 @@ def rf_clic_single_period(rfFieldmapDim):
 
 
 def rf_struct_from_single_period(
-        fieldmapFilePath, fieldmapDim, totPeriods, inputPower, t0, phase,
+        fieldmapFilePath, fieldmapDim, totPeriods, powerScalingFactor, t0, phase,
         aperture=None, additionalHomogBz=None
 ):
     rfPeriod = rf_clic_single_period(fieldmapDim)
-    rfPeriod.set_P_actual(inputPower)
-    rfPeriod.set_t0(t0)
+    rfPeriod.set_P_map(1.)
+    rfPeriod.set_P_actual(powerScalingFactor)
+    if t0 is not None:
+        rfPeriod.set_t0(t0)
     rfPeriod.set_phid(phase)
     if aperture is not None:
         rfPeriod.set_aperture(aperture, aperture, 'circular')
@@ -89,15 +91,17 @@ def rf_struct_from_single_period(
 
 
 def rf_struct_from_full_fieldmap(
-        fieldmapFilePath, fieldmapDim, inputPower, t0, phase,
+        fieldmapFilePath, fieldmapDim, powerScalingFactor, t0, phase,
         aperture=None, additionalHomogBz=None
 ):
     rfField = bd.load_octave_matrices(fieldmapFilePath)
     dz = (rfField['Z'][1] - rfField['Z'][0]) * 1e-3  # [m]
     structL = (rfField['Z'][-1] - rfField['Z'][0]) * 1e-3  # [m]
     rfStruct = rft.RF_FieldMap_1d(rfField['E'], dz, structL, rfField['frequency'], +1)
-    rfStruct.set_P_actual(inputPower)
-    rfStruct.set_t0(t0)
+    rfStruct.set_P_map(1.)
+    rfStruct.set_P_actual(powerScalingFactor)
+    if t0 is not None:
+        rfStruct.set_t0(t0)
     rfStruct.set_phid(phase)
     if aperture is not None:
         rfStruct.set_aperture(aperture, aperture, 'circular')

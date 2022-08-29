@@ -266,9 +266,9 @@ if TRACK_AFTER_AMD:
         rfHomogBz = None
     for structInd in np.arange(RF_N_STRUCTURES):
         try:
-            rfPower = (RF_GRADIENTS[structInd] / RF_FIELDMAP_GRAD) ** 2.
+            powerScalingFactor = (RF_SET_GRADIENTS[structInd] / RF_FIELDMAP_GRAD) ** 2.
         except IndexError:
-            rfPower = (RF_GRADIENTS[-1] / RF_FIELDMAP_GRAD) ** 2.
+            powerScalingFactor = (RF_SET_GRADIENTS[-1] / RF_FIELDMAP_GRAD) ** 2.
         try:
             rfPhase = RF_PHASES[structInd]
             # rfPhase = 0
