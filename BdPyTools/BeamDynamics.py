@@ -272,8 +272,9 @@ def compute_emittance(
             "norm must be either 'normalized', 'geometric' or 'tracespace'."
         )
     standardDf = filter_distr(standardDf, filterSpecs)
-    u = standardDf[planeName]
-    uDiv = standardDf[uDivName]
+    # NOTE: Indexing a dataframe returns its reference, therefore use copy()!
+    u = standardDf[planeName].copy()
+    uDiv = standardDf[uDivName].copy()
     u, uDiv = check_distribution_offsets(
         u, uDiv, planeName, uDivName, uDivUnits, correctOffsets, verbose
     )
@@ -283,10 +284,10 @@ def compute_emittance(
     ) / u.shape[0]
     if norm in ['normalized', 'geometric']:
         Erest = pdgId_to_particle_const(standardDf['pdgId'].iloc[0], 'Erest')
-        emit *= 1e3 / Erest                                                     # [mm mrad]
+        emit *= 1e3 / Erest  # [mm mrad]
         if norm == 'geometric':
             emit /= (standardDf['betaRel']*standardDf['gammaRel']).mean()
-    return emit                                                                 # [mm mrad]
+    return emit  # [mm mrad]
 
 
 def compute_twiss(
@@ -301,8 +302,9 @@ def compute_twiss(
     uDivName = planeName + 'p'
     uDivUnits = 'mrad'
     # TODO: refactor (see compute_emittance)
+    # NOTE: Indexing a dataframe returns its reference, therefore use copy()!
     u, uDiv = check_distribution_offsets(
-        standardDf[planeName], standardDf[uDivName],
+        standardDf[planeName].copy(), standardDf[uDivName].copy(),
         planeName, uDivName, uDivUnits, correctOffsets, verbose
     )
     alphaTwiss = -1. * (u*uDiv).sum()/u.shape[0] / emitTraceSpace
@@ -328,12 +330,19 @@ def check_distribution_offsets(
                 'Average divergence {:s}Avg = {:.3f} {:s}.'.format(uDivName, uDivAvg, uDivUnits)
             )
     if correctOffsets:
-        u -= uAvg
-        uDiv -= uDivAvg
-        if verbose:
-            print('Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'.format(
-                planeName, uAvg, uDivName, uDivAvg, uDivUnits
-            ))
+        if not (np.isnan(uAvg) or np.isnan(uDivAvg)):
+            u -= uAvg
+            uDiv -= uDivAvg
+            if verbose:
+                print(
+                    'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.' \
+                    .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits)
+                )
+        else:
+            print(
+                'Offset cannot be corrected with {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.' \
+                .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits)
+            )
     return u, uDiv
 
 
@@ -893,24 +902,27 @@ def convert_standard_df_to_sdds(
 def check_nan_inf_in_distr(distrIn, removeNanInf):
     NpartIn = distrIn.shape[0]
     # TODO: Better define subset
-    distrWithoutNan = distrIn.dropna(subset=['x', 'y', 'px', 'py', 'xp', 'yp'])
+    colsToCheck = ['x', 'y', 'px', 'py', 'xp', 'yp']
+    distrWithoutNan = distrIn.dropna(subset=colsToCheck)
     NpartWithoutNan = distrWithoutNan.shape[0]
     if removeNanInf:
         strMessage = 'removed'
     else:
         strMessage = 'found'
     if NpartIn - NpartWithoutNan > 0:
-        warnings.warn('{:d} particles with some NaN value have been {:s}.'.format(
+        warnings.warn('{:d} particles with some NaN value have been {:s}:'.format(
             NpartIn - NpartWithoutNan, strMessage
         ))
+        print(distrIn[distrIn[colsToCheck].isna().any(axis=1)])
     # TODO: Better define subset
     distrWithoutNanInf = distrWithoutNan.replace([np.inf, -np.inf], np.nan) \
-        .dropna(subset=['x', 'y', 'px', 'py', 'xp', 'yp'])
+        .dropna(subset=colsToCheck)
     NpartWithoutNanInf = distrWithoutNanInf.shape[0]
     if NpartWithoutNan - NpartWithoutNanInf > 0:
-        warnings.warn('{:d} particles with some Inf value have been {:s}.'.format(
+        warnings.warn('{:d} particles with some Inf value have been {:s}:'.format(
             NpartWithoutNan - NpartWithoutNanInf, strMessage
         ))
+        print(distrIn[distrIn[colsToCheck].isin([np.inf, -np.inf]).any(axis=1)])
     if removeNanInf:
         return distrWithoutNanInf
     else:
