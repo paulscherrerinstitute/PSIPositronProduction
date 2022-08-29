@@ -119,6 +119,8 @@ class TestBeamDynamics(unittest.TestCase):
         colNames = bd.FILE_TYPES_SPECS[rftrackDfFormat]['columnOrder']
         sourceFilePath = 'Data/PositronsAt200MeV/YongkeDistrsV1/' + \
             'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
+        indsAnglesNotConformal = [88346, 93448]
+        # indPzNegative = [7666, 22069, 88346, 93448]
         rftDfOriginal = bd.load_octave_matrices(
             sourceFilePath, matNamesToLoad='A_RF', colNames=colNames
         )
@@ -137,14 +139,13 @@ class TestBeamDynamics(unittest.TestCase):
         rftDf, _ = bd.convert_standard_df_to_rftrack(
             standardDf=standardDf, rftrackDfFormat=rftrackDfFormat
         )
-        for varName in colNames:
-            for partId in (0, 7, 113, 4802):
-                self.assertAlmostEqual(
-                    rftDfOriginal.loc[partId, varName], rftDf.loc[partId, varName]
-                )
+        numDecimalPlaces = 6
+        dfDiff = rftDf.drop(indsAnglesNotConformal).round(numDecimalPlaces) \
+            .compare(rftDfOriginal.drop(indsAnglesNotConformal).round(numDecimalPlaces))
+        self.assertEqual(dfDiff.shape[0], 0)
 
     def test_plot_1(self):
-        """Test plottin of phase space."""
+        """Test plotting of phase space."""
         discardLostParticles = True
         zProjection = 1380.
         zCut = None

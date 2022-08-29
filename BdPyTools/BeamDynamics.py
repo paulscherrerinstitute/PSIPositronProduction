@@ -156,8 +156,8 @@ def pVect_to_p(px, py, pz):
 def pTransv_to_slope(pTransv, pLong):
     pTransv = check_input_pd_or_np(pTransv)
     pLong = check_input_pd_or_np(pLong)
-    slope = np.arctan(pTransv / pLong) * 1e3                                    # [mrad]
-    return slope
+    slope = np.arctan2(pTransv,  pLong)
+    return slope * 1e3  # [mrad]
 
 
 def p_to_Ekin(p, pdgId):
@@ -216,17 +216,41 @@ def extend_standard_df(standardDf, removeNanInf):
     dfExtension['betaRel'] = p_to_beta(p, standardDf['pdgId'])
     dfExtension['xp'] = pTransv_to_slope(standardDf['px'], standardDf['pz'])
     dfExtension['yp'] = pTransv_to_slope(standardDf['py'], standardDf['pz'])
-    for colName in dfExtension.columns:
-        if colName in standardDf.columns:
-            warnings.warn('Overwriting available column {:s}.'.format(colName))
-            relDiffs = (standardDf[colName] - dfExtension[colName]) / dfExtension[colName]
-            relDiffThreshold = 1e-6
-            isDiff = np.abs(relDiffs) > relDiffThreshold
-            if np.any(isDiff):
-                warnings.warn(
-                    '{:d} discrepancies larger than {:e}'.format(np.sum(isDiff), relDiffThreshold)
-                    + ' detected between available and recomputed values.'
-                )
+    # By definition, backwards traveling particles have xp > np.pi/2. or xp < -np.pi/2.
+    # while -np.pi/2 < yp < np.pi/2 in standardDf
+    # TODO: This definition should be implemented in every function generating a standardDf
+    dfExtension.loc[(standardDf['pz'] < 0) & (dfExtension['yp'] > np.pi/2.*1e3), 'yp'] -= np.pi*1e3
+    dfExtension.loc[(standardDf['pz'] < 0) & (dfExtension['yp'] < -np.pi/2.*1e3), 'yp'] += np.pi*1e3
+    # Check conformity of input distribution to angle definition (if angles available)
+    numDecimalPlaces = 6
+    if 'yp' in standardDf.columns:
+        indsAnglesNotConformal = (standardDf['yp'] > np.pi/2.*1e3) | (standardDf['yp'] < -np.pi/2.*1e3)
+        anglesNotConformal = standardDf.loc[indsAnglesNotConformal, ['xp', 'yp']]
+        anglesNotConformal.loc[anglesNotConformal['yp'] > np.pi/2.*1e3, 'yp'] -= np.pi*1e3
+        anglesNotConformal.loc[anglesNotConformal['yp'] < -np.pi/2.*1e3, 'yp'] += np.pi*1e3
+        indsXpLargerZero = anglesNotConformal['xp'] > 0
+        anglesNotConformal.loc[indsXpLargerZero, 'xp'] -= np.pi*1e3
+        anglesNotConformal.loc[~indsXpLargerZero, 'xp'] += np.pi*1e3
+        probAngles = dfExtension.loc[indsAnglesNotConformal, ['xp', 'yp']].round(numDecimalPlaces) \
+            .compare(anglesNotConformal.round(numDecimalPlaces))
+        if probAngles.shape[0] > 0:
+            warnings.warn(
+                '{:d} backward traveling particles with problematic angles detected with index: ' +
+                ', '.join('{:d}'.format(partInd) for partInd in probAngles.index)
+            )
+            print(probAngles)
+        indsToCompare = standardDf.index[~indsAnglesNotConformal]
+    else:
+        indsToCompare = standardDf.index
+    commonQuantities = standardDf.columns.intersection(dfExtension.columns)
+    dfDiff = standardDf.loc[indsToCompare, commonQuantities].round(numDecimalPlaces) \
+        .compare(dfExtension.loc[indsToCompare, commonQuantities].round(numDecimalPlaces))
+    if dfDiff.shape[0] > 0:
+        warnings.warn(
+            '{:d} differing particles detected with index: ' +
+            ', '.join('{:d}'.format(partInd) for partInd in dfDiff.index)
+        )
+        print(dfDiff)
     standardDf = dfExtension.combine_first(standardDf)
     standardDf = check_nan_inf_in_distr(standardDf, removeNanInf)
     return standardDf
@@ -518,8 +542,7 @@ def convert_rftrack_to_standard_df(
         standardDf.rename(columns={'s': 'z'}, inplace=True)
         standardDf['t'] = t                                                     # [ns]
     elif rftrackDfFormat == 'rftrack_xp_t':
-        # TODO: Check that in this case we really have a projection of all particles at the same z
-        standardDf['z'] = z                                                     # [mm]
+        standardDf['z'] = s                                                     # [mm]
         standardDf['t'] = standardDf['t'] / C * 1e6                             # [ns]
         standardDf = p_components_from_angles(standardDf)
     standardDf['pdgId'] = pdgId
@@ -545,7 +568,7 @@ def convert_standard_df_to_rftrack(
         rftrackDf.rename(columns={'z': 's'}, inplace=True)
     elif rftrackDfFormat == 'rftrack_xp_t':
         rftrackDf = standardDf[['x', 'xp', 'y', 'yp', 't']].copy()
-        rftrackDf['t'] = rftrackDf['t'] * C / 1e6                                       # [mm/c]
+        rftrackDf['t'] = rftrackDf['t'] * C / 1e6  # [mm/c]
     # TODO: Check consistency of definitions, pz vs p
     rftrackDf['p'] = pVect_to_p(standardDf['px'], standardDf['py'], standardDf['pz'])   # [MeV/c]
     if outFilePath is not None:
@@ -810,13 +833,23 @@ def convert_sdds_to_standard_df(
 
 
 def p_components_from_angles(standardDf):
-    p = standardDf['p']                                                         # [MeV/c]
+    p = standardDf['p']  # [MeV/c]
     standardDf.drop('p', axis=1, inplace=True)
     standardDf['pz'] = p / np.sqrt(
         1. + np.tan(standardDf['xp']*1e-3)**2. + np.tan(standardDf['yp']*1e-3)**2.
-    )                                                                           # [MeV/c]
-    standardDf['px'] = np.tan(standardDf['xp']*1e-3) * standardDf['pz']         # [MeV/c]
-    standardDf['py'] = np.tan(standardDf['yp']*1e-3) * standardDf['pz']         # [MeV/c]
+    )  # [MeV/c]
+    halfPi = np.pi / 2. * 1e3  # [mrad]
+    backwardsMovingInds = (
+            ((standardDf['xp'] > halfPi) | (standardDf['xp'] < -halfPi))
+            & ((standardDf['yp'] >= -halfPi) & (standardDf['yp'] <= halfPi))
+        ) | (
+            ((standardDf['yp'] > halfPi) | (standardDf['yp'] < -halfPi))
+            & ((standardDf['xp'] >= -halfPi) & (standardDf['xp'] <= halfPi))
+        )
+    # TODO: Check what happens when both angles are larger than pi/2.
+    standardDf.loc[backwardsMovingInds, 'pz'] *= -1
+    standardDf['px'] = np.tan(standardDf['xp']*1e-3) * standardDf['pz']  # [MeV/c]
+    standardDf['py'] = np.tan(standardDf['yp']*1e-3) * standardDf['pz']  # [MeV/c]
     return standardDf
 
 
