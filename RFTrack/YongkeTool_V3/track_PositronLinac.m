@@ -1,5 +1,5 @@
 
-  use_analytic_sol = 1;
+  use_analytic_sol = 0;
 
   RF_Track;
 
@@ -9,15 +9,25 @@
 
   %%pl_input_file = 'Dat/RF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_CLICLband.dat';
   %%pl_input_file = 'Dat/RF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_PSISband.dat';
-
-  pl_input_file = 'Dat/RF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_LargeRLband.dat';
+  % pl_input_file = 'Dat/RF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_LargeRLband.dat';
+  % outfname = 'Dat/PositronLinacOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_LargeRLband.dat'
+  % pl_input_file = '../../Data/RFTrackResults/YongkeTool_V3/CaptureLinacUpTo200MeV_LBandLargeR/RF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_LargeRLband.dat';
+  % outfname = '../../Data/RFTrackResults/YongkeTool_V3/CaptureLinacUpTo200MeV_LBandLargeR/PositronLinacOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_HTS_0.5T_LargeRLband.dat';
+  % pl_input_file = '../../Data/RFTrackResults/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR/DistrOut_After1stTracking_6d.dat';
+  % outfname = '../../Data/RFTrackResults/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR/DistrOut_PositronLinac.dat'
+  % pl_input_file = '../../Data/RFTrackResults/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR_RealSolenoids_Type1and2/DistrOut_After1stTracking_6d.dat';
+  % outfname = '../../Data/RFTrackResults/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR_RealSolenoids_Type1and2/DistrOut_PositronLinac.dat'
+  pl_input_file = '../../Data/RFTrackResults/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR_RealSolenoids_Type1and2_TargetAt35mm/DistrOut_After1stTracking_6d.dat';
+  outfname = '../../Data/RFTrackResults/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR_RealSolenoids_Type1and2_TargetAt35mm/DistrOut_PositronLinac.dat'
 
   if(use_analytic_sol)
-   pl_input_file = 'Dat/AMDAndRF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_LargeRLband_AnalyticSolenoid.dat';
+  %  pl_input_file = 'Dat/AMDAndRF200MeVOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0_LargeRLband_AnalyticSolenoid.dat';
   endif
 
   try
-    load(pl_input_file); % e+ linac input in plain text format
+    % load(pl_input_file); % e+ linac input in plain text format
+    A_RF = load(pl_input_file);
+    printf(pl_input_file)
   catch
     printf("ERROR_PL:: Empty positron linac input file ! ! !\n");
     return;
@@ -149,10 +159,4 @@
   pl.np_pl_cutE = np_pl_cutE;
   pl.np_pl_acc 	= np_pl_acc;
 
-  outfname = pl_input_file;
-  outfname = strrep(outfname,'RF200MeVOutput','PositronLinacOutput');
-  if(use_analytic_sol)
-    outfname = pl_input_file;
-    outfname = strrep(outfname,'AMDAndRF200MeVOutput','PositronLinacOutput');
-  endif
   save('-text',outfname,'A_PL','A_PL_cutT','A_PL_cutE','A_PL_acc','M_cutTE','A_RF_acc','pl');
