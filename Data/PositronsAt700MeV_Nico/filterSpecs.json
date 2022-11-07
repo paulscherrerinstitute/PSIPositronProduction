@@ -1,0 +1,11 @@
+{
+    "RUN_2801_132916.4800.001": {
+        "description": "Select most populated RF bucket.",
+        "filterSpecs": {
+            "xp": [-15.0, 15.0],
+            "yp": [-15.0, 15.0],
+            "z": [48.060e3, 48.120e3]
+        },
+        "RefParticle1": {"x": 0, "px": 0, "y": 0, "py": 0, "z": 48.100e3, "pz": 700.0, "t": 160.35, "Q": 1.6353e-12, "pdgId": -11}
+    }
+}
