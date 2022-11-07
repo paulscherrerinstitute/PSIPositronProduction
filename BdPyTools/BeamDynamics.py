@@ -90,12 +90,31 @@ FILE_TYPES_SPECS = {
     'rftrack_xp_t': {
         'ext': '.dat',
         'columnOrder': ['x', 'xp', 'y', 'yp', 't', 'p'],
-        'columnUnits': ['mm', 'mrad', 'mm', 'mrad', 'mm/c', 'MeV/c']
+        'columnUnits': ['mm', 'mrad', 'mm', 'mrad', 'mm/c', 'MeV/c'],
+        'header': None,
+        'formatters': {
+            'x': SCI_NOTATION_FORMATTER,
+            'xp': SCI_NOTATION_FORMATTER,
+            'y': SCI_NOTATION_FORMATTER,
+            'yp': SCI_NOTATION_FORMATTER,
+            't': SCI_NOTATION_FORMATTER,
+            'p': SCI_NOTATION_FORMATTER
+        }
     },
     'rftrack_Px_S': {
         'ext': '.dat',
+        # TODO: Is the last quantity really pz or p = sqrt(px^2+py^2+pz^2)?
         'columnOrder': ['x', 'px', 'y', 'py', 's', 'pz'],
-        'columnUnits': ['mm', 'MeV/c', 'mm', 'MeV/c', 'mm', 'MeV/c']
+        'columnUnits': ['mm', 'MeV/c', 'mm', 'MeV/c', 'mm', 'MeV/c'],
+        'header': None,
+        'formatters': {
+            'x': SCI_NOTATION_FORMATTER,
+            'px': SCI_NOTATION_FORMATTER,
+            'y': SCI_NOTATION_FORMATTER,
+            'py': SCI_NOTATION_FORMATTER,
+            's': SCI_NOTATION_FORMATTER,
+            'pz': SCI_NOTATION_FORMATTER
+        }
     },
     'placet': {
         'ext': '.dat',
@@ -385,9 +404,15 @@ def generate_fwf(df, formatType='standardDf', outFilePath=None):
             formatters=fileTypeSpecs['formatters'], index=False,
             header=fileTypeSpecs['header']
         )
-    except KeyError:
-        warnings.warn('No column found.')
-        return
+    except KeyError as err:
+        if err.args[0] in ['columnOrder', 'formatters', 'header']:
+            print("FILE_TYPE_SPECS['{:s}']['{:s}'] apparently missing, please verify.".format(
+                formatType, err.args[0]
+            ))
+            raise
+        else:
+            warnings.warn('No column found.')
+            return
     # headerList = standardDf.columns + ' [' + UNITS_STANDARD_DF_EXTENDED + ']'
     if outFilePath is not None:
         outFilePath += FILE_TYPES_SPECS[formatType]['ext']
