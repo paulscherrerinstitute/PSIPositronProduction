@@ -72,6 +72,7 @@ import json
 
 
 # INPUT reproducing YonkeTool_V3, LargeR TW L-band, 0.5 T #########################################
+TRACK_ONLY_REF_PART = False
 BUNCH_FILEPATH = 'RFTrack/YongkeTool_V3/Dat/' + \
     'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
 RFTRACK_FORMAT = 'rftrack_xp_t'
@@ -84,15 +85,11 @@ BUNCH_DOWNSAMPLING = 1
 VOL_R_APERTURE = 30e-3  # [m]
 #
 TARGET_L = 17.5  # [mm]
-TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +30e-3   # [m], YonkeTool_V3, LargeR TW L-band, 0.5 T
+TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +35e-3   # [m], YonkeTool_V3, LargeR TW L-band, 0.5 T
 #
-# TODO
-# target.Ne = 1e4;	% no. of e- simulated
-# target.Np = 4.37e10;	% no. of e+ required
-#
-AMD_FIELDMAP_2p5D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022.dat'
+AMD_FIELDMAP_2P5D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022.dat'
 AMD_FIELDMAP_1D = 'RFTrack/YongkeTool_V2/field/field_map_HTS_5coils_Apr2022_1D.dat'
-USE_AMD_FIELDMAP_2p5D = True
+USE_AMD_FIELDMAP_2P5D = True
 AMD_R_APERTURE = None   # [m]
 # TODO: Old value in the following line
 AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
@@ -103,18 +100,25 @@ RF_FIELDMAP = 'RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
 RF_FIELDMAP_DIM = '1D'
 RF_FIELDMAP_TYPE = 'Full'
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
-RF_N_STRUCTURES = 5  # 5
+RF_N_STRUCTURES = 5 + 10  # 5 + 22
 RF_L_STRUCTURE = 3.240  # [m]
-# Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
+#   Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
+RF_FREQ = 2e9  # [Hz]
+RF_L_CELL = bd.C / RF_FREQ * 9./20.  # [m]
 # RF_L_FLANGE = xxx  # [m]
 # RF_L_MECH_MARGIN = xxx  # [m]
-RF_PHASES = (-125.7, -127.8, -132.0, -102.9, -95.0)  # [deg]
+# RF_PHASES = (-125.7, -127.8, -132.0, -102.9, -95.0)  # [deg],
+#   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +30e-3 m
+RF_PHASES = (-130., -130., -135., -75, -75)  # [deg],
+#   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +35e-3 m
 RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
 RF_SEPARATION = RF_L_STRUCTURE - 3.207140  # [m], struct. separation partially included in fieldmap
 RF_R_APERTURE = None   # [m]
 #
 AUTOPHASING = True
 P0_REF = 100.  # [MeV/c]
+P0_REF_2 = 205.  # [MeV/c]
+T0_REF_2 = 54.92 * bd.C / 1e6  # [mm/c]
 #
 # SOLENOID_TYPE = 'HomogeneousChannel'
 # SOL_HOMOG_BZ = 0.5   # [T]
@@ -126,21 +130,7 @@ P0_REF = 100.  # [MeV/c]
 # SOL_J = 3.54e6   # [A/m2]
 # SOL_HOMOG_BZ = 0.5   # [T]
 # or
-SOLENOID_TYPE = 'Simulated'
-SOLENOIDS = {
-    'Type1': {
-        'Type': 'Simulated',
-        'Fieldmap': 'fieldmaps/20220819_Solenoid_type_1_200A.dat',
-        'FieldmapCurrent': 200.,  # [A]
-        'SetCurrent': 200.,  # [A]
-        'MechanicalLength': 200e-3,  # [m]
-        'ZFirstCenter': 570e-3,  # [m]
-        'RepDistances': [321.5e-3, 334e-3],  # [m]
-        'RepNums': [8, 2]
-    },
-}
-SOL_HOMOG_BZ = 0.5  # [T]
-# or
+# TODO: 'ZFirstCenter' must usually be changed together with TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD
 # SOLENOID_TYPE = 'Simulated'
 # SOLENOIDS = {
 #     'Type1': {
@@ -149,29 +139,74 @@ SOL_HOMOG_BZ = 0.5  # [T]
 #         'FieldmapCurrent': 200.,  # [A]
 #         'SetCurrent': 200.,  # [A]
 #         'MechanicalLength': 200e-3,  # [m]
-#         'ZFirstCenter': 570e-3,  # [m]
-#         'RepDistances': [2572e-3, 334e-3],  # [m]
-#         'RepNums': [1, 2]
+#         'ZFirstCenter': 565e-3,  # [m]
+#         'RepDistances': [321.5e-3, 334e-3],  # [m]
+#         'RepNums': [8, 2]
 #     },
-#     'Type2': {
-#         'Type': 'Simulated',
-#         'Fieldmap': 'fieldmaps/20220819_Solenoid_type_2_200A.dat',
-#         'FieldmapCurrent': 200.,  # [A]
-#         'SetCurrent': 200.,  # [A]
-#         'MechanicalLength': 2214e-3,  # [m]
-#         'ZFirstCenter': 1856e-3,  # [m]
-#         'RepDistances': [3240e-3, ],  # [m]
-#         'RepNums': [1, ]
-#     }
 # }
 # SOL_HOMOG_BZ = 0.5  # [T]
+# or
+SOLENOID_TYPE = 'Simulated'
+SOLENOIDS = {
+    'Type1a': {
+        'Type': 'Simulated',
+        'Fieldmap': 'fieldmaps/20220819_Solenoid_type_1_200A.dat',
+        'FieldmapCurrent': 200.,  # [A]
+        'SetCurrent': 200.,  # [A]
+        'MechanicalLength': 200e-3,  # [m]
+        'ZFirstCenter': 565e-3,  # [m]
+        'RepDistance': 3240e-3,  # [m]
+        'RepNum': RF_N_STRUCTURES
+    },
+    'Type1b': {
+        'Type': 'Simulated',
+        'Fieldmap': 'fieldmaps/20220819_Solenoid_type_1_200A.dat',
+        'FieldmapCurrent': 200.,  # [A]
+        'SetCurrent': 200.,  # [A]
+        'MechanicalLength': 200e-3,  # [m]
+        'ZFirstCenter': 3137e-3,  # [m]
+        'RepDistance': 3240e-3,  # [m]
+        'RepNum': RF_N_STRUCTURES
+    },
+    'Type1c': {
+        'Type': 'Simulated',
+        'Fieldmap': 'fieldmaps/20220819_Solenoid_type_1_200A.dat',
+        'FieldmapCurrent': 200.,  # [A]
+        'SetCurrent': 200.,  # [A]
+        'MechanicalLength': 200e-3,  # [m]
+        'ZFirstCenter': 3471e-3,  # [m]
+        'RepDistance': 3240e-3,  # [m]
+        'RepNum': RF_N_STRUCTURES
+    },
+    'Type2': {
+        'Type': 'Simulated',
+        'Fieldmap': 'fieldmaps/20220819_Solenoid_type_2_200A.dat',
+        'FieldmapCurrent': 200.,  # [A]
+        'SetCurrent': 200.,  # [A]
+        'MechanicalLength': 2214e-3,  # [m]
+        'ZFirstCenter': 1851e-3,  # [m]
+        'RepDistance': 3240e-3,  # [m]
+        'RepNum': RF_N_STRUCTURES
+    },
+    'Tuning': {
+        'Type': 'Simulated',
+        'Fieldmap': 'fieldmaps/20221011_Solenoid_Tuning_V1.dat',
+        'FieldmapCurrent': 200.,  # [A]
+        'SetCurrent': 200.,  # [A]
+        'MechanicalLength': 72e-3,  # [m]
+        'ZFirstCenter': 300e-3,  # [m]
+        'RepDistance': 0,  # [m]
+        'RepNum': 1
+    }
+}
+SOL_HOMOG_BZ = 0.5  # [T]
 #
 INITIAL_L = RF_SEPARATION / 2.  # [m]
-FINAL_L = 0.   # [m]
+FINAL_L = 1.  # [m]
 #
 T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
-N_RF_STRUCT_1ST_TRACKING = RF_N_STRUCTURES
-# N_RF_CELLS_LONG_PS_CUT = 1 + 2 * RF_CELLS_PER_PERIOD
+N_RF_STRUCT_1ST_TRACKING = 5
+N_RF_CELLS_LONG_PS_CUT = 2
 ###################################################################################################
 
 
@@ -179,28 +214,12 @@ splitTracking = RF_N_STRUCTURES > N_RF_STRUCT_1ST_TRACKING
 
 OUT_REL_PATH = './Results_CaptureLinac/LatestSim/'
 
-# TODO
-# rf.R1i  = 20; % mm
-
 # TODO: Refactorize, same code in Run_Linac1_Section1_Simple.py
-# A_target = load(BUNCH_FILEPATH)
 distrMatNp = np.loadtxt(BUNCH_FILEPATH, skiprows=1)
 beamIn, _ = bd.convert_rftrack_to_standard_df(
     rftrackDf=distrMatNp[::BUNCH_DOWNSAMPLING, :], rftrackDfFormat=RFTRACK_FORMAT,
-    s=BUNCH_Z, pdgId=BUNCH_PDGID
+    s=BUNCH_Z, pdgId=BUNCH_PDGID, Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0]
 )
-# TODO:
-# beamIn['Q'] = Q_DRIVE_BEAM / N_MACROPARTICLES_DRIVE_BEAM
-# TODO:
-# M = A_target(:,5) < 1000; % mm/c, remove very large time particles
-# A_target = A_target(M,:);
-# if FILTER_SPECS_SELECTOR is not None:
-#     with open(sd.build_data_path(REL_PATH, 'filterSpecs.json'), 'r') \
-#         as filterSpecsFile:
-#         filterSpecsList = json.load(filterSpecsFile)
-#     filterSpecs = filterSpecsList[FILTER_SPECS_SELECTOR]['filterSpecs']
-#     refParticle = filterSpecsList[FILTER_SPECS_SELECTOR]['RefParticle1']
-#     beamIn = bd.filter_distr(beamIn, filterSpecs)
 M0 = bd.convert_standard_df_to_rftrack(
     standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT
 )[0].to_numpy()
@@ -218,8 +237,8 @@ beamlineSetup = pd.DataFrame(
 )
 
 # TODO: Clean distinction between AMD_FIELDMAP_1D AND _2D
-if USE_AMD_FIELDMAP_2p5D:
-    amdFieldmap = bd.load_octave_matrices(AMD_FIELDMAP_2p5D)
+if USE_AMD_FIELDMAP_2P5D:
+    amdFieldmap = bd.load_octave_matrices(AMD_FIELDMAP_2P5D)
     amdDz = amdFieldmap['Z'][0, 1] - amdFieldmap['Z'][0, 0]  # [mm]
     amdDr = amdFieldmap['R'][1, 0]-amdFieldmap['R'][0, 0]  # [mm]
     amdZ = amdFieldmap['Z'][0, :]  # [mm]
@@ -246,7 +265,7 @@ elif SOLENOID_TYPE in ['Analytical', 'Simulated']:
 amdZEff = amdZ[indsEff]
 amdExitZInVolume = TARGET_EXIT_Z_IN_VOLUME + amdFieldLength*1e-3   # [m]
 print('amdFieldLength = {:f} mm.'.format(amdFieldLength))
-if USE_AMD_FIELDMAP_2p5D:
+if USE_AMD_FIELDMAP_2P5D:
     amdBrEff = amdFieldmap['Br'][:, indsEff]
     amdBzEff = amdFieldmap['Bz'][:, indsEff]
     amd = rft.Static_Magnetic_FieldMap_2d(amdBrEff.T, amdBzEff.T, amdDr*1e-3, amdDz*1e-3)
@@ -268,7 +287,7 @@ beamlineSetup.loc[len(beamlineSetup.index)] = [
     'AMD',
     TARGET_EXIT_Z_IN_VOLUME - TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD,
     AMD_L_HALF_MECHANICAL * 2.,
-    os.path.basename(AMD_FIELDMAP_2p5D)
+    os.path.basename(AMD_FIELDMAP_2P5D)
 ]
 beamlineSetup.loc[len(beamlineSetup.index)] = [
     'TargetExit', TARGET_EXIT_Z_IN_VOLUME, 0., ''
@@ -293,12 +312,15 @@ if TRACK_AFTER_AMD:
     if not AUTOPHASING:
         tRf = RF_T0  # [mm/c]
     else:
-        t0RefPart = TARGET_L + amdFieldLength  # [mm/c]
-        refPart = np.array([
-            0., 0., 0., 0., 236.300, P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, +1., t0RefPart
+        t0RefPart1 = TARGET_L + amdFieldLength  # [mm/c]
+        refPart1Vol = np.array([
+            0., 0., 0., 0., amdFieldLength, P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, +1., t0RefPart1
+        ])
+        refPart1Lat = np.array([
+            0., 0., 0., 0., t0RefPart1, P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, +1.
         ])
         tRf = None
-    rfGap = rft.Drift(RF_SEPARATION)
+    rfGap = rft.Drift()
     if RF_R_APERTURE is not None:
         rfGap.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
     if SOLENOID_TYPE == 'HomogeneousChannel':
@@ -346,20 +368,24 @@ if TRACK_AFTER_AMD:
         if splitTracking and structInd == N_RF_STRUCT_1ST_TRACKING - 1:
             zStop1stTracking = zFinalInVolume
         if structInd < RF_N_STRUCTURES-1:
-            lat.append(rfGap)
-            zFinalInVolume += rfGap.get_length()
-            if not AUTOPHASING:
-                tRf += rfGap.get_length() * 1e3   # [mm/c]
+            rfGap.set_length(RF_SEPARATION)
+        else:
+            rfGap.set_length(RF_SEPARATION / 2.)
+        lat.append(rfGap)
+        zFinalInVolume += rfGap.get_length()
+        if not AUTOPHASING:
+            tRf += rfGap.get_length() * 1e3   # [mm/c]
+    if AUTOPHASING:
+        print('Autophasing in lattice...')
+        pzFinalAutophasing = lat.autophase(rft.Bunch6d(refPart1Lat))
+        print('pzFinalAutophasing 1st tracking = {:e} MeV/c'.format(pzFinalAutophasing))
     vol.add(lat, 0, 0, amdExitZInVolume, 'entrance')
     # TODO: Simplify script wrt solenoid (analytical or simulated is almost the same)
-    # TODO: Currently, implementatio only for single type solenoid, 2 periods
     for solType, sol in SOLENOIDS.items():
         if sol['Type'] == 'Simulated':
             solenoidCenters = [sol['ZFirstCenter'], ]
-            for structInd in np.arange(RF_N_STRUCTURES):
-                for repDist, repNum in zip(sol['RepDistances'], sol['RepNums']):
-                    for solInd in range(repNum):
-                        solenoidCenters.append(solenoidCenters[-1] + repDist)
+            for repInd in np.arange(sol['RepNum'] - 1):
+                solenoidCenters.append(solenoidCenters[-1] + sol['RepDistance'])
             solenoid = rfttools.solenoid_from_fieldmap(
                 sol['Fieldmap'], sol['FieldmapCurrent'], sol['SetCurrent']
             )
@@ -368,10 +394,10 @@ if TRACK_AFTER_AMD:
                 beamlineSetup.loc[len(beamlineSetup.index)] = [
                     solType, zCenter, sol['MechanicalLength'], os.path.basename(sol['Fieldmap'])
                 ]
-    if AUTOPHASING:
-        vol.unset_t0()
-        pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart))
-        print('pzFinalAutophasing = {:e} MeV/c'.format(pzFinalAutophasing))
+    # if AUTOPHASING:
+    #     print('Autophasing in volume...')
+    #     pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart1Vol))
+    #     print('pzFinalAutophasing 1st tracking = {:e} MeV/c'.format(pzFinalAutophasing))
 
 if FINAL_L > 0:
     finalDrift = rft.Drift(FINAL_L)
@@ -392,37 +418,50 @@ trackingOpts = rft.TrackingOptions()
 trackingOpts.dt_mm = 0.2
 trackingOpts.tt_dt_mm = 1.   # [mm/c], track the emittance every tt_dt_mm (time)
 trackingOpts.wp_dt_mm = 0.5e3   # [mm/c], save the distr. on disk every wp_dt_mm (time)
-# Start tracking at s0
 trackingOpts.backtrack_at_entrance = False
 trackingOpts.odeint_algorithm = 'rkf45'   # Options: 'rk2', 'rkf45', 'rk8pd'
 trackingOpts.odeint_epsabs = 1e-5
 trackingOpts.verbosity = 1   # 0 (default), 1 or 2
 
-vol.set_s0(0)
+vol.set_s0(BUNCH_Z)
 vol.set_s1(zStop1stTracking)
 trackingOpts.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
 print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
     zStop1stTracking, trackingOpts.t_max_mm)
 )
-B1_6dT = vol.track(B0_6dT, trackingOpts)
-# B1_6dT = vol.track(rft.Bunch6dT(refPart), trackingOpts)
+if TRACK_ONLY_REF_PART:
+    B1_6dT = vol.track(rft.Bunch6dT(refPart1Vol), trackingOpts)
+else:
+    B1_6dT = vol.track(B0_6dT, trackingOpts)
 M1_6dT = B1_6dT.get_phase_space()
 B1_6d = vol.get_bunch_at_s1()
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
-# TODO: Get s and use it for standard df (also in the following calls to the same function)
 bd.convert_rftrack_to_standard_df(
-    rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', pdgId=-11,
+    rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
     outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_After1stTracking_6d'
 )
-Bend_6dT = B1_6dT
+
+fig1, ax1 = plt.subplots(6, 1)
+rfttools.save_plot_transport(ax1, vol, B0_6dT, B1_6dT, OUT_REL_PATH, outSuffix='1')
+plt.show(block=False)
 
 if splitTracking:
-    tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * rfttools.RF_CLIC_L_CELL*1e3  # [mm/c]
+    refPart2 = np.array([
+        0., 0., 0., 0., zStop1stTracking*1e3, P0_REF_2,
+        PARTICLE_MASS, PARTICLE_CHARGE, +1., T0_REF_2
+    ])
+    # if AUTOPHASING:
+    #     pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart2))
+    #     print('pzFinalAutophasing 2nd tracking = {:e} MeV/c'.format(pzFinalAutophasing))
+    tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * RF_L_CELL*1e3  # [mm/c]
     M1_6d_frontBuckets = M1_6d[M1_6d[:, 4] < tCut, :]
     B1_6d.set_phase_space(M1_6d_frontBuckets)
+    # B1_6dT = rft.Bunch6dT(refPart2)
+    # or
     B1_6dT = rft.Bunch6dT(B1_6d)
     bd.convert_rftrack_to_standard_df(
-        rftrackDf=M1_6d_frontBuckets, rftrackDfFormat='rftrack_xp_t', pdgId=-11,
+        rftrackDf=M1_6d_frontBuckets, rftrackDfFormat='rftrack_xp_t',
+        s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
         outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_FrontBuckets_After1stTracking_6d'
     )
     vol.set_s1(zFinalInVolume)
@@ -434,19 +473,11 @@ if splitTracking:
     B2_6d = vol.get_bunch_at_s1()
     M2_6d = B2_6d.get_phase_space("%x %xp %y %yp %t %Pc")
     bd.convert_rftrack_to_standard_df(
-        rftrackDf=M2_6d, rftrackDfFormat='rftrack_xp_t', pdgId=-11,
+        rftrackDf=M2_6d, rftrackDfFormat='rftrack_xp_t', s=B2_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
         outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_After2ndTracking_6d'
     )
-    Bend_6dT = B2_6dT
-# A_AMD_LOSS = B_AMD_6dT.get_lost_particles();
 
-# TODO: Qbunch
-# bd.convert_rftrack_to_standard_df(
-#     rftrackDf=M1_6dT, rftrackDfFormat='rftrack_Px_S', pdgId=-11,
-#     outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_AMD_6dT'
-# )
+    rfttools.save_plot_transport(ax1, vol, B1_6dT, B2_6dT, OUT_REL_PATH, outSuffix='2')
+    plt.show(block=False)
 
-fig1, ax1 = plt.subplots(6, 1)
-rfttools.save_plot_transport(ax1, vol, B0_6dT, Bend_6dT, OUT_REL_PATH)
-plt.show(block=False)
 input("Press Enter to continue...")

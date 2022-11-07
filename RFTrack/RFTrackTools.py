@@ -126,9 +126,10 @@ def solenoid_from_fieldmap(fieldmapFilePath, fieldmapCurrent, setCurrent):
     return solenoid
 
 
-def save_plot_transport(ax, vol, beam0, beam1, outRelPath):
+def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
     # Prepare Ez and Bz for plotting
-    zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
+    zAxis = np.arange(vol.get_s0(), vol.get_s1(), 1e-3)   # [m]
+    # zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
     Ez = []
     Bz = []
     for z in zAxis:
@@ -138,12 +139,16 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath):
     Ez = np.array(Ez)
     Bz = np.array(Bz)
     emFields = pd.DataFrame(np.row_stack([zAxis, Ez, Bz]).T, columns=['z', 'Ez', 'Bz'])
-    emFields.to_csv(os.path.join(outRelPath, 'EMFields.dat'), index=None)
+    if outSuffix != '':
+        outSuffix = '_' + outSuffix
+    emFields.to_csv(os.path.join(outRelPath, 'EMFields{:s}.dat'.format(outSuffix)), index=None)
     # Get transport table
     getTransportTableStr = '%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E'
     TT = vol.get_transport_table(getTransportTableStr)
     transportTable = pd.DataFrame(TT, columns=getTransportTableStr.replace('%', '').split())
-    transportTable.to_csv(os.path.join(outRelPath, 'TransportTable.dat'), index=None)
+    transportTable.to_csv(
+        os.path.join(outRelPath, 'TransportTable{:s}.dat'.format(outSuffix)), index=None
+    )
     # Compute capture efficiency
     M0 = beam0.get_phase_space()
     Mlost = beam1.get_lost_particles()
@@ -162,13 +167,17 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath):
     captureEfficiency = pd.DataFrame(
         np.row_stack([sCapture, captureEff]).T, columns=['s', 'CaptureEfficiency']
     )
-    captureEfficiency.to_csv(os.path.join(outRelPath, 'CaptureEfficiency.dat'), index=None)
+    captureEfficiency.to_csv(
+        os.path.join(outRelPath, 'CaptureEfficiency{:s}.dat'.format(outSuffix)), index=None
+    )
     plot_transport(ax, emFields, transportTable, captureEfficiency)
 
 
-def load_plot_transport(ax, simRelPath, sShiftEMFields=0, tShift=0):
+def load_plot_transport(ax, simRelPath, sShiftEMFields=0, tShift=0, fileSuffix=''):
     # TODO: Global variable, use also in save_plot_transport()
-    transportFileNames = ['EMFields.dat', 'TransportTable.dat', 'CaptureEfficiency.dat']
+    transportFileBases = ['EMFields', 'TransportTable', 'CaptureEfficiency']
+    if fileSuffix != '':
+        transportFileNames = [fBase + '_' + fileSuffix + '.dat' for fBase in transportFileBases]
     transportDfs = []
     for fileName in transportFileNames:
         transportDfs.append(
