@@ -110,6 +110,19 @@ class TestBeamDynamics(unittest.TestCase):
         self.assertAlmostEqual(standardDf.loc[0, 'px'], 2.286897262e-01)
         self.assertAlmostEqual(standardDf.loc[54324, 'py'], -1.931028202e+00)
 
+    def test_standard_to_rftrack(self):
+        """Test conversion from standard data frame to Octave RF-Track format."""
+        sdfFilePath = 'Data/RFTrackResults/CaptureLinac/' + \
+            'CaptureLinacUpTo200MeV_LBandLargeR_RealSolenoids_Type1and2/' + \
+            'DistrOut_After1stTracking_6d.sdf_txt'
+        rftFilePath = 'DistrOut_After1stTracking_6d.dat'
+        rftrackDfFormat = 'rftrack_xp_t'
+        bd.convert_standard_df_to_rftrack(
+            sourceFilePath=sdfFilePath, rftrackDfFormat=rftrackDfFormat,
+            outFilePath=pl.Path(rftFilePath).stem
+        )
+        assert_file_generated(rftFilePath)
+
     def test_rftrack_back_and_forth(self):
         """Test conversion from RF-Track format to standard data frame and back."""
         # 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
@@ -143,6 +156,17 @@ class TestBeamDynamics(unittest.TestCase):
         dfDiff = rftDf.drop(indsAnglesNotConformal).round(numDecimalPlaces) \
             .compare(rftDfOriginal.drop(indsAnglesNotConformal).round(numDecimalPlaces))
         self.assertEqual(dfDiff.shape[0], 0)
+
+    def test_standard_df_to_sdds(self):
+        """Test conversion from standard data frame to SDDS format."""
+        sdfFilePath = 'Data/RFTrackResults/CaptureLinac/' + \
+            'PositronLinac_15RFStruct_LBandLargeR_SolenoidsType1and2/' + \
+            'DistrOut_After2ndTracking_6d.sdf_txt'
+        sddsFilePath = 'DistrOut_After2ndTracking_6d.sdds'
+        bd.convert_standard_df_to_sdds(
+            sourceFilePath=sdfFilePath, outFilePath=pl.Path(sddsFilePath).stem
+        )
+        assert_file_generated(sddsFilePath)
 
     def test_plot_1(self):
         """Test plotting of phase space."""

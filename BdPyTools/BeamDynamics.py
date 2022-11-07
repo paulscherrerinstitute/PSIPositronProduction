@@ -914,12 +914,12 @@ def convert_standard_df_to_sdds(
     )
     if outFilePath is None:
         raise ValueError('Please specify outFilePath.')
-    astraDf = convert_standard_df_to_astra(
+    astraDf, _ = convert_standard_df_to_astra(
         standardDf=standardDf, refParticleId=refParticleId
     )
     astraDfStr, _ = generate_fwf(astraDf, formatType='astra', outFilePath='TmpAstra')
     outFilePath += FILE_TYPES_SPECS['sdds']['ext']
-    os.system('/opt/elegant-2021.4.0-1/usr/bin/astra2elegant TmpAstra.001 ' + outFilePath)
+    os.system('astra2elegant TmpAstra.001 ' + outFilePath)
     # os.system('rm TmpAstra.001')
     # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
 
