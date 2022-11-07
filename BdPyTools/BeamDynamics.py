@@ -150,10 +150,12 @@ def check_input_pd_or_np(inArray):
     try:
         outArray = inArray.to_numpy()
     except AttributeError:
-        if isinstance(inArray, np.ndarray):
+        if isinstance(inArray, float):
+            outArray = np.array(inArray)
+        elif isinstance(inArray, np.ndarray):
             outArray = inArray
         else:
-            raise TypeError("inArray must be either numpy.ndarray or pandas.Series.")
+            raise TypeError("inArray must be either float, numpy.ndarray or pandas.Series.")
     return outArray
 
 
