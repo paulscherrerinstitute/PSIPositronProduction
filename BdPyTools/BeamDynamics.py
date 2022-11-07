@@ -264,10 +264,11 @@ def extend_standard_df(standardDf, removeNanInf):
             .compare(anglesNotConformal.round(numDecimalPlaces))
         if probAngles.shape[0] > 0:
             warnings.warn(
-                '{:d} backward traveling particles with problematic angles detected with index: ' +
+                '{:d} backward traveling particles '.format(probAngles.shape[0]) +
+                'with problematic angles detected with index: ' +
                 ', '.join('{:d}'.format(partInd) for partInd in probAngles.index)
             )
-            print(probAngles)
+            print(probAngles.head())
         indsToCompare = standardDf.index[~indsAnglesNotConformal]
     else:
         indsToCompare = standardDf.index
