@@ -223,6 +223,14 @@ def p_to_gamma(p, pdgId):
     return gamma
 
 
+def p_to_betagamma(p, pdgId):
+    p = check_input_pd_or_np(p)
+    beta = p_to_beta(p, pdgId)
+    gamma = p_to_gamma(p, pdgId)
+    betaGamma = beta * gamma
+    return betaGamma
+
+
 def Ekin_to_beta(Ekin, pdgId):
     gamma = Ekin_to_gamma(Ekin, pdgId)
     beta = gamma_to_beta(gamma)
