@@ -99,10 +99,12 @@ def rf_struct_from_full_fieldmap(
     structL = (rfField['Z'][-1] - rfField['Z'][0]) * 1e-3  # [m]
     rfStruct = rft.RF_FieldMap_1d(rfField['E'], dz, structL, rfField['frequency'], +1)
     rfStruct.set_P_map(1.)
-    rfStruct.set_P_actual(powerScalingFactor)
+    if powerScalingFactor is not None:
+        rfStruct.set_P_actual(powerScalingFactor)
     if t0 is not None:
         rfStruct.set_t0(t0)
-    rfStruct.set_phid(phase)
+    if phase is not None:
+        rfStruct.set_phid(phase)
     if aperture is not None:
         rfStruct.set_aperture(aperture, aperture, 'circular')
     if additionalHomogBz is not None:
@@ -193,7 +195,8 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
         sigmaXName = 'sigma_X'
         sigmaYName = 'sigma_Y'
     except KeyError:
-        s = (transpTab['mean_t'] + tShift) / 1e3  # [m/c]
+        # TODO: Verify mean_t --> S is OK for existing analyses and scripts
+        s = transpTab['S']  # [m]
         sigmaXName = 'sigma_x'
         sigmaYName = 'sigma_y'
     # TODO: Recognize when axis is empty (xlim = [0, 1])
@@ -217,6 +220,10 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     sigmaLims = np.array([
         np.min([ax[5].get_ylim()[0], transpTab[[sigmaXName, sigmaYName]].stack().min()]),
         np.max([ax[5].get_ylim()[1], transpTab[[sigmaXName, sigmaYName]].stack().max()])
+    ])
+    betaLims = np.array([
+        np.min([ax[6].get_ylim()[0], transpTab['beta_x'].min()]),
+        np.max([ax[6].get_ylim()[1], transpTab['beta_y'].max()])
     ])
     ax[0].plot(emFields['z']+sShiftEMFields, emFields['Bz'])  # , color=DEFAULT_COLOR_CYCLE[0]
     ax[0].set_xlim(sLims)
@@ -257,3 +264,8 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
     ax[5].set_xlim(sLims)
     ax[5].set_ylim(sigmaLims)
     ax[5].set_ylabel('Sigma [mm]')
+    p = ax[6].plot(s, transpTab['beta_x'], '--v', markevery=markEvery)
+    ax[6].plot(s, transpTab['beta_y'], '--^', markevery=markEvery, color=p[0].get_color())
+    ax[6].set_xlim(sLims)
+    ax[6].set_ylim(betaLims)
+    ax[6].set_ylabel('Betatron function [m]')

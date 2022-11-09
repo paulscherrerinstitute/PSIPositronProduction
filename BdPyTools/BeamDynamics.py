@@ -253,7 +253,8 @@ def extend_standard_df(standardDf, removeNanInf):
     # Check conformity of input distribution to angle definition (if angles available)
     numDecimalPlaces = 6
     if 'yp' in standardDf.columns:
-        indsAnglesNotConformal = (standardDf['yp'] > np.pi/2.*1e3) | (standardDf['yp'] < -np.pi/2.*1e3)
+        indsAnglesNotConformal = (standardDf['yp'] > np.pi/2.*1e3) | \
+            (standardDf['yp'] < -np.pi/2.*1e3)
         anglesNotConformal = standardDf.loc[indsAnglesNotConformal, ['xp', 'yp']]
         anglesNotConformal.loc[anglesNotConformal['yp'] > np.pi/2.*1e3, 'yp'] -= np.pi*1e3
         anglesNotConformal.loc[anglesNotConformal['yp'] < -np.pi/2.*1e3, 'yp'] += np.pi*1e3
@@ -365,12 +366,12 @@ def check_distribution_offsets(
             uDiv -= uDivAvg
             if verbose:
                 print(
-                    'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.' \
+                    'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'
                     .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits)
                 )
         else:
             print(
-                'Offset cannot be corrected with {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.' \
+                'Offset cannot be corrected with {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'
                 .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits)
             )
     return u, uDiv
@@ -392,7 +393,7 @@ def filter_distr(standardDf, filterSpecs):
 
 
 def get_json_entry(sourceFilePath, specsSelector, propertyName):
-    folderPath, _ = os.path.split(sourceFilePath)
+    folderPath = os.path.dirname(sourceFilePath)
     # TODO: Rename standard file with better name?
     with open(os.path.join(folderPath, 'filterSpecs.json'), 'r') as specsFile:
         specsList = json.load(specsFile)
