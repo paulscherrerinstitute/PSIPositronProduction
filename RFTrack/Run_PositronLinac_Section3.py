@@ -22,8 +22,6 @@ BUNCH_Z = 0.
 BUNCH_DOWNSAMPLING = 1
 FILTER_SPECS_MAIN_BUNCH = 'MainBunch'
 #
-LAT_R_APERTURE = 2. * 30e-3  # [m]
-#
 TRACK_AFTER_MATCHING_1 = True
 #
 RF_FIELDMAP = 'RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
@@ -48,12 +46,13 @@ INITIAL_L = 0.  # [m]
 #
 MATCHING_1 = {
     'Type': 'QuadMatching1',
-    'QuadLength': 1.000000,  # [m]
-    'QuadStrengths': [-0.108110, 0.223136, -0.241769, 0.243051, -0.206334],  # [1/m2]
+    'QuadLength': 0.500000,  # [m]
+    'QuadStrengths': [-0.193742, 0.560282, -0.600896, 0.501008, -0.442391],  # [1/m2]
     'BrhoRef': 780. / PARTICLE_CHARGE,  # [MV/c]
-    'DriftLength': 4.051648,  # [m]
+    'DriftLength': 3.000000,  # [m]
+    'RadialAperture': 45e-3,  # [m]
 }
-MATCHING_1_STRENGTH_TUNING = 1.0
+MATCHING_1_STRENGTH_TUNING = 0.75
 #
 FODO_1 = {
     'Type': 'QuadFodo1',
@@ -61,8 +60,12 @@ FODO_1 = {
     'QuadStrength': 0.824542,  # [1/m2]
     'BrhoRef': 780. / PARTICLE_CHARGE,  # [MV/c]
     'DriftLength': 4.051648,  # [m]
+    'RadialAperture': 30e-3,  # [m]
 }
-FODO_1_STRENGTH_TUNING = 1.0  # Best trial: 0.70 --> 0.955
+FODO_1_STRENGTH_TUNING = 0.75
+# Best trial:
+# MATCHING_1_STRENGTH_TUNING = 0.75, FODO_1_STRENGTH_TUNING = 0.75
+# --> Capture efficiency = 0.925
 #
 FINAL_L = 1.  # [m]
 ###################################################################################################
@@ -94,17 +97,19 @@ refPart1 = np.array([
 zFinal = 0.  # [m]
 if INITIAL_L > 0:
     initialDrift = rft.Drift(INITIAL_L)
-    initialDrift.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+    initialDrift.set_aperture(
+        MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular'
+    )
     lat.append(initialDrift)
     zFinal += initialDrift.get_length()
 
 driftMatching1 = rft.Drift(MATCHING_1['DriftLength'])
-driftMatching1.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+driftMatching1.set_aperture(MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular')
 for quadStrength in MATCHING_1['QuadStrengths']:
     quadStrengthRftrack = quadStrength * MATCHING_1['QuadLength'] * MATCHING_1['BrhoRef'] \
             * MATCHING_1_STRENGTH_TUNING  # [MV/c/m]
     quadTmp = rft.Quadrupole(MATCHING_1['QuadLength'], quadStrengthRftrack)
-    quadTmp.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+    quadTmp.set_aperture(MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular')
     lat.append(quadTmp)
     beamlineSetup.loc[len(beamlineSetup.index)] = [
         'QuadMatching1', zFinal, MATCHING_1['QuadLength'],
@@ -115,11 +120,11 @@ for quadStrength in MATCHING_1['QuadStrengths']:
 
 quadPolarity = 1.
 quadFodo1 = rft.Quadrupole(FODO_1['QuadLength'], 0)
-quadFodo1.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+quadFodo1.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
 # if not TRACK_AFTER_MATCHING_1:
 #     # TODO: Refactorize
 #     driftFodo1 = rft.Drift(FODO_1['DriftLength'])
-#     driftFodo1.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+#     driftFodo1.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
 #     for cellInd in range(5):
 #         lat.append(quadTmp)
 #         quadPolarity *= -1
@@ -134,18 +139,18 @@ if TRACK_AFTER_MATCHING_1:
     if RF_N_PERIODS_PER_STRUCTURE is not None:
         rf = rfttools.rf_struct_from_single_period(
             RF_FIELDMAP, RF_FIELDMAP_DIM, RF_N_PERIODS_PER_STRUCTURE, None,
-            None, None, aperture=LAT_R_APERTURE
+            None, None, aperture=FODO_1['RadialAperture']
         )
     else:
         rf = rfttools.rf_struct_from_full_fieldmap(
             RF_FIELDMAP, RF_FIELDMAP_DIM, None,
-            None, None, aperture=LAT_R_APERTURE
+            None, None, aperture=FODO_1['RadialAperture']
         )
     rf.set_nsteps(int(rf.get_length() / (bd.C/RF_FREQ) * RF_SAMPLING_STEPS_PER_PERIOD))
     BrhoRef = FODO_1['BrhoRef']
     quadRfGap = rft.Drift((FODO_1['DriftLength'] - rf.get_length()) / 2.)
     # TODO: Work with RF_R_APERTURE
-    quadRfGap.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+    quadRfGap.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
     for structInd in np.arange(RF_N_STRUCTURES):
         # Quad
         quadStrengthRftrack = FODO_1['QuadStrength'] * FODO_1['QuadLength'] * BrhoRef  # [MV/c/m]
@@ -186,7 +191,7 @@ if TRACK_AFTER_MATCHING_1:
 
 if FINAL_L > 0:
     finalDrift = rft.Drift(FINAL_L)
-    finalDrift.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
+    finalDrift.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
     lat.append(finalDrift)
     zFinal += finalDrift.get_length()
 

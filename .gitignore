@@ -1,6 +1,11 @@
 **/*~
-**/*.dat
-**/*.sdf_txt
+# Data are saved by compressing folders (or single files) to .tar.xz format
+Data/**/*.dat
+Data/**/*.sdf_txt
+Data/**/filterSpecs.json
+# Do not monitor output folders of different tools
+RFTrack/YongkeTool_V?/**/*.dat
+RFTrackOutput/*
 # Python
 **/__pycache__
 **/.ipynb_checkpoints
@@ -13,6 +18,7 @@
 **/*.par
 **/*.sig
 **/*.twi
+**/*.sdds
 # Astra output files
 **/*.001
 **/*.ini

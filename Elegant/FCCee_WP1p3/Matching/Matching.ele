@@ -3,9 +3,9 @@
 &end
 
 &run_setup
-	lattice						= Matching_1.lat,
+	lattice						= Matching.lat,
 	use_beamline				= Match,
-	rootname					= Matching_1,
+	rootname					= Matching,
 	output						= %s.out,
 	centroid					= %s.cen,
 	sigma						= %s.sig,
@@ -17,7 +17,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 978.475
+	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -29,8 +29,8 @@
 &optimization_setup
 	verbose 					= 1,
 	equation 					= "
-									MATCHING.END#1.betax 5.503919 - abs
-									MATCHING.END#1.betay 1.456175 - abs +
+									MATCHING.END#1.betax 14.537345 - abs
+									MATCHING.END#1.betay 3.488415 - abs +
 									MATCHING.END#1.alphax 0.0 - abs 10.0 * +
 									MATCHING.END#1.alphay 0.0 - abs 10.0 * +
 								  ",
@@ -50,56 +50,56 @@
 &optimization_variable
     name 						= Quad.M1,
 	item 						= K1,
-    lower_limit 				= -2.0,
-	upper_limit 				= 2.0,
-	step_size 					= 0.1
+    lower_limit 				= -1.6,
+	upper_limit 				= 0.0,
+	step_size 					= 0.2
 &end
 
 &optimization_variable
     name 						= Quad.M2,
 	item 						= K1,
-    lower_limit 				= -2.0,
-	upper_limit 				= 0.0,
-	step_size 					= 0.1
+    lower_limit 				= 0.0,
+	upper_limit 				= 1.6,
+	step_size 					= 0.2
 &end
 
 &optimization_variable
     name 						= Quad.M3,
 	item 						= K1,
-    lower_limit 				= 0.0,
-	upper_limit 				= 2.0,
-	step_size 					= 0.1
+    lower_limit 				= -1.6,
+	upper_limit 				= 0.0,
+	step_size 					= 0.2
 &end
 
 &optimization_variable
     name 						= Quad.M4,
 	item 						= K1,
-    lower_limit 				= -2.0,
-	upper_limit 				= 0.0,
-	step_size 					= 0.1
+    lower_limit 				= 0.0,
+	upper_limit 				= 1.6,
+	step_size 					= 0.2
 &end
 
 &optimization_variable
     name 						= Quad.M5,
 	item 						= K1,
-    lower_limit 				= -2.0,
-	upper_limit 				= 2.0,
-	step_size 					= 0.1
+    lower_limit 				= -1.6,
+	upper_limit 				= 0.0,
+	step_size 					= 0.2
 &end
 
 &twiss_output
 	filename					= %s.twi,
 	matched						= 0,
-	beta_x						= 1.665,
-	beta_y						= 1.665,
-	alpha_x						= -0.329,
-	alpha_y						= -0.322,
+	beta_x						= 6.742,
+	beta_y						= 7.333,
+	alpha_x						= -0.204,
+	alpha_y						= -0.198,
 &end
 
 &sdds_beam
 	input_type					= "elegant",
 	sample_interval				= 1,
-	input						= /home/tia/tmp/EmitGrowthInDriftSpace/NicoDistr_Z20p57m/SingleBucket/RUN_2501_121416.2057_SingleBucket.001.sdds,
+	input						= ../../../Data/RFTrackResults/CaptureLinac/PositronLinac_15RFStruct_LBandLargeR_SolenoidsType1and2/DistrOut_After2ndTracking_6d.sdds,
 	reuse_bunch					= 1
 &end
 
@@ -108,7 +108,7 @@
 &end
 
 &save_lattice
-	filename 					= Matched_1.lat
+	filename 					= Matched.lat
 &end
 
 
@@ -116,9 +116,9 @@
 ! Reload the new lattice, generate final twiss parameters etc.
 
 &run_setup
-	lattice						= Matched_1.lat,
+	lattice						= Matching.lat,
 	use_beamline				= Match,
-	rootname					= Matched_1,
+	rootname					= Matched,
 	output						= %s.out,
 	centroid					= %s.cen,
 	sigma						= %s.sig,
@@ -130,7 +130,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 978.475
+	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -140,10 +140,10 @@
 &end
 
 &twiss_output
-	filename	= %s.twi,
-	matched		= 0,
-	beta_x		= 1.665,
-	beta_y		= 1.665,
-	alpha_x		= -0.329,
-	alpha_y		= -0.322
+	filename					= %s.twi,
+	matched						= 0,
+	beta_x						= 6.742,
+	beta_y						= 7.333,
+	alpha_x						= -0.204,
+	alpha_y						= -0.198,
 &end
