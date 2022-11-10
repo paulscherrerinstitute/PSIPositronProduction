@@ -1,0 +1,38 @@
+&change_particle
+	name						= positron
+&end
+
+&run_setup
+	lattice						= Matched_1_Fodo_1.lat,
+	use_beamline				= MatchAndFodo,
+	rootname					= MatchAndFodo,
+	output						= %s.out,
+	centroid					= %s.cen,
+	sigma						= %s.sig,
+	final						= %s.fin,
+	parameters					= %s.par,
+	magnets						= %s.mag,
+	combine_bunch_statistics	= 0,
+	default_order		 		= 3,
+	concat_order		 		= 0,
+	print_statistics	 		= 0,
+	random_number_seed	 		= 9876543210,
+	p_central		 			= 978.475
+	tracking_updates	 		= 1,
+	always_change_p0	 		= 1
+&end
+
+&run_control
+        n_steps                 = 1
+&end
+
+&sdds_beam
+	input_type					= "elegant",
+	sample_interval				= 1,
+    ! Distribution not available anymore.
+	input						= "/home/tia/tmp/EmitGrowthInDriftSpace/NicoDistr_Z20p57m/SingleBucket/RUN_2501_121416.2057_SingleBucket.001.sdds",
+	reuse_bunch					= 0
+&end
+
+&track
+&end

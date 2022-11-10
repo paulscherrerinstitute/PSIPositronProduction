@@ -3,7 +3,7 @@
 &end
 
 &run_setup
-	lattice						= Matched_1_Fodo_1.lat,
+	lattice						= Matching1_To_Fodo2.lat,
 	use_beamline				= MatchAndFodo,
 	rootname					= MatchAndFodo,
 	output						= %s.out,
@@ -17,30 +17,20 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 978.475
+	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
 
 &run_control
-        n_steps = 1
+        n_steps 				= 1
 &end
 
 &twiss_output
-	filename	= %s.twi,
-	matched		= 0,
-	beta_x		= 1.665,
-	beta_y		= 1.665,
-	alpha_x		= -0.329,
-	alpha_y		= -0.322
+	filename					= %s.twi,
+	matched						= 0,
+	beta_x						= 6.742,
+	beta_y						= 7.333,
+	alpha_x						= -0.204,
+	alpha_y						= -0.198,
 &end
-
-!&sdds_beam
-!	input_type					= "elegant",
-!	sample_interval				= 1,
-!	input						= "/home/tia/tmp/EmitGrowthInDriftSpace/NicoDistr_Z20p57m/SingleBucket/RUN_2501_121416.2057_SingleBucket.001.sdds",
-!	reuse_bunch					= 0
-!&end
-!
-!&track
-!&end

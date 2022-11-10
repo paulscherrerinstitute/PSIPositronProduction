@@ -1,0 +1,37 @@
+&change_particle
+	name						= positron
+&end
+
+&run_setup
+	lattice						= Matching1_To_Fodo2.lat,
+	use_beamline				= MatchAndFodo,
+	rootname					= MatchAndFodo,
+	output						= %s.out,
+	centroid					= %s.cen,
+	sigma						= %s.sig,
+	final						= %s.fin,
+	parameters					= %s.par,
+	magnets						= %s.mag,
+	combine_bunch_statistics	= 0,
+	default_order		 		= 3,
+	concat_order		 		= 0,
+	print_statistics	 		= 0,
+	random_number_seed	 		= 9876543210,
+	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
+	tracking_updates	 		= 1,
+	always_change_p0	 		= 1
+&end
+
+&run_control
+        n_steps 				= 1
+&end
+
+&sdds_beam
+	input_type					= "elegant",
+	sample_interval				= 1,
+	input						= ../../../../Data/RFTrackResults/CaptureLinac/PositronLinac_15RFStruct_LBandLargeR_SolenoidsType1and2/DistrOut_After2ndTracking_6d.sdds,
+	reuse_bunch					= 0
+&end
+
+&track
+&end
