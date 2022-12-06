@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 set SCRIPT_DIR=%~dp0%
 echo %SCRIPT_DIR%
 set P3_REPO=%SCRIPT_DIR%..
-set MODULE_REL_DIRS=..\BdPyTools ..\RFTrack
+set MODULE_REL_DIRS=..\BdPyTools ..\RunningSimulations\RFTrack
 (for %%m in (%MODULE_REL_DIRS%) do (
     echo %%m
     set dirToAdd=%SCRIPT_DIR%%%m

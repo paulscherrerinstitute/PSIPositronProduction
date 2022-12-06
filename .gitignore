@@ -1,6 +1,6 @@
-**/*~
 # Data are saved by compressing folders (or single files) to .tar.xz format
 Data/**/*.dat
+Data/**/*.sdds
 Data/**/*.sdf_txt
 Data/**/filterSpecs.json
 # Do not monitor output folders of different tools
