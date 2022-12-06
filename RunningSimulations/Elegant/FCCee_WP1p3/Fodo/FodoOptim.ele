@@ -17,7 +17,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 978.475
+	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -60,8 +60,8 @@
     name 						= Quad.Foc.HalfSlice,
 	item 						= K1,
     lower_limit 				= 0.010,
-	upper_limit 				= 5.000,
-	step_size 					= 5.0
+	upper_limit 				= 1.000,
+	step_size 					= 1.0
 &end
 
 &optimization_covariable  
@@ -73,16 +73,16 @@
 &optimization_variable
     name 						= Drift,
 	item 						= L, 
-    lower_limit 				= 0.010,
-	upper_limit 				= 2.000,
-	step_size 					= 2.0
+    lower_limit 				= 3.000,
+	upper_limit 				= 5.000,
+	step_size 					= 5.0
 &end
 
 &twiss_output
 	filename					= %s.twi,
 	matched						= 0,
-	beta_x						= 5.503919,
-	beta_y						= 2.215967,
+	beta_x						= 14.537345,
+	beta_y						= 3.431833,
 	alpha_x						= 0,
 	alpha_y						= 0,
 &end
@@ -91,15 +91,15 @@
 	bunch						= %s.bun,
 	n_particles_per_bunch 		= 10000,
 	time_start 					= 0,
-	emit_nx 					= 10000e-6,
-	beta_x 						= 5.503919,
+	emit_nx 					= 10500e-6,
+	beta_x 						= 14.537345,
 	alpha_x 					= 0,
 	eta_x						= 0,
-	emit_ny 					= 10000e-6,
-	beta_y 						= 2.215967,
+	emit_ny 					= 10500e-6,
+	beta_y 						= 3.431833,
 	alpha_y 					= 0,
 	eta_y						= 0,
-	Po 							= 978.475
+	Po 							= 1526.42
 	sigma_dp 					= 0.001,
 	sigma_s 					= 1e-3,
 	dp_s_coupling 				= 0,
@@ -144,7 +144,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 978.475
+	p_central		 			= 1526.42
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -156,8 +156,8 @@
 &twiss_output
 	filename	= %s.twi,
 	matched		= 0,
-	beta_x		= 5.503919,
-	beta_y		= 2.215967,
+	beta_x		= 14.537345,
+	beta_y		= 3.431833,
 	alpha_x		= 0,
 	alpha_y		= 0
 &end

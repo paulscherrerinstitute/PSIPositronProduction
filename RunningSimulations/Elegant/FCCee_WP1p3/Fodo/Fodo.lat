@@ -1,7 +1,7 @@
 Q: CHARGE, TOTAL=5.0e-9
-Quad.Foc.HalfSlice: QUADRUPOLE, L=0.5, K1=0.551744
-Drift: DRIFT, L=0.652593
-Quad.Defoc.HalfSlice: QUADRUPOLE, L=0.5, K1=-0.551744
+Quad.Foc.HalfSlice: QUADRUPOLE, L=0.175000, K1=0.809014
+Drift: DRIFT, L=4.015319
+Quad.Defoc.HalfSlice: QUADRUPOLE, L=0.175000, K1=-0.809014
 FodoCell: Line=(Quad.Foc.HalfSlice, Drift, 2*(Quad.Defoc.HalfSlice), Drift, Quad.Foc.HalfSlice)
 Fodo.Start: MARKER, FITPOINT=1
 Fodo.End: MARKER, FITPOINT=1
