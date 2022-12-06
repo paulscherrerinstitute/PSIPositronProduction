@@ -91,18 +91,16 @@ class TestBeamDynamics(unittest.TestCase):
         self.assertAlmostEqual(standardDf.loc[30911, 'py'], -1.726)
         self.assertAlmostEqual(standardDf.loc[7954, 'pz'], 57.33000000000001)
 
-    def test_rftrack_to_standard_yongke1(self):
-        """Test conversion from RF-Track format to standard data frame."""
-        # 'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_CLICTW-Ztc200-Ri15-Bc0.50.dat'
-        # 'CTSB-N02-F100-E06-S0.5-T5.0_FCTest_Pavel_SolC_CLICTW-OptionA08B7-Bc0.50.dat'
-        octaveMatrixName = 'A_RF'
+    def test_rftrack_to_standard_df_1(self):
+        """Test conversion from RF-Track format to standard data frame, example 1."""
         sourceFilePath = 'Data/PositronsAt200MeV/YongkeDistrsV1/' + \
             'CTSB-N02-F100-E06-S0.5-T5.0_HTSTest_JNov04_SolC_PSISW-Ztc200-Ri15-Bc1.50.dat'
+        octaveMatrixName = 'A_RF'
         # TODO: Following 2 values are very approximative
         s = 10e3   # [mm]
         Qbunch = 25.e-9   # [C]
         standardDf, outFwfPath = bd.convert_rftrack_to_standard_df(
-            sourceFilePath=sourceFilePath, octaveMatrixName=octaveMatrixName,
+            sourceFilePath=sourceFilePath, sourceFormat='octave', octaveMatrixName=octaveMatrixName,
             rftrackDfFormat='rftrack_xp_t', s=s, pdgId=-11, Qbunch=Qbunch,
             outFwfPath=pl.Path(sourceFilePath).stem
         )
@@ -169,7 +167,7 @@ class TestBeamDynamics(unittest.TestCase):
         assert_file_generated(sddsFilePath)
 
     def test_plot_1(self):
-        """Test plotting of phase space."""
+        """Test plotting of phase space, standard example."""
         discardLostParticles = True
         zProjection = 1380.
         zCut = None
@@ -179,9 +177,24 @@ class TestBeamDynamics(unittest.TestCase):
             zProjection=zProjection, zCut=zCut
         )
         plotDefs = bd.set_plot_defs_from_distrs(
-            [standardDf], setNames=['TransvPlane', 'TransvPsAngles']
+            [standardDf], setNames=['TransvPlane', 'TransvPsAngles', 'LongPsT']
         )
-        ax = bd.plot_distr([standardDf], plotDefs, colors=['b'])
+        ax = bd.plot_distr([standardDf], plotDefs)
+
+    def test_plot_2(self):
+        """Test plotting of phase space,
+        example with point-like distributions on certain coordinates."""
+        sourceFilePath = 'Data/RFTrackResults/CaptureLinac/' + \
+            'CaptureLinacUpTo200MeV_LBandLargeR_RealSolenoids_Type1and2_TargetAt35mm/' + \
+            'DistrOut_PositronLinac.dat'
+        standardDf, _ = bd.convert_rftrack_to_standard_df(
+            sourceFilePath=sourceFilePath, sourceFormat='octave', octaveMatrixName='A_PL',
+            rftrackDfFormat='rftrack_xp_t', pdgId=-11
+        )
+        plotDefs = bd.set_plot_defs_from_distrs(
+            [standardDf], setNames=['TransvPlane', 'TransvPsAngles', 'LongPsT']
+        )
+        ax = bd.plot_distr([standardDf], plotDefs)
 
     # zProjection = 500.   # [mm]
     # zCut = 500.   # [mm]

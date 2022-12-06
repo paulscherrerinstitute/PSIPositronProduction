@@ -278,7 +278,7 @@ def extend_standard_df(standardDf, removeNanInf):
         .compare(dfExtension.loc[indsToCompare, commonQuantities].round(numDecimalPlaces))
     if dfDiff.shape[0] > 0:
         warnings.warn(
-            '{:d} differing particles detected with index: ' +
+            '{:d} differing particles detected with index: '.format(dfDiff.shape[0]) +
             ', '.join('{:d}'.format(partInd) for partInd in dfDiff.index)
         )
         print(dfDiff)
@@ -1003,7 +1003,12 @@ def plot_hist(
             binCenters = (binEdges[1:] + binEdges[:-1]) / 2.
             gaussFits = scistats.norm.pdf(binCenters, mu, sigma)
         except RuntimeWarning as err:
-            if str(err) != 'divide by zero encountered in true_divide':
+            knownMessages = [
+                'divide by zero encountered in divide',
+                'divide by zero encountered in true_divide',
+                'invalid value encountered in divide'
+            ]
+            if not str(err) in knownMessages:
                 raise
         else:
             binWidths = binEdges[1:] - binEdges[:-1]
@@ -1051,7 +1056,7 @@ def scatter_individual_marker_style(pathCollectionObj, markerStyles):
 
 def plot_phase_space_2d(
         ax, distr, varName1=None, varName2=None, var1Center=False, var2Center=False,
-        title=None, legendLabel='',
+        title=None, legendLabel='', displayTable=True,
         binWidth1=None, binWidth2=None, lims1=None, lims2=None, pzCutoff=None,
         markerStyle=None, markerSize=2, color=None, opacityHist=1.
 ):
@@ -1070,10 +1075,15 @@ def plot_phase_space_2d(
         # TODO: Check number of bins.
         # Are small density region not plotted if bins is small (e.g. 100)?
         data, x_e, y_e = np.histogram2d(x, y, bins=1000, density=True)
-        color = sciinterp.interpn(
-            (0.5*(x_e[1:]+x_e[:-1]), 0.5*(y_e[1:]+y_e[:-1])), data, np.vstack([x, y]).T,
-            method='splinef2d', bounds_error=False
-        )
+        try:
+            color = sciinterp.interpn(
+                (0.5*(x_e[1:]+x_e[:-1]), 0.5*(y_e[1:]+y_e[:-1])), data, np.vstack([x, y]).T,
+                method='splinef2d', bounds_error=False
+            )
+            if np.all(np.isnan(color)):
+                color = np.ones(x.shape)
+        except ValueError:
+            color = np.ones(x.shape)
         # Sort the points by density, so that the densest points are plotted last
         idx = color.argsort()
         x, y, color = x.iloc[idx], y.iloc[idx], color[idx]
@@ -1130,7 +1140,7 @@ def plot_phase_space_2d(
     # ax[0,0].yaxis.tick_right()
     ax[1, 0].set_ylabel('Bin counts')
     ax[0, 1].set_xlabel('Bin counts')
-    if (varName1 == 'x' and varName2 == 'xp') or (varName1 == 'y' and varName2 == 'yp'):
+    if displayTable and (varName1 == 'x' and varName2 == 'xp') or (varName1 == 'y' and varName2 == 'yp'):
         # TODO: Pass filter specs
         plot_parameters(ax[1, 1], distr, varName1, filterSpecs={})
     else:
