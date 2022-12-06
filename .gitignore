@@ -4,23 +4,26 @@ Data/**/*.dat
 Data/**/*.sdf_txt
 Data/**/filterSpecs.json
 # Do not monitor output folders of different tools
-RFTrack/YongkeTool_V?/**/*.dat
+RunningSimulations/RFTrack/YongkeTool_V?/**/*.dat
 RFTrackOutput/*
 # Python
 **/__pycache__
 **/.ipynb_checkpoints
 # Elegant output files
-**/*.bun
-**/*.cen
-**/*.fin
-**/*.mag
-**/*.out
-**/*.par
-**/*.sig
-**/*.twi
-**/*.sdds
+RunningSimulations/Elegant/**/*.bun
+RunningSimulations/Elegant/**/*.cen
+RunningSimulations/Elegant/**/*.fin
+RunningSimulations/Elegant/**/*.mag
+RunningSimulations/Elegant/**/*.out
+RunningSimulations/Elegant/**/*.par
+RunningSimulations/Elegant/**/*.sig
+RunningSimulations/Elegant/**/*.twi
+RunningSimulations/Elegant/**/*.sdds
+RunningSimulations/Elegant/FCCee_WP1p3/Fodo/FodoOptim.lat
+RunningSimulations/Elegant/FCCee_WP1p3/Matching/Matched.lat
 # Astra output files
-**/*.001
-**/*.ini
-**/win_config.dat
-**/NORRAN
+**/Astra/**/*.001
+**/Astra/**/*.ini
+**/Astra/**/win_config.dat
+**/Astra/**/NORRAN
+**/Astra/**/*.001
