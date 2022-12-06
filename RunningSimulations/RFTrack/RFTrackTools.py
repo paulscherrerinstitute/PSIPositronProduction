@@ -3,7 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import BeamDynamics as bd
-import RF_Track as rft
+try:
+    import RF_Track as rft
+except ModuleNotFoundError:
+    pass
 
 
 DEFAULT_COLOR_CYCLE = plt.rcParams["axes.prop_cycle"].by_key()['color']
