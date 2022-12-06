@@ -96,11 +96,12 @@ AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
 #
 TRACK_AFTER_AMD = True
 #
+ACCEL_WITH_HOMOG_EZ = True
 RF_FIELDMAP = 'RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
 RF_FIELDMAP_DIM = '1D'
 RF_FIELDMAP_TYPE = 'Full'
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
-RF_N_STRUCTURES = 5 + 10  # 5 + 22
+RF_N_STRUCTURES = 5 + 23  # 5 + 23
 RF_L_STRUCTURE = 3.240  # [m]
 #   Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
 RF_FREQ = 2e9  # [Hz]
@@ -207,12 +208,13 @@ FINAL_L = 1.  # [m]
 T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
 N_RF_STRUCT_1ST_TRACKING = 5
 N_RF_CELLS_LONG_PS_CUT = 2
+PZ_MIN_LONG_PS_CUT = 40.  # [MeV/c]
 ###################################################################################################
 
 
 splitTracking = RF_N_STRUCTURES > N_RF_STRUCT_1ST_TRACKING
 
-OUT_REL_PATH = './Results_CaptureLinac/LatestSim/'
+OUT_REL_PATH = './RFTrackOutput/LatestSimCaptureLinac/'
 
 # TODO: Refactorize, same code in Run_Linac1_Section1_Simple.py
 distrMatNp = np.loadtxt(BUNCH_FILEPATH, skiprows=1)
@@ -354,6 +356,9 @@ if TRACK_AFTER_AMD:
                 RF_FIELDMAP, RF_FIELDMAP_DIM, powerScalingFactor, tRf, rfPhase,
                 aperture=RF_R_APERTURE, additionalHomogBz=rfHomogBz
             )
+        if ACCEL_WITH_HOMOG_EZ and structInd > N_RF_STRUCT_1ST_TRACKING - 1:
+            rf = rft.Drift(rf.get_length())
+            rf.set_static_Efield(0, 0, RF_SET_GRADIENTS[-1])
         lat.append(rf)
         zFinalInVolume += rf.get_length() / 2.
         beamlineSetup.loc[len(beamlineSetup.index)] = [
@@ -412,7 +417,7 @@ beamlineSetup['zWrtAmdPeakField'] = \
     beamlineSetup['zWrtTargetExit'] + TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD
 beamlineSetup[[
     'ElementType', 'zWrtTargetExit', 'zWrtAmdPeakField', 'MechanicalLength', 'Fieldmap'
-]].to_csv('./Results_CaptureLinac/LatestSim/BeamlineSetup.dat', index=None)
+]].to_csv(os.path.join(OUT_REL_PATH, 'BeamlineSetup.dat'), index=None)
 
 trackingOpts = rft.TrackingOptions()
 trackingOpts.dt_mm = 0.2
@@ -438,10 +443,10 @@ B1_6d = vol.get_bunch_at_s1()
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
 bd.convert_rftrack_to_standard_df(
     rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
-    outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_After1stTracking_6d'
+    outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_After1stTracking_6d')
 )
 
-fig1, ax1 = plt.subplots(6, 1)
+fig1, ax1 = plt.subplots(7, 1)
 rfttools.save_plot_transport(ax1, vol, B0_6dT, B1_6dT, OUT_REL_PATH, outSuffix='1')
 plt.show(block=False)
 
@@ -454,7 +459,7 @@ if splitTracking:
     #     pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart2))
     #     print('pzFinalAutophasing 2nd tracking = {:e} MeV/c'.format(pzFinalAutophasing))
     tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * RF_L_CELL*1e3  # [mm/c]
-    M1_6d_frontBuckets = M1_6d[M1_6d[:, 4] < tCut, :]
+    M1_6d_frontBuckets = M1_6d[(M1_6d[:, 4] < tCut) & (M1_6d[:, 5] > PZ_MIN_LONG_PS_CUT), :]
     B1_6d.set_phase_space(M1_6d_frontBuckets)
     # B1_6dT = rft.Bunch6dT(refPart2)
     # or
@@ -462,7 +467,7 @@ if splitTracking:
     bd.convert_rftrack_to_standard_df(
         rftrackDf=M1_6d_frontBuckets, rftrackDfFormat='rftrack_xp_t',
         s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
-        outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_FrontBuckets_After1stTracking_6d'
+        outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_FrontBuckets_After1stTracking_6d')
     )
     vol.set_s1(zFinalInVolume)
     trackingOpts.t_max_mm = zFinalInVolume * 1e3 + T_ADD_NON_RELATIVISTIC
@@ -474,7 +479,7 @@ if splitTracking:
     M2_6d = B2_6d.get_phase_space("%x %xp %y %yp %t %Pc")
     bd.convert_rftrack_to_standard_df(
         rftrackDf=M2_6d, rftrackDfFormat='rftrack_xp_t', s=B2_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
-        outFwfPath='./Results_CaptureLinac/LatestSim/DistrOut_After2ndTracking_6d'
+        outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_After2ndTracking_6d')
     )
 
     rfttools.save_plot_transport(ax1, vol, B1_6dT, B2_6dT, OUT_REL_PATH, outSuffix='2')
