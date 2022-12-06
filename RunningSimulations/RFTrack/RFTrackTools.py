@@ -7,6 +7,9 @@ import RF_Track as rft
 
 
 DEFAULT_COLOR_CYCLE = plt.rcParams["axes.prop_cycle"].by_key()['color']
+DEFAULT_QUANTITIES_TO_PLOT = [
+    'Bz', 'Ez', 'mean_E', 'CaptureEfficiency', 'Emittances', 'Sigmas', 'TwissBetas'
+]
 
 # TODO: Make path relative
 RF_CLIC_FIELDMAP_BASEPATH = \
@@ -175,21 +178,30 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
     plot_transport(ax, emFields, transportTable, captureEfficiency)
 
 
-def load_plot_transport(ax, simRelPath, sShiftEMFields=0, tShift=0, fileSuffix=''):
+def load_plot_transport(
+        ax, simRelPath, fileSuffix='', sShiftEMFields=0, sShiftGlobal=0, normFactorCaptureEff=1.,
+        quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT
+):
     # TODO: Global variable, use also in save_plot_transport()
     transportFileBases = ['EMFields', 'TransportTable', 'CaptureEfficiency']
     if fileSuffix != '':
         transportFileNames = [fBase + '_' + fileSuffix + '.dat' for fBase in transportFileBases]
+    else:
+        transportFileNames = [fBase + '.dat' for fBase in transportFileBases]
     transportDfs = []
     for fileName in transportFileNames:
         transportDfs.append(
             pd.read_csv(os.path.join(simRelPath, fileName))
         )
-    plot_transport(ax, *transportDfs, sShiftEMFields=sShiftEMFields, tShift=tShift)
+    plot_transport(
+        ax, *transportDfs, sShiftEMFields=sShiftEMFields, sShiftGlobal=sShiftGlobal,
+        normFactorCaptureEff=normFactorCaptureEff, quantitiesToPlot=quantitiesToPlot)
 
 
 # TODO: Move following function to module BeamDynamics?
-def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift=0):
+def plot_transport(
+        ax, emFields, transpTab, captureEff, sShiftEMFields=0, sShiftGlobal=0,
+        normFactorCaptureEff=1., quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT):
     try:
         s = transpTab['mean_S'] / 1e3  # [m]
         sigmaXName = 'sigma_X'
@@ -199,73 +211,107 @@ def plot_transport(ax, emFields, transpTab, captureEff, sShiftEMFields=0, tShift
         s = transpTab['S']  # [m]
         sigmaXName = 'sigma_x'
         sigmaYName = 'sigma_y'
+    # TODO: Is sShiftEMFields still necessary?
+    s += sShiftGlobal
     # TODO: Recognize when axis is empty (xlim = [0, 1])
     sLims = np.array([
         np.min([ax[0].get_xlim()[0], s.min()]),
         np.max([ax[0].get_xlim()[1], s.max()])
     ])
-    BzLims = np.array([0, np.max([ax[0].get_ylim()[1], emFields['Bz'].max()])])
-    EzLims = np.array([
-        np.min([ax[1].get_ylim()[0], emFields['Ez'].min()]),
-        np.max([ax[1].get_ylim()[1], emFields['Ez'].max()])
-    ])
-    Elims = np.array([
-        np.min([ax[2].get_ylim()[0], transpTab['mean_E'].min()]),
-        np.max([ax[2].get_ylim()[1], transpTab['mean_E'].max()])
-    ])
-    emitLims = np.array([
-        np.min([ax[4].get_ylim()[0], transpTab[['emitt_x', 'emitt_y', 'emitt_4d']].stack().min()]),
-        np.max([ax[4].get_ylim()[1], transpTab[['emitt_x', 'emitt_y', 'emitt_4d']].stack().max()])
-    ])
-    sigmaLims = np.array([
-        np.min([ax[5].get_ylim()[0], transpTab[[sigmaXName, sigmaYName]].stack().min()]),
-        np.max([ax[5].get_ylim()[1], transpTab[[sigmaXName, sigmaYName]].stack().max()])
-    ])
-    betaLims = np.array([
-        np.min([ax[6].get_ylim()[0], transpTab['beta_x'].min()]),
-        np.max([ax[6].get_ylim()[1], transpTab['beta_y'].max()])
-    ])
-    ax[0].plot(emFields['z']+sShiftEMFields, emFields['Bz'])  # , color=DEFAULT_COLOR_CYCLE[0]
-    ax[0].set_xlim(sLims)
-    ax[0].set_ylim(BzLims)
-    ax[0].set_xlabel('s [m]')
-    ax[0].set_ylabel('Bz [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
-    # ax[0].grid()
-    ax[1].plot(emFields['z']+sShiftEMFields, emFields['Ez']/1e6, '--')
-    # , color=DEFAULT_COLOR_CYCLE[0]
-    ax[1].set_xlim(sLims)
-    ax[1].set_ylim(EzLims/1e6)
-    ax[1].set_ylabel('Ez [MV/m]')  # , color=DEFAULT_COLOR_CYCLE[0]
-    ax[2].plot(s, transpTab['mean_E'])
-    ax[2].set_xlim(sLims)
-    ax[2].set_ylim(Elims)
-    ax[2].set_xlabel('s [m]')
-    ax[2].set_ylabel('E [MeV]')
-    # ax[2].grid()
-    ax[3].plot(captureEff['s']/1e3+sShiftEMFields, captureEff['CaptureEfficiency'], '--')
-    ax[3].set_xlim(sLims)
-    ax[3].set_ylim([0, 1])
-    ax[3].set_ylabel('Capture eff.')
-    noMarkers = 20
-    markEvery = int(len(s) / noMarkers)
-    if markEvery < 1:
-        markEvery = 1
-    p = ax[4].plot(s, transpTab['emitt_x']/1e3, '-v', markevery=markEvery)
-    ax[4].plot(s, transpTab['emitt_y']/1e3, '-^', markevery=markEvery, color=p[0].get_color())
-    ax[4].plot(s, transpTab['emitt_4d']/1e3, '-', markevery=markEvery, color=p[0].get_color())
-    ax[4].set_xlim(sLims)
-    ax[4].set_ylim(emitLims/1e3)
-    ax[4].set_xlabel('s [m]')
-    ax[4].set_ylabel('Emitt. [pimmrad]')
-    ax[4].legend(['x (2d)', 'y (2d)', 'Trans. 4d'])
-    # ax[4].grid()
-    p = ax[5].plot(s, transpTab[sigmaXName], '--v', markevery=markEvery)
-    ax[5].plot(s, transpTab[sigmaYName], '--^', markevery=markEvery, color=p[0].get_color())
-    ax[5].set_xlim(sLims)
-    ax[5].set_ylim(sigmaLims)
-    ax[5].set_ylabel('Sigma [mm]')
-    p = ax[6].plot(s, transpTab['beta_x'], '--v', markevery=markEvery)
-    ax[6].plot(s, transpTab['beta_y'], '--^', markevery=markEvery, color=p[0].get_color())
-    ax[6].set_xlim(sLims)
-    ax[6].set_ylim(betaLims)
-    ax[6].set_ylabel('Betatron function [m]')
+    for axInd, quantity in enumerate(quantitiesToPlot):
+        if quantity == 'Bz':
+            ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['Bz'])
+            # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].set_xlim(sLims)
+            BzLims = np.array([0, np.max([ax[axInd].get_ylim()[1], emFields['Bz'].max()])])
+            ax[axInd].set_ylim(BzLims)
+            ax[axInd].set_xlabel('s [m]')
+            ax[axInd].set_ylabel('Bz [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].grid(True)
+        elif quantity == 'Ez':
+            ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['Ez']/1e6, '--')
+            # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].set_xlim(sLims)
+            EzLims = np.array([
+                np.min([ax[axInd].get_ylim()[0], emFields['Ez'].min()]),
+                np.max([ax[axInd].get_ylim()[1], emFields['Ez'].max()])])
+            ax[axInd].set_ylim(EzLims/1e6)
+            ax[axInd].set_ylabel('Ez [MV/m]')  # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].grid(True)
+        elif quantity == 'mean_E':
+            ax[axInd].plot(s, transpTab['mean_E'])
+            ax[axInd].set_xlim(sLims)
+            Elims = np.array([
+                np.min([ax[axInd].get_ylim()[0], transpTab['mean_E'].min()]),
+                np.max([ax[axInd].get_ylim()[1], transpTab['mean_E'].max()])])
+            ax[axInd].set_ylim(Elims)
+            ax[axInd].set_xlabel('s [m]')
+            ax[axInd].set_ylabel('E [MeV]')
+            ax[axInd].grid(True)
+        elif quantity == 'CaptureEfficiency':
+            ax[axInd].plot(
+                captureEff['s']/1e3+sShiftEMFields+sShiftGlobal,
+                captureEff['CaptureEfficiency']*normFactorCaptureEff, '--'
+            )
+            ax[axInd].set_xlim(sLims)
+            ax[axInd].set_ylim([0, 1])
+            ax[axInd].set_ylabel('Capture eff.')
+            ax[axInd].grid(True)
+        elif quantity == 'Emittances':
+            noMarkers = 20
+            markEvery = int(len(s) / noMarkers)
+            if markEvery < 1:
+                markEvery = 1
+            p = ax[axInd].plot(s, transpTab['emitt_x']/1e3, '-v', markevery=markEvery)
+            ax[axInd].plot(
+                s, transpTab['emitt_y']/1e3, '-^', markevery=markEvery, color=p[0].get_color())
+            ax[axInd].plot(
+                s, transpTab['emitt_4d']/1e3, '-', markevery=markEvery, color=p[0].get_color())
+            ax[axInd].set_xlim(sLims)
+            emitLims = np.array([
+                np.min([
+                    ax[axInd].get_ylim()[0],
+                    transpTab[['emitt_x', 'emitt_y', 'emitt_4d']].stack().min()]),
+                np.max([
+                    ax[axInd].get_ylim()[1],
+                    transpTab[['emitt_x', 'emitt_y', 'emitt_4d']].stack().max()])])
+            ax[axInd].set_ylim(emitLims/1e3)
+            ax[axInd].set_xlabel('s [m]')
+            ax[axInd].set_ylabel('Emitt. [pimmrad]')
+            ax[axInd].legend(['x (2d)', 'y (2d)', 'Trans. 4d'])
+            ax[axInd].grid(True)
+        elif quantity == 'Sigmas':
+            noMarkers = 20
+            markEvery = int(len(s) / noMarkers)
+            if markEvery < 1:
+                markEvery = 1
+            p = ax[axInd].plot(s, transpTab[sigmaXName], '--v', markevery=markEvery)
+            ax[axInd].plot(
+                s, transpTab[sigmaYName], '--^', markevery=markEvery, color=p[0].get_color())
+            ax[axInd].set_xlim(sLims)
+            sigmaLims = np.array([
+                np.min([
+                    ax[axInd].get_ylim()[0], transpTab[[sigmaXName, sigmaYName]].stack().min()]),
+                np.max([
+                    ax[axInd].get_ylim()[1], transpTab[[sigmaXName, sigmaYName]].stack().max()])])
+            ax[axInd].set_ylim(sigmaLims)
+            ax[axInd].set_ylabel('Sigma [mm]')
+            ax[axInd].grid(True)
+        elif quantity == 'TwissBetas':
+            try:
+                betaLims = np.array([
+                    np.min([ax[axInd].get_ylim()[0], transpTab['beta_x'].min()]),
+                    np.max([ax[axInd].get_ylim()[1], transpTab['beta_y'].max()])
+                ])
+                p = ax[axInd].plot(s, transpTab['beta_x'], '--v', markevery=markEvery)
+                ax[axInd].plot(
+                    s, transpTab['beta_y'], '--^', markevery=markEvery, color=p[0].get_color())
+                ax[axInd].set_xlim(sLims)
+                ax[axInd].set_ylim(betaLims)
+                ax[axInd].set_ylabel('Betatron function [m]')
+                ax[axInd].grid(True)
+            except KeyError:
+                pass
+        elif quantity is None:
+            ax[axInd].set_visible(False)
+        ax[-1].set_xlabel('s [m]')
