@@ -1006,7 +1006,8 @@ def plot_hist(
             knownMessages = [
                 'divide by zero encountered in divide',
                 'divide by zero encountered in true_divide',
-                'invalid value encountered in divide'
+                'invalid value encountered in divide',
+                'invalid value encountered in true_divide'
             ]
             if not str(err) in knownMessages:
                 raise
