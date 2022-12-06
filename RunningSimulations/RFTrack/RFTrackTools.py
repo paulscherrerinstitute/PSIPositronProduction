@@ -178,6 +178,57 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
     plot_transport(ax, emFields, transportTable, captureEfficiency)
 
 
+def save_plot_transport_in_lattice(ax, lat, beam0, beam1, outRelPath, outSuffix=''):
+    # TODO: Integrate in save_plot_transport for volume, differences are small.
+    # Prepare Ez and Bz for plotting
+    zAxis = np.arange(0., lat.get_length(), 1e-3)   # [m]
+    Ez = []
+    Bz = []
+    for z in zAxis:
+        E, B = lat.get_field(0, 0, z*1e3, 0)   # x,y,z,t (mm, mm/c)
+        Ez.append(E[2])
+        Bz.append(B[2])
+    Ez = np.array(Ez)
+    Bz = np.array(Bz)
+    emFields = pd.DataFrame(np.row_stack([zAxis, Ez, Bz]).T, columns=['z', 'Ez', 'Bz'])
+    if outSuffix != '':
+        outSuffix = '_' + outSuffix
+    emFields.to_csv(os.path.join(outRelPath, 'EMFields{:s}.dat'.format(outSuffix)), index=None)
+    # Get transport table
+    # TODO: Add Twiss parameters
+    getTransportTableStr = '%S %emitt_x %emitt_y %emitt_4d %sigma_x %sigma_y %mean_E ' + \
+        '%beta_x %beta_y'
+    TT = lat.get_transport_table(getTransportTableStr)
+    transportTable = pd.DataFrame(TT, columns=getTransportTableStr.replace('%', '').split())
+    transportTable.to_csv(
+        os.path.join(outRelPath, 'TransportTable{:s}.dat'.format(outSuffix)), index=None
+    )
+    # Compute capture efficiency
+    M0 = beam0.get_phase_space()
+    Mlost = beam1.get_lost_particles()
+    # Columns of Mlost like columns 1-6 of M0, in addition:
+    # t [mm/c] at which particle was lost, m [kg],
+    # Q [?] of particle type, Q of macro-particle [?]
+    try:
+        # sInd = 4  # in Volume()
+        sInd = 6  # in Lattice()
+        Mlost = Mlost[Mlost[:, sInd].argsort()]
+        sCapture = Mlost[:, sInd]
+        captureEff = (
+            M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)
+        ) / M0.shape[0]
+    except IndexError:
+        sCapture = np.array(TT[[0, -1], 0])
+        captureEff = np.ones(sCapture.shape)
+    captureEfficiency = pd.DataFrame(
+        np.row_stack([sCapture, captureEff]).T, columns=['s', 'CaptureEfficiency']
+    )
+    captureEfficiency.to_csv(
+        os.path.join(outRelPath, 'CaptureEfficiency{:s}.dat'.format(outSuffix)), index=None
+    )
+    plot_transport(ax, emFields, transportTable, captureEfficiency)
+
+
 def load_plot_transport(
         ax, simRelPath, fileSuffix='', sShiftEMFields=0, sShiftGlobal=0, normFactorCaptureEff=1.,
         quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT
