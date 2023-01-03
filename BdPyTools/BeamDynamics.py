@@ -43,7 +43,8 @@ UNITS_STANDARD_DF_EXTENDED = {
     't': 'ns',
     'pdgId': '', 'Q': 'C',
     'Ekin': 'MeV', 'gammaRel': '', 'betaRel': '',
-    'xp': 'mrad', 'yp': 'mrad'
+    'xp': 'mrad', 'yp': 'mrad',
+    'r': 'mm'
 }
 PRECISION_STANDARD_DF = 9
 
@@ -1064,11 +1065,22 @@ def plot_phase_space_2d(
     if varName1 is None or varName2 is None:
         raise ValueError('varName1 and varName2 are mandatory arguments.')
     opacityScatter = 1.
-    for vName, vCenter in [[varName1, var1Center], [varName2, var2Center]]:
+    x = None
+    y = None
+    for ind, (vName, vCenter, var) in enumerate(
+            [[varName1, var1Center, x], [varName2, var2Center, y]]):
+        try:
+            var = distr[vName]
+        except KeyError:
+            if vName == 'r':
+                var = np.sqrt(distr['x']**2. + distr['y']**2.)
         if vCenter:
-            distr[vName] = distr[vName] - distr[vName].mean()
-    x = distr[varName1]
-    y = distr[varName2]
+            # TODO: Does this change of distr also remains outside of the function?
+            var = var - var.mean()
+        if ind == 0:
+            x = var
+        else:
+            y = var
     if color is None:
         # Calculate the point density
         # xy = np.vstack([distr[varName1], distr[varName2]])
@@ -1094,15 +1106,15 @@ def plot_phase_space_2d(
     )
     scatter_individual_marker_style(pathColl, markerStyle)
     plot_hist(
-        ax[1, 0], distr[varName1], binWidth=binWidth1, binLims=lims1,
+        ax[1, 0], x, binWidth=binWidth1, binLims=lims1,
         legendLabel=legendLabel, opacityHist=opacityHist
     )
     plot_hist(
-        ax[0, 1], distr[varName2], binWidth=binWidth2, binLims=lims2,
+        ax[0, 1], y, binWidth=binWidth2, binLims=lims2,
         legendLabel=legendLabel, orientation='horizontal',
         opacityHist=opacityHist
     )
-    pzLabels = ['All, Counts = {:d}'.format(distr.shape[0]), ]
+    pzLabels = ['All, Counts = {:d}'.format(x.shape[0]), ]
     if pzCutoff is not None:
         distrLowPz = distr[distr['pz'] < pzCutoff]
         ax[0, 0].scatter(
@@ -1125,8 +1137,8 @@ def plot_phase_space_2d(
             pzLabels, markerscale=5.,
             loc='upper left', bbox_to_anchor=(1.2, -0.2)
         )
-    set_lims(ax[0, 0], 'x', distr[varName1], lims1)
-    set_lims(ax[0, 0], 'y', distr[varName2], lims2)
+    set_lims(ax[0, 0], 'x', x, lims1)
+    set_lims(ax[0, 0], 'y', y, lims2)
     ax[1, 0].set_xlim(ax[0, 0].get_xlim())
     ax[1, 0].invert_yaxis()
     # ax[1,0].set_xticklabels([])
@@ -1364,6 +1376,14 @@ def set_plot_defs_from_distrs(distrList, setNames):
             'varName1': 't', 'varName2': 'z',
             'lims1': (distrAll['t'].min(), distrAll['t'].max()),
             'lims2': (distrAll['z'].min(), distrAll['z'].max()),
+            'opacityHist': 0.6,
+        },
+    ]
+    plotDefs['r-pz'] = [
+        {
+            'varName1': 'r', 'varName2': 'pz',
+            'lims1': (0, np.sqrt((distrAll['x']**2. + distrAll['y']**2.).max())),
+            'lims2': (distrAll['pz'].min(), distrAll['pz'].max()),
             'opacityHist': 0.6,
         },
     ]
