@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = 0.  # [m], initialization just to enable output of beamline setup
 #
 TRACK_ONLY_REF_PART = False
-BUNCH_FILEPATH = 'Data/RFTrackResults/CaptureLinac/' \
+BUNCH_FILEPATH = 'Data/RFTrack/CaptureLinac/' \
     'PositronLinac_15RFStruct_LBandLargeR_SolenoidsType1and2/DistrOut_After2ndTracking_6d.sdf_txt'
 RFTRACK_FORMAT = 'rftrack_xp_t'
 BUNCH_PDGID = -11
@@ -24,11 +24,11 @@ FILTER_SPECS_MAIN_BUNCH = 'MainBunch'
 #
 TRACK_AFTER_MATCHING_1 = True
 #
-RF_FIELDMAP = 'RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
 RF_FIELDMAP_DIM = '1D'
 RF_N_PERIODS_PER_STRUCTURE = None
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
-RF_N_STRUCTURES = 13  # 13
+RF_N_STRUCTURES = 13 + 22  # 13 (1.54 GeV) + 22 (2.84 GeV)
 RF_L_STRUCTURE = 3.240  # [m]
 RF_R_APERTURE = None
 #   Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
