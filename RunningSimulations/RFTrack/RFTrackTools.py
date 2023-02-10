@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import OctavePythonInterface as opi
 import BeamDynamics as bd
 try:
     import RF_Track as rft
@@ -14,108 +15,59 @@ DEFAULT_QUANTITIES_TO_PLOT = [
     'Bz', 'Ez', 'mean_E', 'CaptureEfficiency', 'Emittances', 'Sigmas', 'TwissBetas'
 ]
 
-# TODO: Make path relative
-RF_CLIC_FIELDMAP_BASEPATH = \
-    '/home/tia/Repos/GIT_PSIPositronProduction/' + \
-    'RFTrack/YongkeTool_V1/field/field_map_CLIC_Lband'
-RF_CLIC_FREQ = 1.9986163867e+09   # [Hz]
-RF_CLIC_GRADIENT = 11.23e6   # [V/m]
-RF_CLIC_CELLS_PER_PERIOD = 3.
-RF_CLIC_L_CELL = bd.C / RF_CLIC_FREQ / RF_CLIC_CELLS_PER_PERIOD  # [m]
-
-
-def load_fieldmap_rf_clic():
-    # TODO: Integrate reading of a 3 dimensional array in load_octave_matrices()
-    # and thenuse that function
-    meshAxes = ['ra', 'ta', 'za']
-    meshes = {}
-    for meshAx in meshAxes:
-        filePath = RF_CLIC_FIELDMAP_BASEPATH + '_' + meshAx + '.dat'
-        meshes[meshAx] = np.loadtxt(filePath, skiprows=5)
-    matDimensions = [meshes[meshAx].shape[0] for meshAx in reversed(meshAxes)]
-    complexComponents = ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz']
-    rfFields = {}
-    for complComp in complexComponents:
-        filePath = RF_CLIC_FIELDMAP_BASEPATH + '_' + complComp + '.dat'
-        rfFields[complComp] = np.loadtxt(
-            filePath, skiprows=5, dtype=np.complex128,
-            converters={0: lambda s: np.fromstring(
-                s.decode("latin1").replace('(', '').replace(')', ''), sep=','
-            ).view(np.complex128)}
-        )
-        rfFields[complComp] = rfFields[complComp].reshape(matDimensions).transpose()
-        # .astype(np.complex128)
-    return rfFields, meshes
-
-
-def rf_clic_single_period(rfFieldmapDim):
-    # Fields of 1 RF period (3 cells)
-    # TODO: Data location and path construction
-    rfFields, rfMesh = load_fieldmap_rf_clic()
-    if rfFieldmapDim == '1D':
-        rfPeriod = rft.RF_FieldMap_1d(
-            rfFields['Ez'][0, 0, :],
-            rfMesh['za'][1] - rfMesh['za'][0],
-            rfMesh['za'][-1],
-            RF_CLIC_FREQ, +1
-        )
-    elif rfFieldmapDim == '3D':
-        rfPeriod = rft.RF_FieldMap(
-            rfFields['Ex'], rfFields['Ey'], rfFields['Ez'],
-            rfFields['Bx'], rfFields['By'], rfFields['Bz'],
-            rfMesh['ra'][0], rfMesh['ta'][0],
-            rfMesh['ra'][1] - rfMesh['ra'][0],
-            rfMesh['ta'][1] - rfMesh['ta'][0],
-            rfMesh['za'][1] - rfMesh['za'][0],
-            rfMesh['za'][-1],
-            RF_CLIC_FREQ, +1
-        )
-        rfPeriod.set_cylindrical(True)
-    else:
-        raise ValueError('Invalid rfFieldmapDim={:s}.'.format(rfFieldmapDim))
-    return rfPeriod
+# TODO: Remove when everything working
+# RF_CLIC_FREQ = 1.9986163867e+09   # [Hz]
+# RF_CLIC_GRADIENT = 11.23e6   # [V/m]
+# RF_CLIC_CELLS_PER_PERIOD = 3.
+# RF_CLIC_L_CELL = bd.C / RF_CLIC_FREQ / RF_CLIC_CELLS_PER_PERIOD  # [m]
 
 
 def rf_struct_from_single_period(
         fieldmapFilePath, fieldmapDim, totPeriods, powerScalingFactor, t0, phase,
-        aperture=None, additionalHomogBz=None
-):
-    rfPeriod = rf_clic_single_period(fieldmapDim)
-    rfPeriod.set_P_map(1.)
-    rfPeriod.set_P_actual(powerScalingFactor)
-    if t0 is not None:
-        rfPeriod.set_t0(t0)
-    rfPeriod.set_phid(phase)
-    if aperture is not None:
-        rfPeriod.set_aperture(aperture, aperture, 'circular')
-    if additionalHomogBz is not None:
-        rfPeriod.set_static_Bfield(0, 0, additionalHomogBz)
+        aperture=None, additionalHomogBz=None):
+    rfPeriod = rf_from_field_map(
+        fieldmapFilePath, fieldmapDim, powerScalingFactor, t0, phase,
+        aperture=aperture, additionalHomogBz=additionalHomogBz)
     structLat = rft.Lattice()
     for rfPeriodInd in np.arange(totPeriods):
         structLat.append(rfPeriod)
     return structLat
 
 
-def rf_struct_from_full_fieldmap(
+def rf_from_field_map(
         fieldmapFilePath, fieldmapDim, powerScalingFactor, t0, phase,
-        aperture=None, additionalHomogBz=None
-):
-    rfField = bd.load_octave_matrices(fieldmapFilePath)
-    dz = (rfField['Z'][1] - rfField['Z'][0]) * 1e-3  # [m]
-    structL = (rfField['Z'][-1] - rfField['Z'][0]) * 1e-3  # [m]
-    rfStruct = rft.RF_FieldMap_1d(rfField['E'], dz, structL, rfField['frequency'], +1)
-    rfStruct.set_P_map(1.)
+        aperture=None, additionalHomogBz=None):
+    rfField = opi.load_octave_matrices(fieldmapFilePath)
+    dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
+    structL = rfField['Z'][-1] - rfField['Z'][0]  # [m]
+    if fieldmapDim == '1D':
+        rf = rft.RF_FieldMap_1d(
+            rfField['Ez'], dz, structL, rfField['frequency'], rfField['wave_direction'])  # [V/m]
+    elif fieldmapDim == '3D_RotationallySym':
+        dr = rfField['R'][1] - rfField['R'][0]  # [m]
+        dphi = rfField['PHI'][1] - rfField['PHI'][0]  # [rad]
+        rf = rft.RF_FieldMap(
+            rfField['Ex'], rfField['Ey'], rfField['Ez'],
+            rfField['Bx'], rfField['By'], rfField['Bz'],
+            rfField['R'][0], rfField['PHI'][0], dr, dphi, dz, structL,
+            rfField['frequency'], rfField['wave_direction']
+        )
+        rf.set_cylindrical(True)
+        # TODO: Check with Andrea, are Ex, Ey, Ez cartesian or polar, i.e. Er, Ephi, Ez?
+    else:
+        raise ValueError('Invalid fieldmapDim={:s}.'.format(fieldmapDim))
+    rf.set_P_map(1.)
     if powerScalingFactor is not None:
-        rfStruct.set_P_actual(powerScalingFactor)
+        rf.set_P_actual(powerScalingFactor)
     if t0 is not None:
-        rfStruct.set_t0(t0)
+        rf.set_t0(t0)
     if phase is not None:
-        rfStruct.set_phid(phase)
+        rf.set_phid(phase)
     if aperture is not None:
-        rfStruct.set_aperture(aperture, aperture, 'circular')
+        rf.set_aperture(aperture, aperture, 'circular')
     if additionalHomogBz is not None:
-        rfStruct.set_static_Bfield(0, 0, additionalHomogBz)
-    return rfStruct
+        rf.set_static_Bfield(0, 0, additionalHomogBz)
+    return rf
 
 
 def solenoid_from_analytical_formula(L, R_IN_COIL, R_OUT_COIL, J, extensionFactor=5., dz=1e-3):
@@ -127,7 +79,7 @@ def solenoid_from_analytical_formula(L, R_IN_COIL, R_OUT_COIL, J, extensionFacto
 
 
 def solenoid_from_fieldmap(fieldmapFilePath, fieldmapCurrent, setCurrent):
-    solField = bd.load_octave_matrices(fieldmapFilePath)
+    solField = opi.load_octave_matrices(fieldmapFilePath)
     dz = solField['Z'][1] - solField['Z'][0]  # [m]
     BzOnAxis = solField['Bz'] / fieldmapCurrent * setCurrent  # [T]
     solenoid = rft.Static_Magnetic_FieldMap_1d(BzOnAxis, dz)

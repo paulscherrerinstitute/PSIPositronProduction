@@ -13,6 +13,7 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.markers as pltMarkers
 import matplotlib.patches as pltPatches
+import OctavePythonInterface as opi
 
 
 pd.set_option('display.max_rows', None)
@@ -722,95 +723,6 @@ def convert_standard_df_to_placet(
     return placetDf, outFilePath
 
 
-def find_octave_all_matrices(sourceFilePath):
-    KNOWN_OCTAVE_TYPES = {
-        # typeName: headerLength
-        'scalar': 2,
-        'matrix': 4,
-        'complex matrix': 4,
-    }
-    with open(sourceFilePath, 'r') as sourceFile:
-        matList = []
-        matIndToCheckEnd = -1
-        lineInd = -1
-        for line in sourceFile:
-            lineInd += 1
-            if '# name:' in line:
-                startInd = lineInd
-                typeLine = next(sourceFile)
-                lineInd += 1
-                matIndToCheckEnd = len(matList) - 1
-                for type, hLength in KNOWN_OCTAVE_TYPES.items():
-                    if '# type: ' + type == typeLine[:-1]:
-                        # for ind in range(hLength - 1):
-                        #     firstNumericLine = next(sourceFile)
-                        #     lineInd += 1
-                        # if '(' in firstNumericLine and ')' in firstNumericLine:
-                        #     numType = 'complex'
-                        # else:
-                        #     numType = 'real'
-                        mat = {
-                            'name': line[8:-1],
-                            'type': type,
-                            'startInd': startInd,
-                            'headerLength': hLength,
-                            'endInd': None,
-                            # 'numType': numType
-                        }
-                        matList.append(mat)
-                if matIndToCheckEnd >= 0 and matList[matIndToCheckEnd]['endInd'] is None:
-                    matList[matIndToCheckEnd]['endInd'] = startInd - 3
-                    matList[matIndToCheckEnd]['maxRows'] = (
-                        matList[matIndToCheckEnd]['endInd'] - matList[matIndToCheckEnd]['startInd']
-                        - matList[matIndToCheckEnd]['headerLength'] + 1
-                    )
-        totLines = lineInd
-        matList[-1]['endInd'] = totLines - 2
-        for mat in matList:
-            mat['skipRows'] = mat['startInd'] + mat['headerLength']
-            mat['skipFooter'] = totLines - mat['endInd'] - 2
-    return matList
-
-
-def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
-    matDefList = find_octave_all_matrices(sourceFilePath)
-    matNamesAll = [mat['name'] for mat in matDefList]
-    matStartInds = [mat['startInd'] for mat in matDefList]
-    matHeaderLengths = [mat['headerLength'] for mat in matDefList]
-    singleMatrixRequest = False
-    if matNamesToLoad is None:
-        matNamesToLoad = matNamesAll
-    elif isinstance(matNamesToLoad, str):
-        singleMatrixRequest = True
-        matNamesToLoad = [matNamesToLoad]
-    matList = {}
-    for matDef in matDefList:
-        if matDef['name'] in matNamesToLoad:
-            if matDef['type'] in ['scalar', 'matrix']:
-                matDf = pd.read_csv(
-                    sourceFilePath, engine='python', delim_whitespace=True,
-                    index_col=False, header=None, names=colNames,
-                    skiprows=matDef['skipRows'], skipfooter=matDef['skipFooter']
-                )
-            elif matDef['type'] == 'complex matrix':
-                matNp = np.loadtxt(
-                    sourceFilePath, skiprows=matDef['skipRows'], max_rows=matDef['maxRows'],
-                    dtype=np.complex128, converters={0: lambda s: np.fromstring(
-                        s.decode("latin1").replace('(', '').replace(')', ''), sep=','
-                    ).view(np.complex128)}
-                )
-                matDf = pd.DataFrame(data=matNp, columns=colNames)
-            if colNames is not None:
-                matList[matDef['name']] = matDf
-            else:
-                matList[matDef['name']] = matDf.to_numpy().squeeze()
-                if matList[matDef['name']].shape == ():
-                    matList[matDef['name']] = matList[matDef['name']].item()
-    if singleMatrixRequest:
-        return matList[matNamesToLoad[0]]
-    return matList
-
-
 def convert_from_input_check(
         df, sourceFilePath, sourceFormat='standardDf',
         octaveMatrixName=None, colNames=None
@@ -820,7 +732,7 @@ def convert_from_input_check(
             if sourceFormat == 'standardDf':
                 df = load_standard_fwf(sourceFilePath)
             elif sourceFormat == 'octave':
-                df = load_octave_matrices(
+                df = opi.load_octave_matrices(
                     sourceFilePath, matNamesToLoad=octaveMatrixName,
                     colNames=colNames
                 )
@@ -1153,7 +1065,8 @@ def plot_phase_space_2d(
     # ax[0,0].yaxis.tick_right()
     ax[1, 0].set_ylabel('Bin counts')
     ax[0, 1].set_xlabel('Bin counts')
-    if displayTable and (varName1 == 'x' and varName2 == 'xp') or (varName1 == 'y' and varName2 == 'yp'):
+    if displayTable and (varName1 == 'x' and varName2 == 'xp') \
+            or (varName1 == 'y' and varName2 == 'yp'):
         # TODO: Pass filter specs
         plot_parameters(ax[1, 1], distr, varName1, filterSpecs={})
     else:
