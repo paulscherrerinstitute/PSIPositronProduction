@@ -15,12 +15,6 @@ DEFAULT_QUANTITIES_TO_PLOT = [
     'Bz', 'Ez', 'mean_E', 'CaptureEfficiency', 'Emittances', 'Sigmas', 'TwissBetas'
 ]
 
-# TODO: Remove when everything working
-# RF_CLIC_FREQ = 1.9986163867e+09   # [Hz]
-# RF_CLIC_GRADIENT = 11.23e6   # [V/m]
-# RF_CLIC_CELLS_PER_PERIOD = 3.
-# RF_CLIC_L_CELL = bd.C / RF_CLIC_FREQ / RF_CLIC_CELLS_PER_PERIOD  # [m]
-
 
 def rf_struct_from_single_period(
         fieldmapFilePath, fieldmapDim, totPeriods, powerScalingFactor, t0, phase,
@@ -35,15 +29,19 @@ def rf_struct_from_single_period(
 
 
 def rf_from_field_map(
-        fieldmapFilePath, fieldmapDim, powerScalingFactor, t0, phase,
+        fieldmapOrFilePath, fieldmapDim, powerScalingFactor, t0, phase,
         aperture=None, additionalHomogBz=None):
-    rfField = opi.load_octave_matrices(fieldmapFilePath)
+    try:
+        fieldmapOrFilePath.keys()
+        rfField = fieldmapOrFilePath
+    except AttributeError:
+        rfField = opi.load_octave_matrices(fieldmapOrFilePath)
     dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
     structL = rfField['Z'][-1] - rfField['Z'][0]  # [m]
     if fieldmapDim == '1D':
         rf = rft.RF_FieldMap_1d(
             rfField['Ez'], dz, structL, rfField['frequency'], rfField['wave_direction'])  # [V/m]
-    elif fieldmapDim == '3D_RotationallySym':
+    elif fieldmapDim == '3D_CylindricalSym':
         dr = rfField['R'][1] - rfField['R'][0]  # [m]
         dphi = rfField['PHI'][1] - rfField['PHI'][0]  # [rad]
         rf = rft.RF_FieldMap(
