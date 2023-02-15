@@ -11,8 +11,6 @@ def find_octave_all_matrices(sourceFilePath):
     }
     with open(sourceFilePath, 'r') as sourceFile:
         matList = []
-        # TODO: Remove following line if Variant 2 is adopted
-        # matIndToCheckEnd = -1
         lineInd = 0
         for line in sourceFile:
             lineInd += 1
@@ -25,18 +23,8 @@ def find_octave_all_matrices(sourceFilePath):
                 else:
                     ndims = None
                 lineInd += 2
-                # TODO: Remove following line if Variant 2 is adopted
-                # matIndToCheckEnd = len(matList) - 1
                 for type, hLength in KNOWN_OCTAVE_TYPES.items():
                     if '# type: ' + type == typeLine[:-1]:
-                        # TODO: Remove following lines when cleaning up the function
-                        # for ind in range(hLength - 1):
-                        #     firstNumericLine = next(sourceFile)
-                        #     lineInd += 1
-                        # if '(' in firstNumericLine and ')' in firstNumericLine:
-                        #     numType = 'complex'
-                        # else:
-                        #     numType = 'real'
                         mat = {
                             'name': line[8:-1],
                             'type': type,
@@ -46,25 +34,10 @@ def find_octave_all_matrices(sourceFilePath):
                             'ndims': ndims,
                         }
                         matList.append(mat)
-                # TODO: Remove following lines if Variant 2 is adopted
-                # Variant 1
-                # if matIndToCheckEnd >= 0 and matList[matIndToCheckEnd]['endInd'] is None:
-                #     matList[matIndToCheckEnd]['endInd'] = startInd - 3
-                #     matList[matIndToCheckEnd]['maxRows'] = (
-                #        matList[matIndToCheckEnd]['endInd'] - matList[matIndToCheckEnd]['startInd']
-                #         - matList[matIndToCheckEnd]['headerLength'] + 1
-                #     )
-            # Variant 2
             if line.strip() == '' and len(matList) > 0 and matList[-1]['endInd'] is None:
                 matList[-1]['endInd'] = lineInd - 1
                 matList[-1]['maxRows'] = matList[-1]['endInd'] - matList[-1]['startInd'] \
                     - matList[-1]['headerLength'] + 1
-            # if line.strip() != '':
-            #     lastLineWithContentInd = lineInd
-        # # matList[-1]['endInd'] = totLines - 4 OLD
-        # matList[-1]['endInd'] = lastLineWithContentInd
-        # matList[-1]['maxRows'] = matList[-1]['endInd'] - matList[-1]['startInd'] \
-        #     - matList[-1]['headerLength'] + 1
         totLines = lineInd
         for mat in matList:
             mat['skipRows'] = mat['startInd'] + mat['headerLength'] - 1
@@ -96,12 +69,13 @@ def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
                     skiprows=matDef['skipRows'], skipfooter=matDef['skipFooter']
                 )
             elif matDef['type'] == 'complex matrix':
+                def string_to_complex(byteStr):
+                    charStr = byteStr.decode('latin1')[1:-1]
+                    complexArray = np.fromstring(charStr, sep=',').view(np.complex128)
+                    return complexArray
                 matNp = np.loadtxt(
                     sourceFilePath, skiprows=matDef['skipRows'], max_rows=matDef['maxRows'],
-                    dtype=np.complex128, converters={0: lambda s: np.fromstring(
-                        s.decode("latin1").replace('(', '').replace(')', ''), sep=','
-                    ).view(np.complex128)}
-                )
+                    dtype=np.complex128, converters=string_to_complex)
                 matDf = pd.DataFrame(data=matNp, columns=colNames)
             if colNames is not None:
                 matList[matDef['name']] = matDf
