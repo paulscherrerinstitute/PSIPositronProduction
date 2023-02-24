@@ -105,9 +105,17 @@ AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
 TRACK_AFTER_AMD = True
 #
 ACCEL_WITH_HOMOG_EZ = False
-RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
-RF_FIELDMAP_DIM = '1D'
+#
+# RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+# RF_FIELDMAP_DIM = '1D'
+# RF_FIELDMAP_TYPE = 'Full'
+# RF_PHASE_CORR = 0  # [deg]
+# or
+RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
+RF_FIELDMAP_DIM = '2D'
 RF_FIELDMAP_TYPE = 'Full'
+RF_PHASE_CORR = -0.4  # [deg]
+#
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
 RF_N_STRUCTURES = 28  # 5 + 23
 RF_L_STRUCTURE = 3.240  # [m]
@@ -118,10 +126,9 @@ RF_L_CELL = bd.C / RF_FREQ * 9./20.  # [m]
 # RF_L_MECH_MARGIN = xxx  # [m]
 # RF_PHASES = (-125.7, -127.8, -132.0, -102.9, -95.0)  # [deg],
 #   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +30e-3 m
-RF_PHASES = (-130., -130., -135., -75, -75)  # [deg],
+RF_PHASES = np.array([-130., -130., -135., -75, -75]) + RF_PHASE_CORR  # [deg]
 #   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +35e-3 m
 RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
-RF_SEPARATION = RF_L_STRUCTURE - 3.207140  # [m], struct. separation partially included in fieldmap
 RF_R_APERTURE = None   # [m]
 #
 AUTOPHASING = True
@@ -311,6 +318,8 @@ if AMD_R_APERTURE is not None:
     amdAperture.set_aperture(AMD_R_APERTURE, AMD_R_APERTURE, 'circular')
     vol.add(amdAperture, 0, 0, 0, 'entrance')
 
+rfField = opi.load_octave_matrices(RF_FIELDMAP)
+rfSeparation = RF_L_STRUCTURE - np.diff(rfField['Z'].flatten()[[0, -1]])[0]
 if TRACK_AFTER_AMD:
     lat = rft.Lattice()
     if INITIAL_L > 0:
@@ -338,7 +347,6 @@ if TRACK_AFTER_AMD:
         rfHomogBz = SOL_HOMOG_BZ
     else:
         rfHomogBz = None
-    rfField = opi.load_octave_matrices(RF_FIELDMAP)
     for structInd in np.arange(RF_N_STRUCTURES):
         try:
             powerScalingFactor = (RF_SET_GRADIENTS[structInd] / RF_FIELDMAP_GRAD) ** 2.
@@ -379,9 +387,9 @@ if TRACK_AFTER_AMD:
         if splitTracking and structInd == N_RF_STRUCT_1ST_TRACKING - 1:
             zStop1stTracking = zFinalInVolume
         if structInd < RF_N_STRUCTURES-1:
-            rfGap.set_length(RF_SEPARATION)
+            rfGap.set_length(rfSeparation)
         else:
-            rfGap.set_length(RF_SEPARATION / 2.)
+            rfGap.set_length(rfSeparation / 2.)
         lat.append(rfGap)
         zFinalInVolume += rfGap.get_length()
         if not AUTOPHASING:
@@ -455,6 +463,69 @@ bd.convert_rftrack_to_standard_df(
 
 fig1, ax1 = plt.subplots(7, 1)
 rfttools.save_plot_transport(ax1, vol, B0_6dT, B1_6dT, OUT_REL_PATH, outSuffix='1')
+plt.show(block=False)
+
+yMesh = np.arange(0, 0.03, 1e-3)
+zMesh = np.arange(0.25, 1., 1e-3)
+emFields = rfttools.save_em_fields(vol, [0], yMesh, zMesh, returnMultidimNpArray=True)
+r = emFields[0, :, :, 1]
+z = emFields[0, :, :, 2]
+Er = emFields[0, :, :, 4]
+Etheta = emFields[0, :, :, 3]
+Ez = emFields[0, :, :, 5]
+Br = emFields[0, :, :, 7]
+Btheta = emFields[0, :, :, 6]
+Bz = emFields[0, :, :, 8]
+BzSolenoids = 0.5  # [T], attention, this is only the homogeneous part!
+Emax = 35e6  # [ V/m]
+
+fig2, ax2 = plt.subplots(3, 2)
+p00 = ax2[0, 0].pcolormesh(z, r, Er, shading='nearest', vmin=-Emax, vmax=Emax)
+c00 = fig2.colorbar(p00, ax=ax2[0, 0])
+ax2[0, 0].set_xlabel('z [m]')
+ax2[0, 0].set_ylabel('r [m]')
+c00.set_label('Er [V/m]', rotation=270)
+p10 = ax2[1, 0].pcolormesh(z, r, Etheta, shading='nearest', vmin=-Emax, vmax=Emax)
+c10 = fig2.colorbar(p10, ax=ax2[1, 0])
+ax2[1, 0].set_xlabel('z [m]')
+ax2[1, 0].set_ylabel('r [m]')
+c10.set_label('Etheta [V/m]', rotation=270)
+p20 = ax2[2, 0].pcolormesh(z, r, Ez, shading='nearest', vmin=-Emax, vmax=Emax)
+c20 = fig2.colorbar(p20, ax=ax2[2, 0])
+ax2[2, 0].set_xlabel('z [m]')
+ax2[2, 0].set_ylabel('r [m]')
+c20.set_label('Ez [V/m]', rotation=270)
+p01 = ax2[0, 1].pcolormesh(z, r, Br, shading='nearest', vmin=-0.07, vmax=0.07)
+c01 = fig2.colorbar(p01, ax=ax2[0, 1])
+ax2[0, 1].set_xlabel('z [m]')
+ax2[0, 1].set_ylabel('r [m]')
+c01.set_label('Br [T]', rotation=270)
+p11 = ax2[1, 1].pcolormesh(z, r, Btheta, shading='nearest', vmin=-0.07, vmax=0.07)
+c11 = fig2.colorbar(p11, ax=ax2[1, 1])
+ax2[1, 1].set_xlabel('z [m]')
+ax2[1, 1].set_ylabel('r [m]')
+c11.set_label('Btheta [T]', rotation=270)
+p21 = ax2[2, 1].pcolormesh(z, r, Bz-BzSolenoids, shading='nearest', vmin=-0.07, vmax=0.07)
+c21 = fig2.colorbar(p21, ax=ax2[2, 1])
+ax2[2, 1].set_xlabel('z [m]')
+ax2[2, 1].set_ylabel('r [m]')
+c21.set_label('Bz [T]', rotation=270)
+plt.show(block=False)
+
+rInds = [0, 15, 29]
+fig3, ax3 = plt.subplots(2, 1)
+for rInd in rInds:
+    ax3[0].plot(z[rInd, :], Er[rInd, :], label='r = {:.0f} mm'.format(r[rInd, 0]*1e3))
+    ax3[1].plot(z[rInd, :], Ez[rInd, :], label='r = {:.0f} mm'.format(r[rInd, 0]*1e3))
+ax3[0].set_ylim([-Emax, Emax])
+ax3[0].set_xlabel('z [m]')
+ax3[0].set_ylabel('Er [V/m]')
+ax3[0].legend()
+ax3[0].grid()
+ax3[1].set_ylim([-Emax, Emax])
+ax3[1].set_xlabel('z [m]')
+ax3[1].set_ylabel('Ez [V/m]')
+ax3[1].grid()
 plt.show(block=False)
 
 if splitTracking:

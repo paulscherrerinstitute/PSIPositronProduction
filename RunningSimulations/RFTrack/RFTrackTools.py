@@ -36,22 +36,29 @@ def rf_from_field_map(
         rfField = fieldmapOrFilePath
     except AttributeError:
         rfField = opi.load_octave_matrices(fieldmapOrFilePath)
-    dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
-    structL = rfField['Z'][-1] - rfField['Z'][0]  # [m]
+    # TODO: Check generality of following line
+    structL = np.diff(rfField['Z'].flatten()[[0, -1]])[0]  # [m]
     if fieldmapDim == '1D':
+        dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
         rf = rft.RF_FieldMap_1d(
             rfField['Ez'], dz, structL, rfField['frequency'], rfField['wave_direction'])  # [V/m]
+    elif fieldmapDim == '2D':
+        dr = np.diff(rfField['R'][0, [0, 1]])[0]  # [m]
+        dz = np.diff(rfField['Z'][[0, 1], 0])[0]  # [m]
+        rf = rft.RF_FieldMap_2d(
+            rfField['Er'], rfField['Ez'], rfField['Btheta'], rfField['Bz'], dr, dz, structL,
+            rfField['frequency'], rfField['wave_direction'])
     elif fieldmapDim == '3D_CylindricalSym':
         dr = rfField['R'][1] - rfField['R'][0]  # [m]
-        dphi = rfField['PHI'][1] - rfField['PHI'][0]  # [rad]
+        dtheta = rfField['THETA'][1] - rfField['THETA'][0]  # [rad]
+        dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
         rf = rft.RF_FieldMap(
             rfField['Ex'], rfField['Ey'], rfField['Ez'],
             rfField['Bx'], rfField['By'], rfField['Bz'],
-            rfField['R'][0], rfField['PHI'][0], dr, dphi, dz, structL,
+            rfField['R'][0], rfField['THETA'][0], dr, dtheta, dz, structL,
             rfField['frequency'], rfField['wave_direction']
         )
         rf.set_cylindrical(True)
-        # TODO: Check with Andrea, are Ex, Ey, Ez cartesian or polar, i.e. Er, Ephi, Ez?
     else:
         raise ValueError('Invalid fieldmapDim={:s}.'.format(fieldmapDim))
     rf.set_P_map(1.)
@@ -84,22 +91,37 @@ def solenoid_from_fieldmap(fieldmapFilePath, fieldmapCurrent, setCurrent):
     return solenoid
 
 
-def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
-    # Prepare Ez and Bz for plotting
-    zAxis = np.arange(vol.get_s0(), vol.get_s1(), 1e-3)   # [m]
-    # zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
-    Ez = []
-    Bz = []
-    for z in zAxis:
-        E, B = vol.get_field(0, 0, z*1e3, 0)   # x,y,z,t (mm, mm/c)
-        Ez.append(E[2])
-        Bz.append(B[2])
-    Ez = np.array(Ez)
-    Bz = np.array(Bz)
-    emFields = pd.DataFrame(np.row_stack([zAxis, Ez, Bz]).T, columns=['z', 'Ez', 'Bz'])
+def save_em_fields(
+        vol, xMesh, yMesh, zMesh, outRelPath=None, outSuffix=None, returnMultidimNpArray=False):
+    emFieldsNp = np.zeros([len(zMesh)*len(yMesh)*len(xMesh), 9])
+    meshInd = 0
+    for x in xMesh:
+        for y in yMesh:
+            for z in zMesh:
+                E, B = vol.get_field(x*1e3, y*1e3, z*1e3, 0)  # x [mm], y [mm], z [mm], t [mm/c]
+                emFieldsNp[meshInd, 0] = x
+                emFieldsNp[meshInd, 1] = y
+                emFieldsNp[meshInd, 2] = z
+                emFieldsNp[meshInd, 3] = E[0]
+                emFieldsNp[meshInd, 4] = E[1]
+                emFieldsNp[meshInd, 5] = E[2]
+                emFieldsNp[meshInd, 6] = B[0]
+                emFieldsNp[meshInd, 7] = B[1]
+                emFieldsNp[meshInd, 8] = B[2]
+                meshInd += 1
+    if returnMultidimNpArray:
+        return emFieldsNp.reshape([len(xMesh), len(yMesh), len(zMesh), 9])
+    emFields = pd.DataFrame(emFieldsNp, columns=['x', 'y', 'z', 'Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz'])
     if outSuffix != '':
         outSuffix = '_' + outSuffix
     emFields.to_csv(os.path.join(outRelPath, 'EMFields{:s}.dat'.format(outSuffix)), index=None)
+    return emFields
+
+
+def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
+    zMesh = np.arange(vol.get_s0(), vol.get_s1(), 1e-3)  # [m]
+    # zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
+    emFields = save_em_fields(vol, [0], [0], zMesh, outRelPath, outSuffix)
     # Get transport table
     getTransportTableStr = '%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E'
     TT = vol.get_transport_table(getTransportTableStr)

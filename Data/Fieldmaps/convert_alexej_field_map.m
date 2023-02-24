@@ -10,16 +10,16 @@ Ey = rawE(:, 6) + j * rawE(:, 7);
 Ez = rawE(:, 8) + j * rawE(:, 9);
 
 fid = fopen ('pLinacF3_full44cells_Hcomp_YZplane_dy2mm_dz0p1L.fld', 'r');
-rawB = textscan(fid, '%f%f%f%f%f%f%f%f%f', 'HeaderLines', 2);
+rawH = textscan(fid, '%f%f%f%f%f%f%f%f%f', 'HeaderLines', 2);
 fclose(fid);
-rawB = cell2mat(rawB);
-size(rawB)
-Bx = rawB(:, 4) + j * rawB(:, 5);
-By = rawB(:, 6) + j * rawB(:, 7);
-Bz = rawB(:, 8) + j * rawB(:, 9);
+rawH = cell2mat(rawH);
+size(rawH)
+Hx = rawH(:, 4) + j * rawH(:, 5);
+Hy = rawH(:, 6) + j * rawH(:, 7);
+Hz = rawH(:, 8) + j * rawH(:, 9);
 
 for axInd = 1:3
-    if sum(rawE(:, axInd) ~= rawB(:, axInd)) > 0
+    if sum(rawE(:, axInd) ~= rawH(:, axInd)) > 0
         error('Meshes do not correspond!')
     endif
 endfor
@@ -29,28 +29,29 @@ Z = rawE(:, 3);
 
 amplitudeScaling = 3.3513e7 / 5.1797e3;
 phaseAlignment = exp(pi*j);
+mu0 = 1.25663706212e-6;  % [H/m]
 matShape = [461, 16];
-X = reshape(X, matShape);
-Y = reshape(Y, matShape);
+THETA = reshape(X, matShape);
+R = reshape(Y, matShape);
 Z = reshape(Z, matShape) + 0.11942;
-Ex = reshape(Ex, matShape) * amplitudeScaling * phaseAlignment;
-Ey = reshape(Ey, matShape) * amplitudeScaling * phaseAlignment;
+Etheta = reshape(Ex, matShape) * amplitudeScaling * phaseAlignment;
+Er = reshape(Ey, matShape) * amplitudeScaling * phaseAlignment;
 Ez = reshape(Ez, matShape) * amplitudeScaling * phaseAlignment;
-Bx = reshape(Bx, matShape) * amplitudeScaling * phaseAlignment;
-By = reshape(By, matShape) * amplitudeScaling * phaseAlignment;
-Bz = reshape(Bz, matShape) * amplitudeScaling * phaseAlignment;
-size(X)
-size(Y)
+Btheta = reshape(Hx, matShape) * amplitudeScaling * phaseAlignment * mu0;
+Br = reshape(Hy, matShape) * amplitudeScaling * phaseAlignment * mu0;
+Bz = reshape(Hz, matShape) * amplitudeScaling * phaseAlignment * mu0;
+size(R)
+size(THETA)
 size(Z)
-size(Ex)
-size(Ey)
+size(Er)
+size(Etheta)
 size(Ez)
-size(Bx)
-size(By)
+size(Br)
+size(Btheta)
 size(Bz)
 
 frequency = 2e9  % [Hz]
-phase_advance = 9./10 * pi  % [rad]
+phase_advance = 9./10. * pi  % [rad]
 wave_direction = +1
 cell_length = 2.99792458e8 / frequency * 9./20.  % [m]
 tot_cells = 44
@@ -58,10 +59,11 @@ gradient_avg = 20e6  % [MV/m]
 
 % save(
 %     'pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat',
-%     'X', 'Y', 'Z', 'Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz',
+%     'R', 'Z', 'Er', 'Ez', 'Btheta', 'Bz',
 %     'frequency', 'phase_advance', 'wave_direction', 'cell_length', 'tot_cells', 'gradient_avg');
 
 field1d = load('../../RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat');
+phaseShift = exp(j*pi/6.);
 
 clf();
 figure(1);
@@ -74,20 +76,53 @@ ylabel('Ez [V/m]');
 legend('Old 1D field map (Hermann)', 'New 2D field map (Alexej)');
 grid on;
 subplot(3, 1, 2)
-plot(field1d.Z, real(field1d.Ez));
+plot(field1d.Z, real(field1d.Ez*phaseShift));
 hold on;
-plot(Z(:, 1), real(Ez(:, 1)));
+plot(Z(:, 1), real(Ez(:, 1)*phaseShift));
 xlabel('Z [m]');
 ylabel('Re(Ez) [V/m]');
 legend('Old 1D field map (Hermann)', 'New 2D field map (Alexej)');
 grid on;
 subplot(3, 1, 3)
-plot(field1d.Z, imag(field1d.Ez));
+plot(field1d.Z, imag(field1d.Ez*phaseShift));
 hold on;
-plot(Z(:, 1), imag(Ez(:, 1)));
+plot(Z(:, 1), imag(Ez(:, 1)*phaseShift));
 xlabel('Z [m]');
 ylabel('Im(Ez) [V/m]');
 legend('Old 1D field map (Hermann)', 'New 2D field map (Alexej)');
 grid on;
+figure(2);
+subplot(4, 1, 1)
+plot(Z(:, 1), abs(Er(:, 1)));
+hold on;
+plot(Z(:, 8), abs(Er(:, 8)));
+plot(Z(:, 16), abs(Er(:, 16)));
+xlabel('Z [m]');
+ylabel('abs(Er) [V/m]');
+legend('On axis', 'Middle r', 'End r');
+subplot(4, 1, 2)
+plot(Z(:, 1), abs(Btheta(:, 1)));
+hold on;
+plot(Z(:, 8), abs(Btheta(:, 8)));
+plot(Z(:, 16), abs(Btheta(:, 16)));
+xlabel('Z [m]');
+ylabel('abs(Btheta) [T]');
+legend('On axis', 'Middle r', 'End r');
+subplot(4, 1, 3)
+plot(Z(:, 1), abs(Etheta(:, 1)));
+hold on;
+plot(Z(:, 8), abs(Etheta(:, 8)));
+plot(Z(:, 16), abs(Etheta(:, 16)));
+xlabel('Z [m]');
+ylabel('abs(Etheta) [V/m]');
+legend('On axis', 'Middle r', 'End r');
+subplot(4, 1, 4)
+plot(Z(:, 1), abs(Br(:, 1)));
+hold on;
+plot(Z(:, 8), abs(Br(:, 8)));
+plot(Z(:, 16), abs(Br(:, 16)));
+xlabel('Z [m]');
+ylabel('abs(Br) [T]');
+legend('On axis', 'Middle r', 'End r');
 
 return
