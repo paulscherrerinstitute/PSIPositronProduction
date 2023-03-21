@@ -28,18 +28,18 @@ Y = rawE(:, 2);
 Z = rawE(:, 3);
 
 amplitudeScaling = 3.3513e7 / 5.1797e3;
-phaseAlignment = exp(pi*j);
+globalPhaseAlignment = exp(pi*j);
 mu0 = 1.25663706212e-6;  % [H/m]
 matShape = [461, 16];
 THETA = reshape(X, matShape);
 R = reshape(Y, matShape);
 Z = reshape(Z, matShape) + 0.11942;
-Etheta = reshape(Ex, matShape) * amplitudeScaling * phaseAlignment;
-Er = reshape(Ey, matShape) * amplitudeScaling * phaseAlignment;
-Ez = reshape(Ez, matShape) * amplitudeScaling * phaseAlignment;
-Btheta = reshape(Hx, matShape) * amplitudeScaling * phaseAlignment * mu0;
-Br = reshape(Hy, matShape) * amplitudeScaling * phaseAlignment * mu0;
-Bz = reshape(Hz, matShape) * amplitudeScaling * phaseAlignment * mu0;
+Etheta = reshape(Ex, matShape) * amplitudeScaling * globalPhaseAlignment;
+Er = reshape(Ey, matShape) * amplitudeScaling * globalPhaseAlignment;
+Ez = reshape(Ez, matShape) * amplitudeScaling * globalPhaseAlignment;
+Btheta = reshape(Hx, matShape) * amplitudeScaling * globalPhaseAlignment * mu0;
+Br = reshape(Hy, matShape) * amplitudeScaling * globalPhaseAlignment * mu0;
+Bz = reshape(Hz, matShape) * amplitudeScaling * globalPhaseAlignment * mu0;
 size(R)
 size(THETA)
 size(Z)
@@ -63,33 +63,46 @@ gradient_avg = 20e6  % [MV/m]
 %     'frequency', 'phase_advance', 'wave_direction', 'cell_length', 'tot_cells', 'gradient_avg');
 
 field1d = load('../../RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat');
-phaseShift = exp(j*pi/6.);
+
+overallPhaseShift = exp(j*pi*0);
 
 clf();
 figure(1);
-subplot(3, 1, 1)
+subplot(5, 1, 1)
 plot(field1d.Z, abs(field1d.Ez));
 hold on;
 plot(Z(:, 1), abs(Ez(:, 1)));
 xlabel('Z [m]');
-ylabel('Ez [V/m]');
+ylabel('abs(Ez) on axis [V/m]');
 legend('Old 1D field map (Hermann)', 'New 2D field map (Alexej)');
 grid on;
-subplot(3, 1, 2)
-plot(field1d.Z, real(field1d.Ez*phaseShift));
+subplot(5, 1, 2)
+plot(field1d.Z, real(field1d.Ez*overallPhaseShift));
 hold on;
-plot(Z(:, 1), real(Ez(:, 1)*phaseShift));
+plot(Z(:, 1), real(Ez(:, 1)*overallPhaseShift));
 xlabel('Z [m]');
-ylabel('Re(Ez) [V/m]');
+ylabel('Re(Ez) on axis [V/m]');
 legend('Old 1D field map (Hermann)', 'New 2D field map (Alexej)');
 grid on;
-subplot(3, 1, 3)
-plot(field1d.Z, imag(field1d.Ez*phaseShift));
+subplot(5, 1, 3)
+plot(field1d.Z, imag(field1d.Ez*overallPhaseShift));
 hold on;
-plot(Z(:, 1), imag(Ez(:, 1)*phaseShift));
+plot(Z(:, 1), imag(Ez(:, 1)*overallPhaseShift));
 xlabel('Z [m]');
-ylabel('Im(Ez) [V/m]');
+ylabel('Im(Ez) on axis [V/m]');
 legend('Old 1D field map (Hermann)', 'New 2D field map (Alexej)');
+grid on;
+subplot(5, 1, 4)
+plot(Z(:, 8), real(Btheta(:, 8)*overallPhaseShift), 'r');
+xlabel('Z [m]');
+ylabel(['Re(Btheta) at r=' num2str(R(1,8)*1e3, 2) 'mm [T]']);
+legend('New 2D field map (Alexej)');
+grid on;
+subplot(5, 1, 5)
+plot(Z(:, 8), real(Er(:, 8)*overallPhaseShift), 'r');
+xlabel('Z [m]');
+ylabel(['Re(Er) at r=' num2str(R(1,8)*1e3, 2) 'mm [T]']);
+legend('New 2D field map (Alexej)');
 grid on;
 figure(2);
 subplot(4, 1, 1)
