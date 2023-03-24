@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import timeit
 
 
 def find_octave_all_matrices(sourceFilePath):
@@ -51,8 +52,6 @@ def find_octave_all_matrices(sourceFilePath):
 def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
     matDefList = find_octave_all_matrices(sourceFilePath)
     matNamesAll = [mat['name'] for mat in matDefList]
-    matStartInds = [mat['startInd'] for mat in matDefList]
-    matHeaderLengths = [mat['headerLength'] for mat in matDefList]
     singleMatrixRequest = False
     if matNamesToLoad is None:
         matNamesToLoad = matNamesAll
@@ -63,24 +62,25 @@ def load_octave_matrices(sourceFilePath, matNamesToLoad=None, colNames=None):
     for matDef in matDefList:
         if matDef['name'] in matNamesToLoad:
             if matDef['type'] in ['scalar', 'matrix']:
-                matDf = pd.read_csv(
-                    sourceFilePath, engine='python', delim_whitespace=True,
-                    index_col=False, header=None, names=colNames,
-                    skiprows=matDef['skipRows'], skipfooter=matDef['skipFooter']
-                )
+                converters = None
+                dtype = np.float64
             elif matDef['type'] == 'complex matrix':
+                dtype = np.complex128
+
                 def string_to_complex(byteStr):
                     charStr = byteStr.decode('latin1')[1:-1]
                     complexArray = np.fromstring(charStr, sep=',').view(np.complex128)
                     return complexArray
-                matNp = np.loadtxt(
-                    sourceFilePath, skiprows=matDef['skipRows'], max_rows=matDef['maxRows'],
-                    dtype=np.complex128, converters=string_to_complex)
-                matDf = pd.DataFrame(data=matNp, columns=colNames)
+                converters = string_to_complex
+            # execTimeStart = timeit.default_timer()
+            matNp = np.loadtxt(
+                sourceFilePath, skiprows=matDef['skipRows'], max_rows=matDef['maxRows'],
+                dtype=dtype, converters=converters)
+            # execTimeStop = timeit.default_timer()
+            # print('Time for np.loadtxt(): ', execTimeStop-execTimeStart, 's')
             if colNames is not None:
-                matList[matDef['name']] = matDf
+                matList[matDef['name']] = pd.DataFrame(data=matNp, columns=colNames)
             else:
-                matNp = matDf.to_numpy().squeeze()
                 if matDef['ndims'] is not None:
                     matNp = matNp.reshape(np.flip(matDef['ndims'])).transpose()
                 elif matNp.shape == ():
