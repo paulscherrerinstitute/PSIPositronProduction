@@ -1,6 +1,16 @@
 clear all;
 
-fid = fopen ('pLinacF3_full44cells_Ecomp_YZplane_dy2mm_dz0p1L.fld', 'r');
+% filenameEcomplex = 'pLinacF3_full44cells_Ecomp_YZplane_dy2mm_dz0p1L.fld';
+% filenameHcomplex = 'pLinacF3_full44cells_Hcomp_YZplane_dy2mm_dz0p1L.fld';
+% matShape = [461, 16];
+% filenameOctaveFieldMap = 'pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat';
+% or
+filenameEcomplex = 'pLinacF3_full44cells_m2_Ecomp_YZplane_dy1mm_dz0p025L.fld';
+filenameHcomplex = 'pLinacF3_full44cells_m2_Hcomp_YZplane_dy1mm_dz0p025L.fld';
+matShape = [1841, 31];
+filenameOctaveFieldMap = 'pLinacF3_full44cells_m2_YZplane_dy1mm_dz0p025L.dat';
+
+fid = fopen (filenameEcomplex, 'r');
 rawE = textscan(fid, '%f%f%f%f%f%f%f%f%f', 'HeaderLines', 2);
 fclose(fid);
 rawE = cell2mat(rawE);
@@ -9,7 +19,7 @@ Ex = rawE(:, 4) + j * rawE(:, 5);
 Ey = rawE(:, 6) + j * rawE(:, 7);
 Ez = rawE(:, 8) + j * rawE(:, 9);
 
-fid = fopen ('pLinacF3_full44cells_Hcomp_YZplane_dy2mm_dz0p1L.fld', 'r');
+fid = fopen (filenameHcomplex, 'r');
 rawH = textscan(fid, '%f%f%f%f%f%f%f%f%f', 'HeaderLines', 2);
 fclose(fid);
 rawH = cell2mat(rawH);
@@ -30,7 +40,6 @@ Z = rawE(:, 3);
 amplitudeScaling = 3.3513e7 / 5.1797e3;
 globalPhaseAlignment = exp(pi*j);
 mu0 = 1.25663706212e-6;  % [H/m]
-matShape = [461, 16];
 THETA = reshape(X, matShape);
 R = reshape(Y, matShape);
 Z = reshape(Z, matShape) + 0.11942;
@@ -58,7 +67,7 @@ tot_cells = 44
 gradient_avg = 20e6  % [MV/m]
 
 % save(
-%     'pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat',
+%     filenameOctaveFieldMap,
 %     'R', 'Z', 'Er', 'Ez', 'Btheta', 'Bz',
 %     'frequency', 'phase_advance', 'wave_direction', 'cell_length', 'tot_cells', 'gradient_avg');
 
