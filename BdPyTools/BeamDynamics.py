@@ -65,7 +65,7 @@ FILE_TYPES_SPECS = {
         # {formatters = [formatterStr.format] * fileTypeSpecs['numCols']
     },
     'astra': {
-        'ext': '.001',
+        'ext': '.0001.001',
         'columnOrder': [
             'x', 'y', 'z', 'px', 'py', 'pz',
             'clock', 'macroCharge', 'particleIndex', 'statusFlag'
@@ -629,29 +629,24 @@ def convert_standard_df_to_rftrack(
 
 
 def convert_standard_df_to_astra(
-        standardDf=None, sourceFilePath=None, refParticleId=0,
-        outFilePath=None
-):
-    standardDf = convert_from_input_check(
-        standardDf, sourceFilePath
-    )
+        standardDf=None, sourceFilePath=None, refParticleId=0, outFilePath=None):
+    standardDf = convert_from_input_check(standardDf, sourceFilePath)
     astraDf = standardDf[['x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId']].copy()
-    astraDf['x'] = astraDf['x'] * 1e-3                                          # [m]
-    astraDf['y'] = astraDf['y'] * 1e-3                                          # [m]
-    astraDf['z'] = astraDf['z'] * 1e-3                                          # [m]
-    astraDf['px'] = astraDf['px'] * 1e6                                         # [eV/c]
-    astraDf['py'] = astraDf['py'] * 1e6                                         # [eV/c]
-    astraDf['pz'] = astraDf['pz'] * 1e6                                         # [eV/c]
+    astraDf['x'] = astraDf['x'] * 1e-3  # [m]
+    astraDf['y'] = astraDf['y'] * 1e-3  # [m]
+    astraDf['z'] = astraDf['z'] * 1e-3  # [m]
+    astraDf['px'] = astraDf['px'] * 1e6  # [eV/c]
+    astraDf['py'] = astraDf['py'] * 1e6  # [eV/c]
+    astraDf['pz'] = astraDf['pz'] * 1e6  # [eV/c]
     # t is already in [ns]
-    astraDf['Q'] = astraDf['Q'] * 1e9                                           # [nC]
+    astraDf['Q'] = astraDf['Q'] * 1e9  # [nC]
     astraDf['pdgId'].replace(to_replace={11: 1, -11: 2}, inplace=True)
     # Small check for the reference particle
     if not np.isclose(astraDf['x'][refParticleId], 0) \
             or not np.isclose(astraDf['y'][refParticleId], 0):
         warnings.warn(
             'Reference particle is out of axis with (x,y) = ({:.6f}, {:.6f}) m'.format(
-                astraDf['x'][refParticleId], astraDf['y'][refParticleId]
-            ))
+                astraDf['x'][refParticleId], astraDf['y'][refParticleId]))
     # Longitudinal variables with respect to the reference particle
     nonRefIds = [ind for ind in standardDf.index if ind != refParticleId]
     astraDf.loc[nonRefIds, 'z'] = astraDf.loc[nonRefIds, 'z'] - astraDf.loc[refParticleId, 'z']
@@ -842,9 +837,10 @@ def convert_standard_df_to_sdds(
     astraDf, _ = convert_standard_df_to_astra(
         standardDf=standardDf, refParticleId=refParticleId
     )
-    astraDfStr, _ = generate_fwf(astraDf, formatType='astra', outFilePath='TmpAstra')
+    outFileBase = 'TmpAstra'
+    astraDfStr, _ = generate_fwf(astraDf, formatType='astra', outFilePath=outFileBase)
     outFilePath += FILE_TYPES_SPECS['sdds']['ext']
-    os.system('astra2elegant TmpAstra.001 ' + outFilePath)
+    os.system('astra2elegant ' + outFileBase + FILE_TYPES_SPECS['astra']['ext'] + ' ' + outFilePath)
     # os.system('rm TmpAstra.001')
     # os.system('astra2elegant -pipe=in ' + astraDfStr + ' ' + outFilePath)
 

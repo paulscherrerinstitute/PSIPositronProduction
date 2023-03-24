@@ -51,6 +51,17 @@ class TestBeamDynamics(unittest.TestCase):
         self.assertAlmostEqual(standardDf.loc[30911, 'py'], -1.726)
         self.assertAlmostEqual(standardDf.loc[7954, 'pz'], 57.33000000000001)
 
+    def test_standard_to_astra_1(self):
+        """Test conversion from standard data frame to ASTRA format."""
+        sourceFilePath = 'Data/RFTrack/CaptureLinac/CaptureLinacUpTo200MeV_LBandLargeR' + \
+            '_RealSolenoids_Type1and2_TargetAt35mm/DistrOut_After1stTracking_6d.sdf_txt'
+        astraFilePath = 'DistrOut_After1stTracking_6d.0001.001'
+        df = bd.load_standard_fwf(sourceFilePath)
+        totPositronCharge = 5e-9  # [C]
+        df['Q'] = totPositronCharge / df.shape[0]
+        bd.convert_standard_df_to_astra(standardDf=df, outFilePath=pl.Path(astraFilePath).stem[:-5])
+        assert_file_generated(astraFilePath)
+
     def test_rftrack_to_standard_df_1(self):
         """Test conversion from RF-Track format to standard data frame, example 1."""
         sourceFilePath = 'Data/RFTrack/PositronsAt200MeV_Yongke/' + \
@@ -246,11 +257,6 @@ class TestBeamDynamics(unittest.TestCase):
     # standardDf = bd.generate_cross_distribution(
     #     xMax, yMax, p0, pzDelta, xPoints=7, yPoints=7, pzPoints=5,
     #     saveStandardFwf=True, outFilePath=outFilePath
-    # )
-
-    # astraDf = bd.convert_standard_df_to_astra(
-    #     standardDf=standardDf, refParticleId=10,
-    #     saveAstraDistr=True, outFilePath=outFilePath
     # )
 
     # bd.convert_standard_df_to_sdds(standardDf=standardDf, outFilePath=outFilePath)
