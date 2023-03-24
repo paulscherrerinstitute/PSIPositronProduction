@@ -117,7 +117,8 @@ def save_em_fields(
 
 
 def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
-    zMesh = np.arange(vol.get_s0(), vol.get_s1(), 1e-3)  # [m]
+    # TODO: Check indexing with Andrea
+    zMesh = np.arange(vol.get_s0()[0, 2]/1e3, vol.get_s1()[0, 2]/1e3, 1e-3)  # [m]
     # zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
     if outSuffix != '':
         outSuffix = '_' + outSuffix
