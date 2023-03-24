@@ -112,8 +112,6 @@ def save_em_fields(
     if returnMultidimNpArray:
         return emFieldsNp.reshape([len(xMesh), len(yMesh), len(zMesh), 9])
     emFields = pd.DataFrame(emFieldsNp, columns=['x', 'y', 'z', 'Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz'])
-    if outSuffix != '':
-        outSuffix = '_' + outSuffix
     emFields.to_csv(os.path.join(outRelPath, 'EMFields{:s}.dat'.format(outSuffix)), index=None)
     return emFields
 
@@ -121,6 +119,8 @@ def save_em_fields(
 def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
     zMesh = np.arange(vol.get_s0(), vol.get_s1(), 1e-3)  # [m]
     # zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
+    if outSuffix != '':
+        outSuffix = '_' + outSuffix
     emFields = save_em_fields(vol, [0], [0], zMesh, outRelPath, outSuffix)
     # Get transport table
     getTransportTableStr = '%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E'
