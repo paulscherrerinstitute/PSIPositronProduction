@@ -511,7 +511,7 @@ bd.convert_rftrack_to_standard_df(
     outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_After1stTracking_6d')
 )
 
-fig1, ax1 = plt.subplots(7, 1)
+fig1, ax1 = plt.subplots(9, 1)
 rfttools.save_plot_transport(ax1, vol, B0_6dT, B1_6dT, OUT_REL_PATH, outSuffix='1')
 plt.show(block=False)
 
@@ -611,6 +611,7 @@ if splitTracking:
     )
 
     rfttools.save_plot_transport(ax1, vol, B1_6dT, B2_6dT, OUT_REL_PATH, outSuffix='2')
+    ax1[0].set_ylim([0, 0.55])
     plt.show(block=False)
 
 input("Press Enter to continue...")

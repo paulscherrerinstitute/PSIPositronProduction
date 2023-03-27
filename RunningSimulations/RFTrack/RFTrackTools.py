@@ -12,7 +12,8 @@ except ModuleNotFoundError:
 
 DEFAULT_COLOR_CYCLE = plt.rcParams["axes.prop_cycle"].by_key()['color']
 DEFAULT_QUANTITIES_TO_PLOT = [
-    'Bz', 'Ez', 'mean_E', 'CaptureEfficiency', 'Emittances', 'Sigmas', 'TwissBetas'
+    'Bz', 'By', 'BeamPosition', 'Ez', 'mean_E', 'CaptureEfficiency',
+    'Emittances', 'Sigmas', 'TwissBetas'
 ]
 
 
@@ -124,7 +125,8 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
         outSuffix = '_' + outSuffix
     emFields = save_em_fields(vol, [0], [0], zMesh, outRelPath, outSuffix)
     # Get transport table
-    getTransportTableStr = '%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E'
+    getTransportTableStr = \
+        '%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E %mean_X %mean_Y'
     TT = vol.get_transport_table(getTransportTableStr)
     transportTable = pd.DataFrame(TT, columns=getTransportTableStr.replace('%', '').split())
     transportTable.to_csv(
@@ -246,7 +248,18 @@ def plot_transport(
         np.max([ax[0].get_xlim()[1], s.max()])
     ])
     for axInd, quantity in enumerate(quantitiesToPlot):
-        if quantity == 'Bz':
+        if quantity == 'By':
+            ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['By'])
+            # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].set_xlim(sLims)
+            ByLims = np.array([
+                np.min([ax[axInd].get_ylim()[0], emFields['By'].min()]),
+                np.max([ax[axInd].get_ylim()[1], emFields['By'].max()])])
+            ax[axInd].set_ylim(ByLims)
+            ax[axInd].set_xlabel('s [m]')
+            ax[axInd].set_ylabel('By [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].grid(True)
+        elif quantity == 'Bz':
             ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['Bz'])
             # , color=DEFAULT_COLOR_CYCLE[0]
             ax[axInd].set_xlim(sLims)
@@ -264,6 +277,27 @@ def plot_transport(
                 np.max([ax[axInd].get_ylim()[1], emFields['Ez'].max()])])
             ax[axInd].set_ylim(EzLims/1e6)
             ax[axInd].set_ylabel('Ez [MV/m]')  # , color=DEFAULT_COLOR_CYCLE[0]
+            ax[axInd].grid(True)
+        elif quantity == 'BeamPosition':
+            noMarkers = 20
+            markEvery = int(len(s) / noMarkers)
+            if markEvery < 1:
+                markEvery = 1
+            p = ax[axInd].plot(s, transpTab['mean_X'], '-v', markevery=markEvery)
+            ax[axInd].plot(
+                s, transpTab['mean_Y'], '-^', markevery=markEvery, color=p[0].get_color())
+            ax[axInd].set_xlim(sLims)
+            beamPositionLims = np.array([
+                np.min([
+                    ax[axInd].get_ylim()[0],
+                    transpTab[['mean_X', 'mean_Y']].stack().min()]),
+                np.max([
+                    ax[axInd].get_ylim()[1],
+                    transpTab[['mean_X', 'mean_Y']].stack().max()])])
+            ax[axInd].set_ylim(beamPositionLims)
+            ax[axInd].set_xlabel('s [m]')
+            ax[axInd].set_ylabel('Beam pos. [mm]')
+            ax[axInd].legend(['x', 'y'])
             ax[axInd].grid(True)
         elif quantity == 'mean_E':
             ax[axInd].plot(s, transpTab['mean_E'])
