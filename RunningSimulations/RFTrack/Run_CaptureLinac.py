@@ -487,7 +487,8 @@ beamlineSetup[[
 trackingOpts = rft.TrackingOptions()
 trackingOpts.dt_mm = 0.2
 trackingOpts.tt_dt_mm = 1.   # [mm/c], track the emittance every tt_dt_mm (time)
-trackingOpts.wp_dt_mm = 0.5e3   # [mm/c], save the distr. on disk every wp_dt_mm (time)
+trackingOpts.tt_select = 'active_in_volume'
+# trackingOpts.wp_dt_mm = 0.5e3   # [mm/c], save the distr. on disk every wp_dt_mm (time)
 trackingOpts.backtrack_at_entrance = False
 trackingOpts.odeint_algorithm = 'rkf45'   # Options: 'rk2', 'rkf45', 'rk8pd'
 trackingOpts.odeint_epsabs = 1e-5
