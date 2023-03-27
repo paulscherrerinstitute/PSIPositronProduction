@@ -88,7 +88,7 @@ PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
 BUNCH_Z = 0.
 BUNCH_DOWNSAMPLING = 20
 #
-VOL_R_APERTURE = 30e-3  # [m]
+VOL_R_APERTURE = None  # [m]
 #
 TARGET_L = 17.5  # [mm]
 TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +35e-3   # [m], YonkeTool_V3, LargeR TW L-band, 0.5 T
@@ -98,7 +98,7 @@ AMD_FIELDMAP_2P5D = 'RunningSimulations/RFTrack/YongkeTool_V2/field/' + \
 AMD_FIELDMAP_1D = 'RunningSimulations/RFTrack/YongkeTool_V2/field/' + \
     'field_map_HTS_5coils_Apr2022_1D.dat'
 USE_AMD_FIELDMAP_2P5D = True
-AMD_R_APERTURE = None   # [m]
+AMD_R_APERTURE = 30e-3   # [m]
 # TODO: Old value in the following line
 AMD_L_HALF_MECHANICAL = 96.5e-3   # [m]
 #
@@ -129,7 +129,7 @@ RF_L_CELL = bd.C / RF_FREQ * 9./20.  # [m]
 RF_PHASES = np.array([-130., -130., -135., -75, -75]) + RF_PHASE_CORR  # [deg]
 #   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +35e-3 m
 RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
-RF_R_APERTURE = None   # [m]
+RF_R_APERTURE = 30e-3  # [m]
 #
 AUTOPHASING = True
 P0_REF = 100.  # [MeV/c]
@@ -217,7 +217,19 @@ SOLENOIDS = {
 }
 SOL_HOMOG_BZ = 0.5  # [T]
 #
-INITIAL_L = RF_SEPARATION / 2.  # [m]
+CHICANE_INSERT = True
+CHICANE_FIELDMAP = 'Data/Fieldmaps/field_map_chicane_all.dat'
+CHICANE_FIELD_PEAK = 0.1  # [T]
+CHICANE_AFTER_RF_STRUCT_NO = 5
+CHICANE_TOT_LENGTH = 3.0  # [m]
+CHICANE_BEAM_PIPE_HALF_APERTURE_X = 0.075  # [m]
+CHICANE_BEAM_PIPE_HALF_APERTURE_Y = 0.020  # [m]
+CHICANE_COLLIM_X_INSERT = False
+CHICANE_COLLIM_X_LENGTH = 0.12  # [m]
+CHICANE_COLLIM_X_TOT_APERTURE = 0.050  # [m]
+CHICANE_COLLIM_X_OFFSET = -0.025  # [m]
+CHICANE_COLLIM_X_Z_FROM_CENTER = 0.1325  # [m]
+#
 FINAL_L = 1.  # [m]
 #
 T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
@@ -240,15 +252,14 @@ beamIn, _ = bd.convert_rftrack_to_standard_df(
 M0 = bd.convert_standard_df_to_rftrack(
     standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT
 )[0].to_numpy()
-# TODO: Verify following change
-BUNCH_POPULATION = M0.shape[0]  # YongkeTool_V2
-# BUNCH_POPULATION = 0  # YongkeTool_V3, but only in track_AMD_HTS.m
+BUNCH_POPULATION = M0.shape[0]
 B0_6d = rft.Bunch6d(PARTICLE_MASS, BUNCH_POPULATION, PARTICLE_CHARGE, M0)
 B0_6dT = rft.Bunch6dT(B0_6d)
 
 TARGET_EXIT_Z_IN_VOLUME = 0.   # [m]
 vol = rft.Volume()
-vol.set_aperture(VOL_R_APERTURE, VOL_R_APERTURE, 'circular')
+if VOL_R_APERTURE is not None:
+    vol.set_aperture(VOL_R_APERTURE, VOL_R_APERTURE, 'circular')
 beamlineSetup = pd.DataFrame(
     columns=['ElementType', 'zWrtTargetExit', 'MechanicalLength', 'Fieldmap']
 )
@@ -290,15 +301,10 @@ else:
     amdBzEff = amdFieldmap['Bz'][indsEff]
     amd = rft.Static_Magnetic_FieldMap_1d(amdBzEff.T, amdDz*1e-3)
 if SOLENOID_TYPE == 'HomogeneousChannel':
-    # TODO: Why is set_length() necessary?
+    # TODO: Very probably redundant
     amd.set_length(amdFieldLength*1e-3)
-    # TODO: Parametrize number of steps, i.e. following factor 2
-    # TODO: Is the following line necessary in volume?
-    amd.set_nsteps(int(amdFieldLength*2.))
 elif SOLENOID_TYPE in ['Analytical', 'Simulated']:
     amd.set_length(amdFieldLengthAnalytical*1e-3)
-    # TODO: Is the following line necessary in volume?
-    amd.set_nsteps(int(amdFieldLengthAnalytical*2.))
 vol.add(amd, 0, 0, TARGET_EXIT_Z_IN_VOLUME, 'entrance')
 beamlineSetup.loc[len(beamlineSetup.index)] = [
     'AMD',
@@ -386,14 +392,24 @@ if TRACK_AFTER_AMD:
         zFinalInVolume += rf.get_length() / 2.
         if splitTracking and structInd == N_RF_STRUCT_1ST_TRACKING - 1:
             zStop1stTracking = zFinalInVolume
-        if structInd < RF_N_STRUCTURES-1:
-            rfGap.set_length(rfSeparation)
-        else:
+        if structInd == RF_N_STRUCTURES-1 or (
+                CHICANE_INSERT and
+                structInd in [CHICANE_AFTER_RF_STRUCT_NO-1, CHICANE_AFTER_RF_STRUCT_NO]):
             rfGap.set_length(rfSeparation / 2.)
+        else:
+            rfGap.set_length(rfSeparation)
         lat.append(rfGap)
         zFinalInVolume += rfGap.get_length()
         if not AUTOPHASING:
-            tRf += rfGap.get_length() * 1e3   # [mm/c]
+            tRf += rfGap.get_length() * 1e3  # [mm/c]
+        if CHICANE_INSERT and structInd == CHICANE_AFTER_RF_STRUCT_NO-1:
+            # TODO: Refactor insertion of gap
+            chicaneGap = rft.Drift(CHICANE_TOT_LENGTH)
+            lat.append(chicaneGap)
+            chicaneCenter = zFinalInVolume + chicaneGap.get_length()/2.
+            zFinalInVolume += chicaneGap.get_length()
+            if not AUTOPHASING:
+                tRf += chicaneGap.get_length() * 1e3  # [mm/c]
     if AUTOPHASING:
         print('Autophasing in lattice...')
         pzFinalAutophasing = lat.autophase(rft.Bunch6d(refPart1Lat))
@@ -406,6 +422,9 @@ if TRACK_AFTER_AMD:
                 solenoidCenters = [sol['ZFirstCenter'], ]
                 for repInd in np.arange(sol['RepNum'] - 1):
                     solenoidCenters.append(solenoidCenters[-1] + sol['RepDistance'])
+                solenoidCenters = np.array(solenoidCenters)
+                if CHICANE_INSERT:
+                    solenoidCenters[CHICANE_AFTER_RF_STRUCT_NO:] += CHICANE_TOT_LENGTH
                 solenoid = rfttools.solenoid_from_fieldmap(
                     sol['Fieldmap'], sol['FieldmapCurrent'], sol['SetCurrent']
                 )
@@ -414,6 +433,37 @@ if TRACK_AFTER_AMD:
                     beamlineSetup.loc[len(beamlineSetup.index)] = [
                         solType, zCenter, sol['MechanicalLength'], os.path.basename(sol['Fieldmap'])
                     ]
+    if CHICANE_INSERT:
+        chicaneField = opi.load_octave_matrices(CHICANE_FIELDMAP)
+        strengthFactor = CHICANE_FIELD_PEAK / chicaneField['field_peak']
+        dx = chicaneField['X'][1, 0, 0] - chicaneField['X'][0, 0, 0]
+        dy = chicaneField['Y'][0, 1, 0] - chicaneField['Y'][0, 0, 0]
+        dz = chicaneField['Z'][0, 0, 1] - chicaneField['Z'][0, 0, 0]
+        magnetL = chicaneField['Z'][0, 0, -1] - chicaneField['Z'][0, 0, 0]
+        # Variant 1: rft.Static_Magnetic_FieldMap() ensures div(B) = 0
+        chicaneDipoles = rft.Static_Magnetic_FieldMap(
+            chicaneField['Bx']*strengthFactor, chicaneField['By']*strengthFactor,
+            chicaneField['Bz']*strengthFactor, chicaneField['X'][0, 0, 0],
+            chicaneField['Y'][0, 0, 0], dx, dy, dz, magnetL)
+        # Variant 2: rft.RF_FieldMap()
+        # vanishingE = np.zeros(chicaneField['Bx'].shape)
+        # chicaneDipoles = rft.RF_FieldMap(
+        #     vanishingE, vanishingE, vanishingE, chicaneField['Bx']*strengthFactor*1j,
+        #     chicaneField['By']*strengthFactor*1j, chicaneField['Bz']*strengthFactor*1j,
+        #     chicaneField['X'][0, 0, 0], chicaneField['Y'][0, 0, 0], dx, dy, dz, magnetL, 0., 1)
+        # chicaneDipoles.set_t0(0)
+        # chicaneDipoles.set_phid(-90.)
+        vol.add(chicaneDipoles, 0, 0, chicaneCenter, 'center')
+        chicaneBeamPipe = rft.Drift(CHICANE_TOT_LENGTH)
+        chicaneBeamPipe.set_aperture(
+            CHICANE_BEAM_PIPE_HALF_APERTURE_X, CHICANE_BEAM_PIPE_HALF_APERTURE_Y, 'rectangular')
+        vol.add(chicaneBeamPipe, 0, 0, chicaneCenter, 'center')
+        if CHICANE_COLLIM_X_INSERT:
+            chicaneCollimX = rft.Drift(CHICANE_COLLIM_X_LENGTH)
+            chicaneCollimX.set_aperture(CHICANE_COLLIM_X_TOT_APERTURE/2., np.Inf, 'rectangular')
+            vol.add(
+                chicaneCollimX, CHICANE_COLLIM_X_OFFSET, 0,
+                chicaneCenter+CHICANE_COLLIM_X_Z_FROM_CENTER, 'entrance')
     # if AUTOPHASING:
     #     print('Autophasing in volume...')
     #     pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart1Vol))
