@@ -78,7 +78,9 @@ import json
 
 
 # INPUT reproducing YonkeTool_V3, LargeR TW L-band, 0.5 T #########################################
-TRACK_ONLY_REF_PART = False
+TRACKING_VARIANT = 'RefPart1'
+# TRACKING_VARIANT = 'RefPartChicaneIn_Back'
+# TRACKING_VARIANT = 'PositronBunch'
 BUNCH_FILEPATH = 'RunningSimulations/RFTrack/YongkeTool_V3/Dat/' + \
     'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
 RFTRACK_FORMAT = 'rftrack_xp_t'
@@ -132,9 +134,20 @@ RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
 RF_R_APERTURE = 30e-3  # [m]
 #
 AUTOPHASING = True
-P0_REF = 100.  # [MeV/c]
-P0_REF_2 = 205.  # [MeV/c]
-T0_REF_2 = 54.92 * bd.C / 1e6  # [mm/c]
+# Ref. particle, variant 1
+REF_PART_1_T0 = 0.  # [mm/c]
+REF_PART_1_P0 = 100.  # [MeV/c]
+# REF_PART_1_T0_TRACK = 0.  # [mm/c]
+# REF_PART_1_P0_TRACK = 100.  # [MeV/c]
+# TODO: Check ref. particle with split tracking
+# P0_REF_2 = 205.  # [MeV/c]
+# T0_REF_2 = 54.92 * bd.C / 1e6  # [mm/c]
+# or
+# Ref. particle, variant 2
+REF_PART_1_T0_TRACK = 16.145371  # [mm/c]
+REF_PART_1_P0_TRACK = 49.4087751  # [MeV/c]
+# P0_REF_2 =  # [MeV/c]
+# T0_REF_2 =  # [mm/c]
 #
 # SOLENOID_TYPE = 'HomogeneousChannel'
 # SOL_HOMOG_BZ = 0.5   # [T]
@@ -337,13 +350,9 @@ if TRACK_AFTER_AMD:
     if not AUTOPHASING:
         tRf = RF_T0  # [mm/c]
     else:
-        t0RefPart1 = TARGET_L + amdFieldLength  # [mm/c]
-        refPart1Vol = np.array([
-            0., 0., 0., 0., amdFieldLength, P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, +1., t0RefPart1
-        ])
+        t0RefPart1 = REF_PART_1_T0 + TARGET_L + amdFieldLength  # [mm/c]
         refPart1Lat = np.array([
-            0., 0., 0., 0., t0RefPart1, P0_REF, PARTICLE_MASS, PARTICLE_CHARGE, +1.
-        ])
+            0., 0., 0., 0., t0RefPart1, REF_PART_1_P0, PARTICLE_MASS, PARTICLE_CHARGE, +1.])
         tRf = None
     rfGap = rft.Drift()
     if RF_R_APERTURE is not None:
@@ -484,31 +493,53 @@ beamlineSetup[[
     'ElementType', 'zWrtTargetExit', 'zWrtAmdPeakField', 'MechanicalLength', 'Fieldmap'
 ]].to_csv(os.path.join(OUT_REL_PATH, 'BeamlineSetup.dat'), index=None)
 
-trackingOpts = rft.TrackingOptions()
-trackingOpts.dt_mm = 0.2
-trackingOpts.tt_dt_mm = 1.   # [mm/c], track the emittance every tt_dt_mm (time)
-trackingOpts.tt_select = 'active_in_volume'
-# trackingOpts.wp_dt_mm = 0.5e3   # [mm/c], save the distr. on disk every wp_dt_mm (time)
-trackingOpts.backtrack_at_entrance = False
-trackingOpts.odeint_algorithm = 'rkf45'   # Options: 'rk2', 'rkf45', 'rk8pd'
-trackingOpts.odeint_epsabs = 1e-5
-trackingOpts.verbosity = 1   # 0 (default), 1 or 2
+vol.dt_mm = 0.2
+vol.tt_dt_mm = 1.  # [mm/c], track the emittance every tt_dt_mm (time)
+vol.tt_select = 'active_in_volume'
+# vol.wp_dt_mm = 0.5e3  # [mm/c], save the distr. on disk every wp_dt_mm (time)
+vol.backtrack_at_entrance = False
+vol.odeint_algorithm = 'rkf45'  # Options: 'rk2', 'rkf45', 'rk8pd'
+vol.odeint_epsabs = 1e-5
+vol.verbosity = 1  # 0 (default), 1 or 2
 
-vol.set_s0(BUNCH_Z)
-vol.set_s1(zStop1stTracking)
-trackingOpts.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
+# TODO: Strange things still happening here
+vol.set_s0(float(BUNCH_Z))
+vol.set_s1(float(zStop1stTracking))
+vol.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
 print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
-    zStop1stTracking, trackingOpts.t_max_mm)
+    zStop1stTracking, vol.t_max_mm)
 )
-if TRACK_ONLY_REF_PART:
-    B1_6dT = vol.track(rft.Bunch6dT(refPart1Vol), trackingOpts)
-else:
-    B1_6dT = vol.track(B0_6dT, trackingOpts)
+# if TRACKING_VARIANT in ['RefPart1', 'PositronBunch']:
+if TRACKING_VARIANT == 'RefPart1':
+    # Variant 1
+    # t0RefPart1Track = REF_PART_1_T0_TRACK + TARGET_L + amdFieldLength  # [mm/c]
+    # refPart1Vol = np.array([
+    #     0., 0., 0., 0., amdFieldLength, REF_PART_1_P0_TRACK,
+    #     PARTICLE_MASS, PARTICLE_CHARGE, +1., t0RefPart1Track])
+    # Variant 2
+    refPart1Vol = np.array([
+        0., 0., 0., 0., 0., REF_PART_1_P0_TRACK,
+        PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_1_T0_TRACK])
+    B1_6dT = vol.track(rft.Bunch6dT(refPart1Vol))
+    B1_6d = vol.get_bunch_at_s1()
+elif TRACKING_VARIANT == 'PositronBunch':
+    B1_6dT = vol.track(B0_6dT)
+    B1_6d = vol.get_bunch_at_s1()
+elif TRACKING_VARIANT == 'RefPartChicaneIn_Back':
+    REF_PART_CHICANE_IN_Z = 17431.3  # [mm]
+    REF_PART_CHICANE_IN_P0 = 170.  # [MeV/c]
+    REF_PART_CHICANE_IN_T = 58.32e-9 * bd.C * 1e3  # [mm/c]
+    refPartChicaneInVol = np.array([
+        0., 0., 0., 0., REF_PART_CHICANE_IN_Z, REF_PART_CHICANE_IN_P0,
+        PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_CHICANE_IN_T])
+    vol.set_s0(0.)
+    vol.set_s1(float(REF_PART_CHICANE_IN_Z/1e3+1.))
+    B1_6dT = vol.btrack(rft.Bunch6dT(refPartChicaneInVol))
+    B1_6d = vol.get_bunch_at_s0()
 M1_6dT = B1_6dT.get_phase_space()
-B1_6d = vol.get_bunch_at_s1()
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
 bd.convert_rftrack_to_standard_df(
-    rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
+    rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', s=B1_6d.S*1e3, pdgId=BUNCH_PDGID,
     outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_After1stTracking_6d')
 )
 
@@ -598,12 +629,11 @@ if splitTracking:
         s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
         outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_FrontBuckets_After1stTracking_6d')
     )
-    vol.set_s1(zFinalInVolume)
-    trackingOpts.t_max_mm = zFinalInVolume * 1e3 + T_ADD_NON_RELATIVISTIC
+    vol.t_max_mm = zFinalInVolume * 1e3 + T_ADD_NON_RELATIVISTIC
     print('2nd particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
-        zFinalInVolume, trackingOpts.t_max_mm)
+        zFinalInVolume, vol.t_max_mm)
     )
-    B2_6dT = vol.track(B1_6dT, trackingOpts)
+    B2_6dT = vol.track(B1_6dT)
     B2_6d = vol.get_bunch_at_s1()
     M2_6d = B2_6d.get_phase_space("%x %xp %y %yp %t %Pc")
     bd.convert_rftrack_to_standard_df(
