@@ -339,13 +339,15 @@ if AMD_R_APERTURE is not None:
 
 rfField = opi.load_octave_matrices(RF_FIELDMAP)
 rfSeparation = RF_L_STRUCTURE - np.diff(rfField['Z'].flatten()[[0, -1]])[0]
+initialL = rfSeparation / 2.
+
 if TRACK_AFTER_AMD:
     lat = rft.Lattice()
-    if INITIAL_L > 0:
-        initialRfGap = rft.Drift(INITIAL_L)
+    if initialL > 0:
+        initialRfGap = rft.Drift(initialL)
         if SOLENOID_TYPE == 'HomogeneousChannel':
             initialRfGap.set_static_Bfield(0, 0, SOL_HOMOG_BZ)
-        zFinalInVolume += INITIAL_L
+        zFinalInVolume += initialL
         lat.append(initialRfGap)
     if not AUTOPHASING:
         tRf = RF_T0  # [mm/c]
