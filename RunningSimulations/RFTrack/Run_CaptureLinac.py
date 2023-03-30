@@ -55,7 +55,7 @@ import json
 # RF_SEPARATION = 0.2   # [m]
 # RF_R_APERTURE = 20e-3   # [m]
 # #
-# AUTOPHASING = False
+# AUTOPHASE = False
 # #
 # SOLENOID_TYPE = 'HomogeneousChannel'
 # SOL_HOMOG_BZ = 0.5   # [T]
@@ -111,43 +111,22 @@ ACCEL_WITH_HOMOG_EZ = False
 # RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
 # RF_FIELDMAP_DIM = '1D'
 # RF_FIELDMAP_TYPE = 'Full'
-# RF_PHASE_CORR = 0  # [deg]
 # or
-RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
+# RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
+RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_m2_YZplane_dy1mm_dz0p025L.dat'
 RF_FIELDMAP_DIM = '2D'
 RF_FIELDMAP_TYPE = 'Full'
-RF_PHASE_CORR = -0.4  # [deg]
 #
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
-RF_N_STRUCTURES = 28  # 5 + 23
+RF_N_STRUCTURES = 5  # 5 + 23
 RF_L_STRUCTURE = 3.240  # [m]
 #   Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
 RF_FREQ = 2e9  # [Hz]
 RF_L_CELL = bd.C / RF_FREQ * 9./20.  # [m]
 # RF_L_FLANGE = xxx  # [m]
 # RF_L_MECH_MARGIN = xxx  # [m]
-# RF_PHASES = (-125.7, -127.8, -132.0, -102.9, -95.0)  # [deg],
-#   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +30e-3 m
-RF_PHASES = np.array([-130., -130., -135., -75, -75]) + RF_PHASE_CORR  # [deg]
-#   values for TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = +35e-3 m
 RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
 RF_R_APERTURE = 30e-3  # [m]
-#
-AUTOPHASING = True
-# Ref. particle, variant 1
-REF_PART_1_T0 = 0.  # [mm/c]
-REF_PART_1_P0 = 100.  # [MeV/c]
-# REF_PART_1_T0_TRACK = 0.  # [mm/c]
-# REF_PART_1_P0_TRACK = 100.  # [MeV/c]
-# TODO: Check ref. particle with split tracking
-# P0_REF_2 = 205.  # [MeV/c]
-# T0_REF_2 = 54.92 * bd.C / 1e6  # [mm/c]
-# or
-# Ref. particle, variant 2
-REF_PART_1_T0_TRACK = 16.145371  # [mm/c]
-REF_PART_1_P0_TRACK = 49.4087751  # [MeV/c]
-# P0_REF_2 =  # [MeV/c]
-# T0_REF_2 =  # [mm/c]
 #
 # SOLENOID_TYPE = 'HomogeneousChannel'
 # SOL_HOMOG_BZ = 0.5   # [T]
@@ -246,6 +225,25 @@ CHICANE_COLLIM_X_Z_FROM_CENTER = 0.1325  # [m]
 #
 FINAL_L = 1.  # [m]
 #
+AUTOPHASE = True
+#
+# RF_PHASES = np.array([0., 0., 0., 0., 0.])  # [deg], Test on-crest
+#
+# Ref. particle 100 MeV, old, from Yongke's optimization
+# REF_PART_1_T0_AUTOPHASE = TARGET_L  # [mm/c]
+# REF_PART_1_P0_AUTOPHASE = 100.  # [MeV/c]
+# RF_PHASES = np.array([-130., -130., -135., -20, -20])
+# REF_PART_1_T0_TRACK = TARGET_L + amdFieldLength  # [mm/c]
+# REF_PART_1_Z0_TRACK = amdFieldLength  # [mm]
+# REF_PART_1_P0_TRACK = 100.  # [MeV/c]
+# or
+# Ref. particle representing main bunch center, new
+REF_PART_1_T0_AUTOPHASE = 19.835938  # [mm/c]
+REF_PART_1_P0_AUTOPHASE = 8.943716  # [MeV/c]
+RF_PHASES = np.array([-122., -54., -59., 0., 0.])
+REF_PART_1_T0_TRACK = 19.835938  # [mm/c]
+REF_PART_1_Z0_TRACK = 0.  # [mm]
+REF_PART_1_P0_TRACK = 8.943716  # [MeV/c]
 T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
 N_RF_STRUCT_1ST_TRACKING = 5
 N_RF_CELLS_LONG_PS_CUT = 2
@@ -350,12 +348,14 @@ if TRACK_AFTER_AMD:
             initialRfGap.set_static_Bfield(0, 0, SOL_HOMOG_BZ)
         zFinalInVolume += initialL
         lat.append(initialRfGap)
-    if not AUTOPHASING:
+    if not AUTOPHASE:
         tRf = RF_T0  # [mm/c]
     else:
-        t0RefPart1 = REF_PART_1_T0 + TARGET_L + amdFieldLength  # [mm/c]
+        t0RefPart1 = REF_PART_1_T0_AUTOPHASE \
+            + amdFieldLength / bd.p_to_beta(REF_PART_1_P0_AUTOPHASE, BUNCH_PDGID)  # [mm/c]
         refPart1Lat = np.array([
-            0., 0., 0., 0., t0RefPart1, REF_PART_1_P0, PARTICLE_MASS, PARTICLE_CHARGE, +1.])
+            0., 0., 0., 0., t0RefPart1, REF_PART_1_P0_AUTOPHASE,
+            PARTICLE_MASS, PARTICLE_CHARGE, +1.])
         tRf = None
     rfGap = rft.Drift()
     if RF_R_APERTURE is not None:
@@ -379,7 +379,7 @@ if TRACK_AFTER_AMD:
         try:
             print('Setting rf.t0 = {:f} mm/c'.format(tRf))
         except TypeError:
-            print('Using autophasing...')
+            print('Using autophase...')
         if RF_FIELDMAP_TYPE == 'SinglePeriod':
             rf = rfttools.rf_struct_from_single_period(
                 rfField, RF_FIELDMAP_DIM, RF_N_PERIODS_PER_STRUCTURE, powerScalingFactor,
@@ -412,7 +412,7 @@ if TRACK_AFTER_AMD:
             rfGap.set_length(rfSeparation)
         lat.append(rfGap)
         zFinalInVolume += rfGap.get_length()
-        if not AUTOPHASING:
+        if not AUTOPHASE:
             tRf += rfGap.get_length() * 1e3  # [mm/c]
         if CHICANE_INSERT and structInd == CHICANE_AFTER_RF_STRUCT_NO-1:
             # TODO: Refactor insertion of gap
@@ -420,12 +420,12 @@ if TRACK_AFTER_AMD:
             lat.append(chicaneGap)
             chicaneCenter = zFinalInVolume + chicaneGap.get_length()/2.
             zFinalInVolume += chicaneGap.get_length()
-            if not AUTOPHASING:
+            if not AUTOPHASE:
                 tRf += chicaneGap.get_length() * 1e3  # [mm/c]
-    if AUTOPHASING:
+    if AUTOPHASE:
         print('Autophasing in lattice...')
-        pzFinalAutophasing = lat.autophase(rft.Bunch6d(refPart1Lat))
-        print('pzFinalAutophasing 1st tracking = {:e} MeV/c'.format(pzFinalAutophasing))
+        pzFinalAutophase = lat.autophase(rft.Bunch6d(refPart1Lat))
+        print('pzFinalAutophase 1st tracking = {:e} MeV/c'.format(pzFinalAutophase))
     vol.add(lat, 0, 0, amdExitZInVolume, 'entrance')
     # TODO: Simplify script wrt solenoid (analytical or simulated is almost the same)
     if SOLENOID_TYPE != 'HomogeneousChannel':
@@ -490,10 +490,10 @@ if TRACK_AFTER_AMD:
             vol.add(
                 chicaneCollimX, CHICANE_COLLIM_X_OFFSET, 0,
                 chicaneCenter+CHICANE_COLLIM_X_Z_FROM_CENTER, 'entrance')
-    # if AUTOPHASING:
+    # if AUTOPHASE:
     #     print('Autophasing in volume...')
-    #     pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart1Vol))
-    #     print('pzFinalAutophasing 1st tracking = {:e} MeV/c'.format(pzFinalAutophasing))
+    #     pzFinalAutophase = vol.autophase(rft.Bunch6dT(refPart1Vol))
+    #     print('pzFinalAutophase 1st tracking = {:e} MeV/c'.format(pzFinalAutophase))
 
 if FINAL_L > 0:
     finalDrift = rft.Drift(FINAL_L)
@@ -628,24 +628,17 @@ ax3[1].grid()
 plt.show(block=False)
 
 if splitTracking:
-    refPart2 = np.array([
-        0., 0., 0., 0., zStop1stTracking*1e3, P0_REF_2,
-        PARTICLE_MASS, PARTICLE_CHARGE, +1., T0_REF_2
-    ])
-    # if AUTOPHASING:
-    #     pzFinalAutophasing = vol.autophase(rft.Bunch6dT(refPart2))
-    #     print('pzFinalAutophasing 2nd tracking = {:e} MeV/c'.format(pzFinalAutophasing))
+    # TODO: This can probably be improved by filtering M1_6dT
     tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * RF_L_CELL*1e3  # [mm/c]
     M1_6d_frontBuckets = M1_6d[(M1_6d[:, 4] < tCut) & (M1_6d[:, 5] > PZ_MIN_LONG_PS_CUT), :]
     B1_6d.set_phase_space(M1_6d_frontBuckets)
-    # B1_6dT = rft.Bunch6dT(refPart2)
-    # or
     B1_6dT = rft.Bunch6dT(B1_6d)
     bd.convert_rftrack_to_standard_df(
         rftrackDf=M1_6d_frontBuckets, rftrackDfFormat='rftrack_xp_t',
         s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
         outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_FrontBuckets_After1stTracking_6d')
     )
+    vol.set_s1(float(zFinalInVolume))
     vol.t_max_mm = zFinalInVolume * 1e3 + T_ADD_NON_RELATIVISTIC
     print('2nd particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
         zFinalInVolume, vol.t_max_mm)
