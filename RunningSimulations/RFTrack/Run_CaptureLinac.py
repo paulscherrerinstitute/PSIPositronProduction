@@ -230,13 +230,14 @@ SOLENOIDS = {
 }
 SOL_HOMOG_BZ = 0.5  # [T]
 #
-CHICANE_INSERT = True
-CHICANE_FIELDMAP = 'Data/Fieldmaps/field_map_chicane_all.dat'
-CHICANE_FIELD_PEAK = 0.1  # [T]
+CHICANE_INSERT = False
+CHICANE_FIELDMAP = 'Data/Fieldmaps/field_map_chicane_all_dispersion_closed.dat'
+CHICANE_FIELD_PEAK = 0.2  # [T]
 CHICANE_AFTER_RF_STRUCT_NO = 5
-CHICANE_TOT_LENGTH = 3.0  # [m]
+CHICANE_TOT_LENGTH = 2.0  # [m]
 CHICANE_BEAM_PIPE_HALF_APERTURE_X = 0.075  # [m]
 CHICANE_BEAM_PIPE_HALF_APERTURE_Y = 0.020  # [m]
+CHICANE_FORCE_CLOSED_DISPERSION = False
 CHICANE_COLLIM_X_INSERT = False
 CHICANE_COLLIM_X_LENGTH = 0.12  # [m]
 CHICANE_COLLIM_X_TOT_APERTURE = 0.050  # [m]
@@ -451,19 +452,33 @@ if TRACK_AFTER_AMD:
         dy = chicaneField['Y'][0, 1, 0] - chicaneField['Y'][0, 0, 0]
         dz = chicaneField['Z'][0, 0, 1] - chicaneField['Z'][0, 0, 0]
         magnetL = chicaneField['Z'][0, 0, -1] - chicaneField['Z'][0, 0, 0]
-        # Variant 1: rft.Static_Magnetic_FieldMap() ensures div(B) = 0
-        chicaneDipoles = rft.Static_Magnetic_FieldMap(
-            chicaneField['Bx']*strengthFactor, chicaneField['By']*strengthFactor,
-            chicaneField['Bz']*strengthFactor, chicaneField['X'][0, 0, 0],
-            chicaneField['Y'][0, 0, 0], dx, dy, dz, magnetL)
-        # Variant 2: rft.RF_FieldMap()
-        # vanishingE = np.zeros(chicaneField['Bx'].shape)
-        # chicaneDipoles = rft.RF_FieldMap(
-        #     vanishingE, vanishingE, vanishingE, chicaneField['Bx']*strengthFactor*1j,
-        #     chicaneField['By']*strengthFactor*1j, chicaneField['Bz']*strengthFactor*1j,
-        #     chicaneField['X'][0, 0, 0], chicaneField['Y'][0, 0, 0], dx, dy, dz, magnetL, 0., 1)
-        # chicaneDipoles.set_t0(0)
-        # chicaneDipoles.set_phid(-90.)
+        if CHICANE_FORCE_CLOSED_DISPERSION:
+            centralIndX = int((chicaneField['X'].shape[0] - 1) / 2)
+            centralIndY = int((chicaneField['X'].shape[1] - 1) / 2)
+            startInd, endInd = np.squeeze(
+                np.where(chicaneField['By'][centralIndX, centralIndY, :] < 0))[[0, -1]]
+            originalIntBy = np.sum(chicaneField['By'][centralIndX, centralIndY, :])
+            positiveIntBy = np.sum(chicaneField['By'][centralIndX, centralIndY, :startInd]) \
+                + np.sum(chicaneField['By'][centralIndX, centralIndY, endInd+1:])
+            negativeIntBy = np.sum(chicaneField['By'][centralIndX, centralIndY, startInd:endInd+1])
+            rescalingFactor = positiveIntBy / np.abs(negativeIntBy)
+            for fieldComponent in ['Bx', 'By', 'Bz']:
+                chicaneField[fieldComponent][:, :, startInd:endInd+1] *= rescalingFactor
+            manipulatedIntBy = np.sum(chicaneField['By'][centralIndX, centralIndY, :])
+            # Variant 2: rft.RF_FieldMap()
+            vanishingE = np.zeros(chicaneField['Bx'].shape)
+            chicaneDipoles = rft.RF_FieldMap(
+                vanishingE, vanishingE, vanishingE, chicaneField['Bx']*strengthFactor*1j,
+                chicaneField['By']*strengthFactor*1j, chicaneField['Bz']*strengthFactor*1j,
+                chicaneField['X'][0, 0, 0], chicaneField['Y'][0, 0, 0], dx, dy, dz, magnetL, 0., 1)
+            chicaneDipoles.set_t0(0)
+            chicaneDipoles.set_phid(-90.)
+        else:
+            # Variant 1: rft.Static_Magnetic_FieldMap() ensures div(B) = 0
+            chicaneDipoles = rft.Static_Magnetic_FieldMap(
+                chicaneField['Bx']*strengthFactor, chicaneField['By']*strengthFactor,
+                chicaneField['Bz']*strengthFactor, chicaneField['X'][0, 0, 0],
+                chicaneField['Y'][0, 0, 0], dx, dy, dz, magnetL)
         vol.add(chicaneDipoles, 0, 0, chicaneCenter, 'center')
         chicaneBeamPipe = rft.Drift(CHICANE_TOT_LENGTH)
         chicaneBeamPipe.set_aperture(

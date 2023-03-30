@@ -1,6 +1,6 @@
 clear all;
 
-fid = fopen ('field_map_chicane_all.fld', 'r');
+fid = fopen ('field_map_chicane_all_dispersion_closed.fld', 'r');
 rawB = textscan(fid, '%f%f%f%f%f%f', 'HeaderLines', 2);
 fclose(fid);
 rawB = cell2mat(rawB);
@@ -49,7 +49,7 @@ size(Bz)
 
 field_peak = 0.197  % [T]
 
-% save('field_map_chicane_all.dat', 'X', 'Y', 'Z', 'Bx', 'By', 'Bz', 'field_peak');
+save('field_map_chicane_all_dispersion_closed.dat', 'X', 'Y', 'Z', 'Bx', 'By', 'Bz', 'field_peak');
 
 figure(2);
 clf();
