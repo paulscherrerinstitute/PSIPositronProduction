@@ -7,7 +7,6 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import json
 
 
 # INPUT reproducing YonkeTool_V2, CLIC TW L-band, 0.5 T ###########################################
@@ -78,17 +77,6 @@ import json
 
 
 # INPUT reproducing YonkeTool_V3, LargeR TW L-band, 0.5 T #########################################
-TRACKING_VARIANT = 'RefPart1'
-# TRACKING_VARIANT = 'RefPartChicaneIn_Back'
-# TRACKING_VARIANT = 'PositronBunch'
-BUNCH_FILEPATH = 'RunningSimulations/RFTrack/YongkeTool_V3/Dat/' + \
-    'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
-RFTRACK_FORMAT = 'rftrack_xp_t'
-BUNCH_PDGID = -11
-PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
-PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
-BUNCH_Z = 0.
-BUNCH_DOWNSAMPLING = 20
 #
 VOL_R_APERTURE = None  # [m]
 #
@@ -225,6 +213,19 @@ CHICANE_COLLIM_X_Z_FROM_CENTER = 0.1325  # [m]
 #
 FINAL_L = 1.  # [m]
 #
+TRACKING_VARIANT = 'PositronBunch'
+# TRACKING_VARIANT = 'RefPart1'
+# TRACKING_VARIANT = 'RefPartBacktrack'
+#
+BUNCH_FILEPATH = 'RunningSimulations/RFTrack/YongkeTool_V3/Dat/' + \
+    'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
+RFTRACK_FORMAT = 'rftrack_xp_t'
+BUNCH_PDGID = -11
+PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
+PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
+BUNCH_Z = 0.
+BUNCH_DOWNSAMPLING = 1
+#
 AUTOPHASE = True
 #
 # RF_PHASES = np.array([0., 0., 0., 0., 0.])  # [deg], Test on-crest
@@ -244,29 +245,22 @@ RF_PHASES = np.array([-122., -54., -59., 0., 0.])
 REF_PART_1_T0_TRACK = 19.835938  # [mm/c]
 REF_PART_1_Z0_TRACK = 0.  # [mm]
 REF_PART_1_P0_TRACK = 8.943716  # [MeV/c]
+#
+# Ref. part at chicane entrance, after 5 RF structures
+REF_PART_BACKTRACK_Z = 17431.3  # [mm]
+REF_PART_BACKTRACK_P = 207.  # [MeV/c]
+REF_PART_BACKTRACK_T = 58.31e-9 * bd.C * 1e3  # [mm/c]
+#
 T_ADD_NON_RELATIVISTIC = 1000.  # [mm/c]
-N_RF_STRUCT_1ST_TRACKING = 5
+N_RF_STRUCT_1ST_TRACKING = 3
 N_RF_CELLS_LONG_PS_CUT = 2
-PZ_MIN_LONG_PS_CUT = 40.  # [MeV/c]
+PZ_MIN_LONG_PS_CUT = 10.  # [MeV/c]
 ###################################################################################################
 
 
 splitTracking = RF_N_STRUCTURES > N_RF_STRUCT_1ST_TRACKING
 
 OUT_REL_PATH = './RFTrackOutput/LatestSimCaptureLinac/'
-
-# TODO: Refactorize, same code in Run_Linac1_Section1_Simple.py
-distrMatNp = np.loadtxt(BUNCH_FILEPATH, skiprows=1)
-beamIn, _ = bd.convert_rftrack_to_standard_df(
-    rftrackDf=distrMatNp[::BUNCH_DOWNSAMPLING, :], rftrackDfFormat=RFTRACK_FORMAT,
-    s=BUNCH_Z, pdgId=BUNCH_PDGID, Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0]
-)
-M0 = bd.convert_standard_df_to_rftrack(
-    standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT
-)[0].to_numpy()
-BUNCH_POPULATION = M0.shape[0]
-B0_6d = rft.Bunch6d(PARTICLE_MASS, BUNCH_POPULATION, PARTICLE_CHARGE, M0)
-B0_6dT = rft.Bunch6dT(B0_6d)
 
 TARGET_EXIT_Z_IN_VOLUME = 0.   # [m]
 vol = rft.Volume()
@@ -518,40 +512,39 @@ vol.backtrack_at_entrance = False
 vol.odeint_algorithm = 'rkf45'  # Options: 'rk2', 'rkf45', 'rk8pd'
 vol.odeint_epsabs = 1e-5
 vol.verbosity = 1  # 0 (default), 1 or 2
-
-# TODO: Strange things still happening here
+# TODO: Strange things still happening to variable passed to set_s0()
 vol.set_s0(float(BUNCH_Z))
-vol.set_s1(float(zStop1stTracking))
-vol.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
-print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
-    zStop1stTracking, vol.t_max_mm)
-)
-# if TRACKING_VARIANT in ['RefPart1', 'PositronBunch']:
-if TRACKING_VARIANT == 'RefPart1':
-    # Variant 1
-    # t0RefPart1Track = REF_PART_1_T0_TRACK + TARGET_L + amdFieldLength  # [mm/c]
-    # refPart1Vol = np.array([
-    #     0., 0., 0., 0., amdFieldLength, REF_PART_1_P0_TRACK,
-    #     PARTICLE_MASS, PARTICLE_CHARGE, +1., t0RefPart1Track])
-    # Variant 2
-    refPart1Vol = np.array([
-        0., 0., 0., 0., 0., REF_PART_1_P0_TRACK,
-        PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_1_T0_TRACK])
-    B1_6dT = vol.track(rft.Bunch6dT(refPart1Vol))
-    B1_6d = vol.get_bunch_at_s1()
-elif TRACKING_VARIANT == 'PositronBunch':
+if TRACKING_VARIANT in ['RefPart1', 'PositronBunch']:
+    if TRACKING_VARIANT == 'PositronBunch':
+        # TODO: Refactorize, same code in Run_Linac1_Section1_Simple.py
+        distrMatNp = np.loadtxt(BUNCH_FILEPATH, skiprows=1)
+        beamIn, _ = bd.convert_rftrack_to_standard_df(
+            rftrackDf=distrMatNp[::BUNCH_DOWNSAMPLING, :], rftrackDfFormat=RFTRACK_FORMAT,
+            s=BUNCH_Z, pdgId=BUNCH_PDGID, Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0])
+        M0 = bd.convert_standard_df_to_rftrack(
+            standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT)[0].to_numpy()
+        bunchPopulation = M0.shape[0]
+        B0_6d = rft.Bunch6d(PARTICLE_MASS, bunchPopulation, PARTICLE_CHARGE, M0)
+        B0_6dT = rft.Bunch6dT(B0_6d)
+    elif TRACKING_VARIANT == 'RefPart1':
+        refPart1Vol = np.array([
+            0., 0., 0., 0., REF_PART_1_Z0_TRACK, REF_PART_1_P0_TRACK,
+            PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_1_T0_TRACK])
+        B0_6dT = rft.Bunch6dT(refPart1Vol)
+    vol.set_s1(float(zStop1stTracking))
+    vol.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
+    print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
+        zStop1stTracking, vol.t_max_mm)
+    )
     B1_6dT = vol.track(B0_6dT)
     B1_6d = vol.get_bunch_at_s1()
-elif TRACKING_VARIANT == 'RefPartChicaneIn_Back':
-    REF_PART_CHICANE_IN_Z = 17431.3  # [mm]
-    REF_PART_CHICANE_IN_P0 = 170.  # [MeV/c]
-    REF_PART_CHICANE_IN_T = 58.32e-9 * bd.C * 1e3  # [mm/c]
-    refPartChicaneInVol = np.array([
-        0., 0., 0., 0., REF_PART_CHICANE_IN_Z, REF_PART_CHICANE_IN_P0,
-        PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_CHICANE_IN_T])
-    vol.set_s0(0.)
-    vol.set_s1(float(REF_PART_CHICANE_IN_Z/1e3+1.))
-    B1_6dT = vol.btrack(rft.Bunch6dT(refPartChicaneInVol))
+elif TRACKING_VARIANT == 'RefPartBacktrack':
+    refPartBacktrack = np.array([
+        0., 0., 0., 0., REF_PART_BACKTRACK_Z, REF_PART_BACKTRACK_P,
+        PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_BACKTRACK_T])
+    vol.set_s1(float(REF_PART_BACKTRACK_Z/1e3 + 1.))
+    B0_6dT = rft.Bunch6dT(refPartBacktrack)
+    B1_6dT = vol.btrack(B0_6dT)
     B1_6d = vol.get_bunch_at_s0()
 M1_6dT = B1_6dT.get_phase_space()
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
@@ -655,4 +648,5 @@ if splitTracking:
     ax1[0].set_ylim([0, 0.55])
     plt.show(block=False)
 
-input("Press Enter to continue...")
+print("Continue debugging to close...")
+print("... closed!")
