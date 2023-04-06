@@ -1048,7 +1048,8 @@ def plot_phase_space_2d(
     set_lims(ax[0, 0], 'x', x, lims1)
     set_lims(ax[0, 0], 'y', y, lims2)
     ax[1, 0].set_xlim(ax[0, 0].get_xlim())
-    ax[1, 0].invert_yaxis()
+    if np.diff(ax[1, 0].get_ylim()) > 0:
+        ax[1, 0].invert_yaxis()
     # ax[1,0].set_xticklabels([])
     ax[0, 1].set_ylim(ax[0, 0].get_ylim())
     # ax[0,1].set_yticklabels([])
