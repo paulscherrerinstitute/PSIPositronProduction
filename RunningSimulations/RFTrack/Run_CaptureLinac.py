@@ -96,17 +96,19 @@ TRACK_AFTER_AMD = True
 #
 ACCEL_WITH_HOMOG_EZ = False
 #
-# RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
 # RF_FIELDMAP_DIM = '1D'
-# RF_FIELDMAP_TYPE = 'Full'
+# or
+RF_FIELDMAP_DIM = '1D_3rdOrderExpansion'
+RF_FIELDMAP_TYPE = 'Full'
 # or
 # RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
-RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_m2_YZplane_dy1mm_dz0p025L.dat'
-RF_FIELDMAP_DIM = '2D'
-RF_FIELDMAP_TYPE = 'Full'
+# RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_m2_YZplane_dy1mm_dz0p025L.dat'
+# RF_FIELDMAP_DIM = '2D'
+# RF_FIELDMAP_TYPE = 'Full'
 #
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
-RF_N_STRUCTURES = 5  # 5 + 23
+RF_N_STRUCTURES = 28  # 5 + 23
 RF_L_STRUCTURE = 3.240  # [m]
 #   Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
 RF_FREQ = 2e9  # [Hz]
@@ -520,7 +522,8 @@ if TRACKING_VARIANT in ['RefPart1', 'PositronBunch']:
         distrMatNp = np.loadtxt(BUNCH_FILEPATH, skiprows=1)
         beamIn, _ = bd.convert_rftrack_to_standard_df(
             rftrackDf=distrMatNp[::BUNCH_DOWNSAMPLING, :], rftrackDfFormat=RFTRACK_FORMAT,
-            s=BUNCH_Z, pdgId=BUNCH_PDGID, Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0])
+            s=BUNCH_Z, pdgId=BUNCH_PDGID,
+            Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0])
         M0 = bd.convert_standard_df_to_rftrack(
             standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT)[0].to_numpy()
         bunchPopulation = M0.shape[0]

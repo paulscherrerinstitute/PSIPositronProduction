@@ -43,6 +43,10 @@ def rf_from_field_map(
         dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
         rf = rft.RF_FieldMap_1d(
             rfField['Ez'], dz, structL, rfField['frequency'], rfField['wave_direction'])  # [V/m]
+    if fieldmapDim == '1D_3rdOrderExpansion':
+        dz = rfField['Z'][1] - rfField['Z'][0]  # [m]
+        rf = rft.RF_FieldMap_1d_CINT(
+            rfField['Ez'], dz, structL, rfField['frequency'], rfField['wave_direction'])  # [V/m]
     elif fieldmapDim == '2D':
         dr = np.diff(rfField['R'][0, [0, 1]])[0]  # [m]
         dz = np.diff(rfField['Z'][[0, 1], 0])[0]  # [m]
