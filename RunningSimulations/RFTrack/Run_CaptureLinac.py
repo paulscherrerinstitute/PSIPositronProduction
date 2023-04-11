@@ -97,15 +97,18 @@ TRACK_AFTER_AMD = True
 ACCEL_WITH_HOMOG_EZ = False
 #
 RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+RF_FIELDMAP_TYPE = 'Full'
 # RF_FIELDMAP_DIM = '1D'
+# RF_SMOOTH = 0
 # or
 RF_FIELDMAP_DIM = '1D_3rdOrderExpansion'
-RF_FIELDMAP_TYPE = 'Full'
+RF_SMOOTH = 6
 # or
 # RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
 # RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_m2_YZplane_dy1mm_dz0p025L.dat'
-# RF_FIELDMAP_DIM = '2D'
 # RF_FIELDMAP_TYPE = 'Full'
+# RF_FIELDMAP_DIM = '2D'
+# RF_SMOOTH = 0
 #
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
 RF_N_STRUCTURES = 28  # 5 + 23
@@ -383,7 +386,7 @@ if TRACK_AFTER_AMD:
         elif RF_FIELDMAP_TYPE == 'Full':
             rf = rfttools.rf_from_field_map(
                 rfField, RF_FIELDMAP_DIM, powerScalingFactor,
-                tRf, rfPhase, aperture=RF_R_APERTURE, additionalHomogBz=rfHomogBz)
+                tRf, rfPhase, aperture=RF_R_APERTURE, additionalHomogBz=rfHomogBz, smooth=RF_SMOOTH)
         if ACCEL_WITH_HOMOG_EZ and structInd > N_RF_STRUCT_1ST_TRACKING - 1:
             rf = rft.Drift(rf.get_length())
             rf.set_static_Efield(0, 0, RF_SET_GRADIENTS[-1])
