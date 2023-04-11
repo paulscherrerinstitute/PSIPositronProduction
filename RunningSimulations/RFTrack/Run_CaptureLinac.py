@@ -191,7 +191,7 @@ SOLENOIDS = {
     },
     'Tuning': {
         'Type': 'Simulated',
-        'Fieldmap': 'Data/Fieldmaps/20221011_Solenoid_Tuning_V1.dat',
+        'Fieldmap': 'Data/Fieldmaps/20221011_Solenoid_Tuning_V1_200A.dat',
         'FieldmapCurrent': 200.,  # [A]
         'SetCurrent': 200.,  # [A]
         'MechanicalLength': 72e-3,  # [m]
