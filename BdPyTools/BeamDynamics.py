@@ -347,21 +347,16 @@ def compute_twiss(
 
 
 def check_distribution_offsets(
-        u, uDiv, planeName, uDivName, uDivUnits, correctOffsets, verbose
-):
-    thresholdFactor = 0.001
+    thresholdFactor = 0.01
     if verbose or correctOffsets:
         uAvg = u.mean()
         uDivAvg = uDiv.mean()
     if verbose:
-        if uAvg > u.std()*thresholdFactor:
+        if np.abs(uAvg) > u.std()*thresholdFactor:
+            warnings.warn('Average position {:s}Avg = {:.3f} mm.'.format(planeName, uAvg))
+        if np.abs(uDivAvg) > uDiv.std()*thresholdFactor:
             warnings.warn(
-                'Average position {:s}Avg = {:.3f} mm.'.format(planeName, uAvg)
-            )
-        if uDivAvg > uDiv.std()*thresholdFactor:
-            warnings.warn(
-                'Average divergence {:s}Avg = {:.3f} {:s}.'.format(uDivName, uDivAvg, uDivUnits)
-            )
+                'Average divergence {:s}Avg = {:.3f} {:s}.'.format(uDivName, uDivAvg, uDivUnits))
     if correctOffsets:
         if not (np.isnan(uAvg) or np.isnan(uDivAvg)):
             u -= uAvg
