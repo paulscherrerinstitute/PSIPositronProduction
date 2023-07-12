@@ -291,9 +291,7 @@ def extend_standard_df(standardDf, removeNanInf):
 
 def compute_emittance(
         standardDf, planeName, norm='normalized',
-        correctOffsets=True, verbose=True,
-        filterSpecs={}
-):
+        correctOffsets=True, verbose=True, filterSpecs={}):
     if norm in ['normalized', 'geometric']:
         uDivName = 'p' + planeName
         uDivUnits = 'MeV/c'
@@ -347,6 +345,7 @@ def compute_twiss(
 
 
 def check_distribution_offsets(
+        u, uDiv, planeName, uDivName, uDivUnits, correctOffsets, verbose):
     thresholdFactor = 0.01
     if verbose or correctOffsets:
         uAvg = u.mean()
@@ -364,13 +363,11 @@ def check_distribution_offsets(
             if verbose:
                 print(
                     'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'
-                    .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits)
-                )
+                        .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits))
         else:
             print(
                 'Offset cannot be corrected with {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'
-                .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits)
-            )
+                    .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits))
     return u, uDiv
 
 
@@ -489,15 +486,11 @@ def convert_fcceett_to_standard_df(sourceFilePath, pdgId=[], outFwfPath=None):
 
 
 def convert_astra_to_standard_df(
-        sourceFilePath, discardLostParticles=True, filterSpecsSelector=None,
-        zProjection=None, zCut=None, removeNanInf=False,
-        outFwfPath=None, verbose=False
-):
+        sourceFilePath, delim_whitespace=True, discardLostParticles=True, filterSpecsSelector=None,
+        zProjection=None, zCut=None, removeNanInf=False, outFwfPath=None, verbose=False):
     standardDf = pd.read_csv(
-        sourceFilePath, delim_whitespace=True,
-        index_col=False, header=None,
-        names=FILE_TYPES_SPECS['astra']['columnOrder']
-    )
+        sourceFilePath, delim_whitespace=delim_whitespace, index_col=False, header=None,
+        names=FILE_TYPES_SPECS['astra']['columnOrder'])
     # names=('x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId', 'statusFlag')
     standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
     standardDf['px'] = standardDf['px'] * 1.e-6                                 # [MeV]
@@ -1179,9 +1172,7 @@ def third_twiss_param(alphaTwiss=None, betaTwiss=None, gammaTwiss=None):
     elif betaTwiss is not None and gammaTwiss is not None and alphaTwiss is None:
         alphaTwiss = np.sqrt(betaTwiss*gammaTwiss - 1.)
     else:
-        raise ValueError(
-            'Wrong input. Two out of three Twiss parameters are required.'
-        )
+        raise ValueError('Wrong input. Two out of three Twiss parameters are required.')
     return alphaTwiss, betaTwiss, gammaTwiss
 
 
@@ -1193,9 +1184,7 @@ def distr_within_ellipse(standardDf, emitTraceSpace, ellipseSpecs):
         uDiv = standardDf[planeName+'p']
         # TODO: Allow for different emittances in the different planes
         indsWithinEllipse = indsWithinEllipse & (
-            gammaTwiss*u**2. + 2.*alphaTwiss*u*uDiv + betaTwiss*uDiv**2.
-            <= emitTraceSpace
-        )
+            gammaTwiss*u**2. + 2.*alphaTwiss*u*uDiv + betaTwiss*uDiv**2. <= emitTraceSpace)
     distrWithinEllipse = standardDf[indsWithinEllipse]
     portion = distrWithinEllipse.shape[0] / standardDf.shape[0]
     return distrWithinEllipse, portion
