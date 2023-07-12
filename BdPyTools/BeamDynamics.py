@@ -492,21 +492,20 @@ def convert_astra_to_standard_df(
         sourceFilePath, delim_whitespace=delim_whitespace, index_col=False, header=None,
         names=FILE_TYPES_SPECS['astra']['columnOrder'])
     # names=('x', 'y', 'z', 'px', 'py', 'pz', 't', 'Q', 'pdgId', 'statusFlag')
-    standardDf['x'] = standardDf['x'] * 1.e3                                    # [mm]
-    standardDf['px'] = standardDf['px'] * 1.e-6                                 # [MeV]
-    standardDf['y'] = standardDf['y'] * 1.e3                                    # [mm]
-    standardDf['py'] = standardDf['py'] * 1.e-6                                 # [MeV]
-    standardDf['z'] = standardDf['z'] * 1.e3                                    # [mm]
-    standardDf['pz'] = standardDf['pz'] * 1.e-6                                 # [MeV]
+    standardDf['x'] = standardDf['x'] * 1.e3  # [mm]
+    standardDf['px'] = standardDf['px'] * 1.e-6  # [MeV]
+    standardDf['y'] = standardDf['y'] * 1.e3  # [mm]
+    standardDf['py'] = standardDf['py'] * 1.e-6  # [MeV]
+    standardDf['z'] = standardDf['z'] * 1.e3  # [mm]
+    standardDf['pz'] = standardDf['pz'] * 1.e-6  # [MeV]
     # Longitudinal coordinates in Astra are with respect to reference particle
     standardDf.loc[1:, 'z'] = standardDf.loc[1:, 'z'] + standardDf.loc[0, 'z']
     standardDf.loc[1:, 'pz'] = standardDf.loc[1:, 'pz'] + standardDf.loc[0, 'pz']
-    standardDf.loc[1:, 'clock'] = \
-        standardDf.loc[1:, 'clock'] + standardDf.loc[0, 'clock']                  # [ns]
+    standardDf.loc[1:, 'clock'] = standardDf.loc[1:, 'clock'] + standardDf.loc[0, 'clock']  # [ns]
     standardDf.rename(columns={'clock': 't'}, inplace=True)
     standardDf['particleIndex'].replace(to_replace={1: 11, 2: -11}, inplace=True)
     standardDf.rename(columns={'particleIndex': 'pdgId'}, inplace=True)
-    standardDf['macroCharge'] = standardDf['macroCharge'] * 1.e-9               # [C]
+    standardDf['macroCharge'] = standardDf['macroCharge'] * 1.e-9  # [C]
     standardDf.rename(columns={'macroCharge': 'Q'}, inplace=True)
     if discardLostParticles:
         standardDf = standardDf[standardDf['statusFlag'] >= -6]
@@ -1238,20 +1237,23 @@ def set_plot_defs_from_distrs(distrList, setNames):
             'opacityHist': 0.6,
         }
     ]
-    plotDefs['LongPsZ'] = [
+    plotDefs['z-pz'] = [
         {
             'varName1': 'z', 'varName2': 'pz',
             'lims1': (distrAll['z'].min(), distrAll['z'].max()),
             'lims2': (distrAll['pz'].min(), distrAll['pz'].max()),
             'opacityHist': 0.6,
-        },
+        }
+    ]
+    plotDefs['z-Ekin'] = [
         {
             'varName1': 'z', 'varName2': 'Ekin',
             'lims1': (distrAll['z'].min(), distrAll['z'].max()),
             'lims2': (distrAll['Ekin'].min(), distrAll['Ekin'].max()),
             'opacityHist': 0.6,
-        }
+        },
     ]
+    plotDefs['LongPsZ'] = plotDefs['z-pz'] + plotDefs['z-Ekin']
     plotDefs['LongPsT'] = [
         {
             'varName1': 't', 'varName2': 'pz',
