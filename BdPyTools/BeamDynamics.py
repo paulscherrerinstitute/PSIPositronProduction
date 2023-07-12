@@ -1236,6 +1236,20 @@ def set_plot_defs_from_distrs(distrList, setNames):
             'opacityHist': 0.6,
         }
     ]
+    plotDefs['TransvPsMomenta'] = [
+        {
+            'varName1': 'x', 'varName2': 'px',
+            'lims1': (distrAll['x'].min(), distrAll['x'].max()),
+            'lims2': (distrAll['px'].min(), distrAll['px'].max()),
+            'opacityHist': 0.6,
+        },
+        {
+            'varName1': 'y', 'varName2': 'py',
+            'lims1': (distrAll['y'].min(), distrAll['y'].max()),
+            'lims2': (distrAll['py'].min(), distrAll['py'].max()),
+            'opacityHist': 0.6,
+        }
+    ]
     plotDefs['LongPsZ'] = [
         {
             'varName1': 'z', 'varName2': 'pz',
