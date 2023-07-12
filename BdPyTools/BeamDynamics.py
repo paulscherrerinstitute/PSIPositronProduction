@@ -827,8 +827,7 @@ def get_sdds_parameter(sourceFilePath, parameterName):
 
 
 def convert_standard_df_to_sdds(
-        standardDf=None, sourceFilePath=None, refParticleId=0, outFilePath=None
-):
+        standardDf=None, sourceFilePath=None, refParticleId=0, outFilePath=None):
     standardDf = convert_from_input_check(
         standardDf, sourceFilePath
     )
@@ -1293,6 +1292,14 @@ def set_plot_defs_from_distrs(distrList, setNames):
         {
             'varName1': 'r', 'varName2': 'pz',
             'lims1': (0, np.sqrt((distrAll['x']**2. + distrAll['y']**2.).max())),
+            'lims2': (distrAll['pz'].min(), distrAll['pz'].max()),
+            'opacityHist': 0.6,
+        },
+    ]
+    plotDefs['x-pz'] = [
+        {
+            'varName1': 'x', 'varName2': 'pz',
+            'lims1': (distrAll['x'].min(), distrAll['x'].max()),
             'lims2': (distrAll['pz'].min(), distrAll['pz'].max()),
             'opacityHist': 0.6,
         },
