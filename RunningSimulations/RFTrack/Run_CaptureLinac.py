@@ -261,6 +261,25 @@ BUNCH_Z = 0.  # [m]
 # BUNCH_T = 16563.9507  # [mm/c]
 # BUNCH_DOWNSAMPLING = 1
 #
+# SAVE_BUNCH6DT = True
+# Z_STOP_TRACKING_MANUAL = None
+# T_STOP_TRACKING_MANUAL = None
+# or
+# SAVE_BUNCH6DT = True
+# # Exit of 5th RF structure
+# Z_STOP_TRACKING_MANUAL = 16.35  # [m]
+# T_STOP_TRACKING_MANUAL = 55.25e-9 * bd.C * 1e3  # [mm/c]
+# or
+SAVE_BUNCH6DT = False
+# Middle of the chicane
+Z_STOP_TRACKING_MANUAL = 17.43  # [m]
+T_STOP_TRACKING_MANUAL = 59.3e-9 * bd.C * 1e3  # [mm/c]
+# or
+# SAVE_BUNCH6DT = False
+# # After X collimator
+# Z_STOP_TRACKING_MANUAL = 17.6825  # [m]
+# T_STOP_TRACKING_MANUAL = None  # [mm/c]
+#
 AUTOPHASE = True
 #
 # RF_PHASES = np.array([0., 0., 0., 0., 0.])  # [deg], Test on-crest
@@ -533,6 +552,7 @@ if FINAL_L > 0:
     zFinalInVolume += finalDrift.get_length()
 if not splitTracking:
     zStop1stTracking = zFinalInVolume
+tStop1stTracking = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
 
 beamlineSetup['zWrtAmdPeakField'] = \
     beamlineSetup['zWrtTargetExit'] + TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD
@@ -569,11 +589,15 @@ if TRACKING_VARIANT in ['RefPart', 'Bunch']:
             B0_6dT.t = BUNCH_T
     elif TRACKING_VARIANT == 'RefPart':
         B0_6dT = rft.Bunch6dT(refPartVol)
+    # TODO: Generalize for splitTracking
+    if Z_STOP_TRACKING_MANUAL is not None and Z_STOP_TRACKING_MANUAL < zStop1stTracking:
+        zStop1stTracking = Z_STOP_TRACKING_MANUAL
     vol.set_s1(float(zStop1stTracking))
-    vol.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
+    if T_STOP_TRACKING_MANUAL is not None and T_STOP_TRACKING_MANUAL < tStop1stTracking:
+        tStop1stTracking = T_STOP_TRACKING_MANUAL
+    vol.t_max_mm = tStop1stTracking
     print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
-        zStop1stTracking, vol.t_max_mm)
-    )
+        zStop1stTracking, tStop1stTracking))
     B1_6dT = vol.track(B0_6dT)
     B1_6d = vol.get_bunch_at_s1()
 elif TRACKING_VARIANT == 'RefPartBacktrack':
@@ -585,6 +609,8 @@ elif TRACKING_VARIANT == 'RefPartBacktrack':
     B1_6dT = vol.btrack(B0_6dT)
     B1_6d = vol.get_bunch_at_s0()
 M1_6dT = B1_6dT.get_phase_space()
+if SAVE_BUNCH6DT:
+    np.savetxt('RFTrackOutput/LatestSimCaptureLinac/Bunch6dT_After1stTracking.dat', M1_6dT)
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
 bd.convert_rftrack_to_standard_df(
     rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', s=B1_6d.S*1e3, pdgId=BUNCH_PDGID,
@@ -660,21 +686,36 @@ plt.show(block=False)
 
 if splitTracking:
     # TODO: This can probably be improved by filtering M1_6dT
-    tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * RF_L_CELL*1e3  # [mm/c]
-    M1_6d_frontBuckets = M1_6d[(M1_6d[:, 4] < tCut) & (M1_6d[:, 5] > PZ_MIN_LONG_PS_CUT), :]
-    B1_6d.set_phase_space(M1_6d_frontBuckets)
-    B1_6dT = rft.Bunch6dT(B1_6d)
+    # tCut = np.min(M1_6d[:, 4]) + N_RF_CELLS_LONG_PS_CUT * RF_L_CELL*1e3  # [mm/c]
+    # M1_6d_frontBuckets = M1_6d[(M1_6d[:, 4] < tCut) & (M1_6d[:, 5] > PZ_MIN_LONG_PS_CUT), :]
+    # B1_6d.set_phase_space(M1_6d_frontBuckets)
+    # B1_6dT = rft.Bunch6dT(B1_6d)
+    M1_6dT_forward = M1_6dT[(M1_6dT[:, 4] >= 0) & (M1_6dT[:, 5] > 0), :]
+    # TODO: Following line not working as expected
+    # B1_6dT.set_phase_space(M1_6dT_forward)
+    B1_6dT_forward = rft.Bunch6dT(
+        PARTICLE_MASS, M1_6dT_forward.shape[0], PARTICLE_CHARGE, M1_6dT_forward)
+    B1_6dT_forward.t = B1_6dT.t
     bd.convert_rftrack_to_standard_df(
-        rftrackDf=M1_6d_frontBuckets, rftrackDfFormat='rftrack_xp_t',
-        s=B1_6d.get_S()*1e3, pdgId=BUNCH_PDGID,
-        outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_FrontBuckets_After1stTracking_6d')
+        rftrackDf=M1_6dT_forward, rftrackDfFormat='rftrack_Px_S',
+        t=B1_6dT_forward.t/bd.C*1e6, pdgId=BUNCH_PDGID,
+        outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_Forward_After1stTracking_6dT')
     )
-    vol.set_s1(float(zFinalInVolume))
-    vol.t_max_mm = zFinalInVolume * 1e3 + T_ADD_NON_RELATIVISTIC
+    if Z_STOP_TRACKING_MANUAL is not None and Z_STOP_TRACKING_MANUAL > zStop1stTracking:
+        zStop2ndTracking = Z_STOP_TRACKING_MANUAL
+    else:
+        zStop2ndTracking = zFinalInVolume
+    vol.set_s1(float(zStop2ndTracking))
+    if T_STOP_TRACKING_MANUAL is not None and T_STOP_TRACKING_MANUAL > tStop1stTracking:
+        tStop2ndTracking = T_STOP_TRACKING_MANUAL
+    else:
+        tStop2ndTracking = zStop2ndTracking * 1e3 + T_ADD_NON_RELATIVISTIC
+    vol.t_max_mm = tStop2ndTracking
     print('2nd particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
-        zFinalInVolume, vol.t_max_mm)
+        zStop2ndTracking, tStop2ndTracking)
     )
-    B2_6dT = vol.track(B1_6dT)
+    # TODO: vol.tt_dt changing here?
+    B2_6dT = vol.track(B1_6dT_forward)
     B2_6d = vol.get_bunch_at_s1()
     M2_6d = B2_6d.get_phase_space("%x %xp %y %yp %t %Pc")
     bd.convert_rftrack_to_standard_df(
@@ -682,7 +723,7 @@ if splitTracking:
         outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_After2ndTracking_6d')
     )
 
-    rfttools.save_plot_transport(ax1, vol, B1_6dT, B2_6dT, OUT_REL_PATH, outSuffix='2')
+    rfttools.save_plot_transport(ax1, vol, B1_6dT_forward, B2_6dT, OUT_REL_PATH, outSuffix='2')
     ax1[0].set_ylim([0, 0.55])
     plt.show(block=False)
 
