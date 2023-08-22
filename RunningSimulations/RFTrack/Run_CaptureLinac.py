@@ -204,7 +204,7 @@ SOLENOIDS = {
 }
 SOL_HOMOG_BZ = 0.5  # [T]
 #
-CHICANE_INSERT = False
+CHICANE_INSERT = True
 CHICANE_FIELDMAP = 'Data/Fieldmaps/field_map_chicane_all_dispersion_closed.dat'
 CHICANE_FIELD_PEAK = 0.2  # [T]
 CHICANE_AFTER_RF_STRUCT_NO = 5
@@ -212,10 +212,10 @@ CHICANE_TOT_LENGTH = 2.0  # [m]
 CHICANE_BEAM_PIPE_HALF_APERTURE_X = 0.075  # [m]
 CHICANE_BEAM_PIPE_HALF_APERTURE_Y = 0.020  # [m]
 CHICANE_FORCE_CLOSED_DISPERSION = False
-CHICANE_COLLIM_X_INSERT = False
+CHICANE_COLLIM_X_INSERT = True
 CHICANE_COLLIM_X_LENGTH = 0.12  # [m]
-CHICANE_COLLIM_X_TOT_APERTURE = 0.050  # [m]
-CHICANE_COLLIM_X_OFFSET = -0.025  # [m]
+CHICANE_COLLIM_X_TOT_APERTURE = 0.075  # [m]
+CHICANE_COLLIM_X_OFFSET = -CHICANE_BEAM_PIPE_HALF_APERTURE_X + CHICANE_COLLIM_X_TOT_APERTURE / 2.
 CHICANE_COLLIM_X_Z_FROM_CENTER = 0.1325  # [m]
 #
 FINAL_L = 1.  # [m]
@@ -405,9 +405,7 @@ if TRACK_AFTER_AMD:
         zFinalInVolume += rf.get_length() / 2.
         if splitTracking and structInd == N_RF_STRUCT_1ST_TRACKING - 1:
             zStop1stTracking = zFinalInVolume
-        if structInd == RF_N_STRUCTURES-1 or (
-                CHICANE_INSERT and
-                structInd in [CHICANE_AFTER_RF_STRUCT_NO-1, CHICANE_AFTER_RF_STRUCT_NO]):
+        if structInd == RF_N_STRUCTURES-1:
             rfGap.set_length(rfSeparation / 2.)
         else:
             rfGap.set_length(rfSeparation)
@@ -419,7 +417,7 @@ if TRACK_AFTER_AMD:
             # TODO: Refactor insertion of gap
             chicaneGap = rft.Drift(CHICANE_TOT_LENGTH)
             lat.append(chicaneGap)
-            chicaneCenter = zFinalInVolume + chicaneGap.get_length()/2.
+            chicaneCenter = zFinalInVolume - rfSeparation/2. + chicaneGap.get_length()/2.
             zFinalInVolume += chicaneGap.get_length()
             if not AUTOPHASE:
                 tRf += chicaneGap.get_length() * 1e3  # [mm/c]
