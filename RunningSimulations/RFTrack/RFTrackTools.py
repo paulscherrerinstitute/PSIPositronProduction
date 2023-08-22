@@ -98,13 +98,15 @@ def solenoid_from_fieldmap(fieldmapFilePath, fieldmapCurrent, setCurrent):
 
 
 def save_em_fields(
-        vol, xMesh, yMesh, zMesh, outRelPath=None, outSuffix=None, returnMultidimNpArray=False):
+        volOrLat, xMesh, yMesh, zMesh,
+        outRelPath=None, outSuffix=None, returnMultidimNpArray=False):
     emFieldsNp = np.zeros([len(zMesh)*len(yMesh)*len(xMesh), 9])
     meshInd = 0
     for x in xMesh:
         for y in yMesh:
             for z in zMesh:
-                E, B = vol.get_field(x*1e3, y*1e3, z*1e3, 0)  # x [mm], y [mm], z [mm], t [mm/c]
+                E, B = volOrLat.get_field(x*1e3, y*1e3, z*1e3, 0)
+                #   x [mm], y [mm], z [mm], t [mm/c]
                 emFieldsNp[meshInd, 0] = x
                 emFieldsNp[meshInd, 1] = y
                 emFieldsNp[meshInd, 2] = z
@@ -122,17 +124,28 @@ def save_em_fields(
     return emFields
 
 
-def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
-    # TODO: Check indexing with Andrea
-    zMesh = np.arange(vol.get_s0()[0, 2]/1e3, vol.get_s1()[0, 2]/1e3, 1e-3)  # [m]
-    # zAxis = np.linspace(vol.get_s0(), vol.get_s1(), 1000)   # [m]
+def save_plot_transport(ax, volOrLat, beam0, beam1, outRelPath, outSuffix=''):
+    try:
+        # Volume
+        # TODO: Check indexing with Andrea
+        zMeshStart = volOrLat.get_s0()[0, 2] / 1e3  # [m]
+        zMeshEnd = volOrLat.get_s1()[0, 2] / 1e3  # [m]
+        getTransportTableStr = '%mean_S %mean_X %mean_Y %sigma_X %sigma_Y'
+        sInd = 4
+    except AttributeError as err:
+        if err.args[0][1:8] == 'Lattice':
+            zMeshStart = 0.
+            zMeshEnd = volOrLat.get_length()  # [m]
+            getTransportTableStr = '%S %mean_x %mean_y %sigma_x %sigma_y'
+            sInd = 6
+    zMesh = np.arange(zMeshStart, zMeshEnd, 1e-3)  # [m]
+    # zMesh = np.linspace(zMeshStart, zMeshEnd, 1000)  # [m]
+    getTransportTableStr += ' %mean_E %emitt_x %emitt_y %emitt_4d %alpha_x %beta_x %alpha_y %beta_y'
     if outSuffix != '':
         outSuffix = '_' + outSuffix
-    emFields = save_em_fields(vol, [0], [0], zMesh, outRelPath, outSuffix)
+    emFields = save_em_fields(volOrLat, [0], [0], zMesh, outRelPath, outSuffix)
     # Get transport table
-    getTransportTableStr = \
-        '%mean_S %emitt_x %emitt_y %emitt_4d %sigma_X %sigma_Y %mean_E %mean_X %mean_Y'
-    TT = vol.get_transport_table(getTransportTableStr)
+    TT = volOrLat.get_transport_table(getTransportTableStr)
     transportTable = pd.DataFrame(TT, columns=getTransportTableStr.replace('%', '').split())
     transportTable.to_csv(
         os.path.join(outRelPath, 'TransportTable{:s}.dat'.format(outSuffix)), index=None
@@ -141,74 +154,19 @@ def save_plot_transport(ax, vol, beam0, beam1, outRelPath, outSuffix=''):
     M0 = beam0.get_phase_space()
     Mlost = beam1.get_lost_particles()
     # Columns of Mlost like columns 1-6 of M0, in addition:
-    # t [mm/c] at which particle was lost, m [kg],
+    # t [mm/c] (Volume) or z [mm] (Lattice) at which particle was lost, m [kg],
     # Q [?] of particle type, Q of macro-particle [?]
     try:
-        Mlost = Mlost[Mlost[:, 4].argsort()]
-        sCapture = Mlost[:, 4]
-        captureEff = (
-            M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)
-        ) / M0.shape[0]
-    except IndexError:
-        sCapture = np.array(TT[[0, -1], 0])
-        captureEff = np.ones(sCapture.shape)
-    captureEfficiency = pd.DataFrame(
-        np.row_stack([sCapture, captureEff]).T, columns=['s', 'CaptureEfficiency']
-    )
-    captureEfficiency.to_csv(
-        os.path.join(outRelPath, 'CaptureEfficiency{:s}.dat'.format(outSuffix)), index=None
-    )
-    plot_transport(ax, emFields, transportTable, captureEfficiency)
-
-
-def save_plot_transport_in_lattice(ax, lat, beam0, beam1, outRelPath, outSuffix=''):
-    # TODO: Integrate in save_plot_transport for volume, differences are small.
-    # Prepare Ez and Bz for plotting
-    zAxis = np.arange(0., lat.get_length(), 1e-3)   # [m]
-    Ez = []
-    Bz = []
-    for z in zAxis:
-        E, B = lat.get_field(0, 0, z*1e3, 0)   # x,y,z,t (mm, mm/c)
-        Ez.append(E[2])
-        Bz.append(B[2])
-    Ez = np.array(Ez)
-    Bz = np.array(Bz)
-    emFields = pd.DataFrame(np.row_stack([zAxis, Ez, Bz]).T, columns=['z', 'Ez', 'Bz'])
-    if outSuffix != '':
-        outSuffix = '_' + outSuffix
-    emFields.to_csv(os.path.join(outRelPath, 'EMFields{:s}.dat'.format(outSuffix)), index=None)
-    # Get transport table
-    # TODO: Add Twiss parameters
-    getTransportTableStr = '%S %emitt_x %emitt_y %emitt_4d %sigma_x %sigma_y %mean_E ' + \
-        '%beta_x %beta_y'
-    TT = lat.get_transport_table(getTransportTableStr)
-    transportTable = pd.DataFrame(TT, columns=getTransportTableStr.replace('%', '').split())
-    transportTable.to_csv(
-        os.path.join(outRelPath, 'TransportTable{:s}.dat'.format(outSuffix)), index=None
-    )
-    # Compute capture efficiency
-    M0 = beam0.get_phase_space()
-    Mlost = beam1.get_lost_particles()
-    # Columns of Mlost like columns 1-6 of M0, in addition:
-    # t [mm/c] at which particle was lost, m [kg],
-    # Q [?] of particle type, Q of macro-particle [?]
-    try:
-        # sInd = 4  # in Volume()
-        sInd = 6  # in Lattice()
         Mlost = Mlost[Mlost[:, sInd].argsort()]
         sCapture = Mlost[:, sInd]
-        captureEff = (
-            M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)
-        ) / M0.shape[0]
+        captureEff = (M0.shape[0] - np.arange(1, Mlost.shape[0]+1, 1)) / M0.shape[0]
     except IndexError:
         sCapture = np.array(TT[[0, -1], 0])
         captureEff = np.ones(sCapture.shape)
     captureEfficiency = pd.DataFrame(
-        np.row_stack([sCapture, captureEff]).T, columns=['s', 'CaptureEfficiency']
-    )
+        np.row_stack([sCapture, captureEff]).T, columns=['s', 'CaptureEfficiency'])
     captureEfficiency.to_csv(
-        os.path.join(outRelPath, 'CaptureEfficiency{:s}.dat'.format(outSuffix)), index=None
-    )
+        os.path.join(outRelPath, 'CaptureEfficiency{:s}.dat'.format(outSuffix)), index=None)
     plot_transport(ax, emFields, transportTable, captureEfficiency)
 
 

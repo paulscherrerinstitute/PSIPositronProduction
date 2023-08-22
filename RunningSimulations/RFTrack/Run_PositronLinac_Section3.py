@@ -222,8 +222,8 @@ bd.convert_rftrack_to_standard_df(
     outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_6d')
 )
 
-fig1, ax1 = plt.subplots(7, 1)
-rfttools.save_plot_transport_in_lattice(ax1, lat, B0_6d, B1_6d, OUT_REL_PATH)
+fig1, ax1 = plt.subplots(9, 1)
+rfttools.save_plot_transport(ax1, lat, B0_6d, B1_6d, OUT_REL_PATH)
 plt.show(block=False)
 
 input("Press Enter to continue...")
