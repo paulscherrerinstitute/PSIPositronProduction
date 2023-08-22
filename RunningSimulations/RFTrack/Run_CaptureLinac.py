@@ -621,68 +621,68 @@ fig1, ax1 = plt.subplots(9, 1)
 rfttools.save_plot_transport(ax1, vol, B0_6dT, B1_6dT, OUT_REL_PATH, outSuffix='1')
 plt.show(block=False)
 
-yMesh = np.arange(0, 0.03, 1e-3)
-zMesh = np.arange(0.25, 1., 1e-3)
-emFields = rfttools.save_em_fields(vol, [0], yMesh, zMesh, returnMultidimNpArray=True)
-r = emFields[0, :, :, 1]
-z = emFields[0, :, :, 2]
-Er = emFields[0, :, :, 4]
-Etheta = emFields[0, :, :, 3]
-Ez = emFields[0, :, :, 5]
-Br = emFields[0, :, :, 7]
-Btheta = emFields[0, :, :, 6]
-Bz = emFields[0, :, :, 8]
-BzSolenoids = 0.5  # [T], attention, this is only the homogeneous part!
-Emax = 35e6  # [ V/m]
+# yMesh = np.arange(0, 0.03, 1e-3)
+# zMesh = np.arange(0.25, 1., 1e-3)
+# emFields = rfttools.save_em_fields(vol, [0], yMesh, zMesh, returnMultidimNpArray=True)
+# r = emFields[0, :, :, 1]
+# z = emFields[0, :, :, 2]
+# Er = emFields[0, :, :, 4]
+# Etheta = emFields[0, :, :, 3]
+# Ez = emFields[0, :, :, 5]
+# Br = emFields[0, :, :, 7]
+# Btheta = emFields[0, :, :, 6]
+# Bz = emFields[0, :, :, 8]
+# BzSolenoids = 0.5  # [T], attention, this is only the homogeneous part!
+# Emax = 35e6  # [ V/m]
 
-fig2, ax2 = plt.subplots(3, 2)
-p00 = ax2[0, 0].pcolormesh(z, r, Er, shading='nearest', vmin=-Emax, vmax=Emax)
-c00 = fig2.colorbar(p00, ax=ax2[0, 0])
-ax2[0, 0].set_xlabel('z [m]')
-ax2[0, 0].set_ylabel('r [m]')
-c00.set_label('Er [V/m]', rotation=270)
-p10 = ax2[1, 0].pcolormesh(z, r, Etheta, shading='nearest', vmin=-Emax, vmax=Emax)
-c10 = fig2.colorbar(p10, ax=ax2[1, 0])
-ax2[1, 0].set_xlabel('z [m]')
-ax2[1, 0].set_ylabel('r [m]')
-c10.set_label('Etheta [V/m]', rotation=270)
-p20 = ax2[2, 0].pcolormesh(z, r, Ez, shading='nearest', vmin=-Emax, vmax=Emax)
-c20 = fig2.colorbar(p20, ax=ax2[2, 0])
-ax2[2, 0].set_xlabel('z [m]')
-ax2[2, 0].set_ylabel('r [m]')
-c20.set_label('Ez [V/m]', rotation=270)
-p01 = ax2[0, 1].pcolormesh(z, r, Br, shading='nearest', vmin=-0.07, vmax=0.07)
-c01 = fig2.colorbar(p01, ax=ax2[0, 1])
-ax2[0, 1].set_xlabel('z [m]')
-ax2[0, 1].set_ylabel('r [m]')
-c01.set_label('Br [T]', rotation=270)
-p11 = ax2[1, 1].pcolormesh(z, r, Btheta, shading='nearest', vmin=-0.07, vmax=0.07)
-c11 = fig2.colorbar(p11, ax=ax2[1, 1])
-ax2[1, 1].set_xlabel('z [m]')
-ax2[1, 1].set_ylabel('r [m]')
-c11.set_label('Btheta [T]', rotation=270)
-p21 = ax2[2, 1].pcolormesh(z, r, Bz-BzSolenoids, shading='nearest', vmin=-0.07, vmax=0.07)
-c21 = fig2.colorbar(p21, ax=ax2[2, 1])
-ax2[2, 1].set_xlabel('z [m]')
-ax2[2, 1].set_ylabel('r [m]')
-c21.set_label('Bz [T]', rotation=270)
-plt.show(block=False)
+# fig2, ax2 = plt.subplots(3, 2)
+# p00 = ax2[0, 0].pcolormesh(z, r, Er, shading='nearest', vmin=-Emax, vmax=Emax)
+# c00 = fig2.colorbar(p00, ax=ax2[0, 0])
+# ax2[0, 0].set_xlabel('z [m]')
+# ax2[0, 0].set_ylabel('r [m]')
+# c00.set_label('Er [V/m]', rotation=270)
+# p10 = ax2[1, 0].pcolormesh(z, r, Etheta, shading='nearest', vmin=-Emax, vmax=Emax)
+# c10 = fig2.colorbar(p10, ax=ax2[1, 0])
+# ax2[1, 0].set_xlabel('z [m]')
+# ax2[1, 0].set_ylabel('r [m]')
+# c10.set_label('Etheta [V/m]', rotation=270)
+# p20 = ax2[2, 0].pcolormesh(z, r, Ez, shading='nearest', vmin=-Emax, vmax=Emax)
+# c20 = fig2.colorbar(p20, ax=ax2[2, 0])
+# ax2[2, 0].set_xlabel('z [m]')
+# ax2[2, 0].set_ylabel('r [m]')
+# c20.set_label('Ez [V/m]', rotation=270)
+# p01 = ax2[0, 1].pcolormesh(z, r, Br, shading='nearest', vmin=-0.07, vmax=0.07)
+# c01 = fig2.colorbar(p01, ax=ax2[0, 1])
+# ax2[0, 1].set_xlabel('z [m]')
+# ax2[0, 1].set_ylabel('r [m]')
+# c01.set_label('Br [T]', rotation=270)
+# p11 = ax2[1, 1].pcolormesh(z, r, Btheta, shading='nearest', vmin=-0.07, vmax=0.07)
+# c11 = fig2.colorbar(p11, ax=ax2[1, 1])
+# ax2[1, 1].set_xlabel('z [m]')
+# ax2[1, 1].set_ylabel('r [m]')
+# c11.set_label('Btheta [T]', rotation=270)
+# p21 = ax2[2, 1].pcolormesh(z, r, Bz-BzSolenoids, shading='nearest', vmin=-0.07, vmax=0.07)
+# c21 = fig2.colorbar(p21, ax=ax2[2, 1])
+# ax2[2, 1].set_xlabel('z [m]')
+# ax2[2, 1].set_ylabel('r [m]')
+# c21.set_label('Bz [T]', rotation=270)
+# plt.show(block=False)
 
-rInds = [0, 15, 29]
-fig3, ax3 = plt.subplots(2, 1)
-for rInd in rInds:
-    ax3[0].plot(z[rInd, :], Er[rInd, :], label='r = {:.0f} mm'.format(r[rInd, 0]*1e3))
-    ax3[1].plot(z[rInd, :], Ez[rInd, :], label='r = {:.0f} mm'.format(r[rInd, 0]*1e3))
-ax3[0].set_ylim([-Emax, Emax])
-ax3[0].set_xlabel('z [m]')
-ax3[0].set_ylabel('Er [V/m]')
-ax3[0].legend()
-ax3[0].grid()
-ax3[1].set_ylim([-Emax, Emax])
-ax3[1].set_xlabel('z [m]')
-ax3[1].set_ylabel('Ez [V/m]')
-ax3[1].grid()
-plt.show(block=False)
+# rInds = [0, 15, 29]
+# fig3, ax3 = plt.subplots(2, 1)
+# for rInd in rInds:
+#     ax3[0].plot(z[rInd, :], Er[rInd, :], label='r = {:.0f} mm'.format(r[rInd, 0]*1e3))
+#     ax3[1].plot(z[rInd, :], Ez[rInd, :], label='r = {:.0f} mm'.format(r[rInd, 0]*1e3))
+# ax3[0].set_ylim([-Emax, Emax])
+# ax3[0].set_xlabel('z [m]')
+# ax3[0].set_ylabel('Er [V/m]')
+# ax3[0].legend()
+# ax3[0].grid()
+# ax3[1].set_ylim([-Emax, Emax])
+# ax3[1].set_xlabel('z [m]')
+# ax3[1].set_ylabel('Ez [V/m]')
+# ax3[1].grid()
+# plt.show(block=False)
 
 if splitTracking:
     # TODO: This can probably be improved by filtering M1_6dT
