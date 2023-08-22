@@ -30,8 +30,8 @@ def rf_struct_from_single_period(
 
 
 def rf_from_field_map(
-        fieldmapOrFilePath, fieldmapDim, powerScalingFactor, t0, phase,
-        aperture=None, additionalHomogBz=None, smooth=0):
+        fieldmapOrFilePath, fieldmapDim, powerScalingFactor, t0, phase, smooth=0,
+        aperture=None, additionalHomogBz=None):
     try:
         fieldmapOrFilePath.keys()
         rfField = fieldmapOrFilePath
@@ -172,8 +172,8 @@ def save_plot_transport(ax, volOrLat, beam0, beam1, outRelPath, outSuffix=''):
 
 def load_plot_transport(
         ax, simRelPath, fileSuffix='', sShiftEMFields=0, sShiftGlobal=0, normFactorCaptureEff=1.,
-        quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT
-):
+        quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT,
+        lineStyles=['-']*len(DEFAULT_QUANTITIES_TO_PLOT), colors=None, cutAtInversionOfS=False):
     # TODO: Global variable, use also in save_plot_transport()
     transportFileBases = ['EMFields', 'TransportTable', 'CaptureEfficiency']
     if fileSuffix != '':
@@ -187,52 +187,68 @@ def load_plot_transport(
         )
     plot_transport(
         ax, *transportDfs, sShiftEMFields=sShiftEMFields, sShiftGlobal=sShiftGlobal,
-        normFactorCaptureEff=normFactorCaptureEff, quantitiesToPlot=quantitiesToPlot)
+        normFactorCaptureEff=normFactorCaptureEff, quantitiesToPlot=quantitiesToPlot,
+        lineStyles=lineStyles, colors=colors, cutAtInversionOfS=cutAtInversionOfS)
 
 
 # TODO: Move following function to module BeamDynamics?
 def plot_transport(
         ax, emFields, transpTab, captureEff, sShiftEMFields=0, sShiftGlobal=0,
-        normFactorCaptureEff=1., quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT):
+        normFactorCaptureEff=1., quantitiesToPlot=DEFAULT_QUANTITIES_TO_PLOT,
+        lineStyles=['-']*len(DEFAULT_QUANTITIES_TO_PLOT), colors=None, cutAtInversionOfS=False):
     try:
-        s = transpTab['mean_S'] / 1e3  # [m]
+        s = transpTab['mean_S'].to_numpy() / 1e3  # [m]
+        meanXName = 'mean_X'
+        meanYName = 'mean_Y'
         sigmaXName = 'sigma_X'
         sigmaYName = 'sigma_Y'
     except KeyError:
         # TODO: Verify mean_t --> S is OK for existing analyses and scripts
-        s = transpTab['S']  # [m]
+        s = transpTab['S'].to_numpy()  # [m]
+        meanXName = 'mean_x'
+        meanYName = 'mean_y'
         sigmaXName = 'sigma_x'
         sigmaYName = 'sigma_y'
+    if cutAtInversionOfS:
+        try:
+            inversionInd = np.where(s[1:] - s[:-1] < 0)[0][0]
+            s = s[:inversionInd]
+            transpTab = transpTab[:inversionInd]
+        except IndexError:
+            pass
     # TODO: Is sShiftEMFields still necessary?
     s += sShiftGlobal
+    sEmFields = emFields['z'] + sShiftEMFields + sShiftGlobal
+    sCaptureEff = captureEff['s'] / 1e3 + sShiftEMFields + sShiftGlobal
     # TODO: Recognize when axis is empty (xlim = [0, 1])
     sLims = np.array([
-        np.min([ax[0].get_xlim()[0], s.min()]),
-        np.max([ax[0].get_xlim()[1], s.max()])
-    ])
-    for axInd, quantity in enumerate(quantitiesToPlot):
+        np.min([ax[0].get_xlim()[0], s.min(), sEmFields.min(), sCaptureEff.min()]),
+        np.max([ax[0].get_xlim()[1], s.max(), sEmFields.max(), sCaptureEff.max()])])
+    if lineStyles is None or isinstance(lineStyles, str):
+        lineStyles = [lineStyles] * len(quantitiesToPlot)
+    if colors is None or isinstance(colors, str):
+        colors = [colors] * len(quantitiesToPlot)
+    for axInd, (quantity, lineStyle, color) in enumerate(zip(quantitiesToPlot, lineStyles, colors)):
         if quantity == 'By':
-            ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['By'])
+            ax[axInd].plot(sEmFields, emFields['By'], lineStyle, color=color)
             # , color=DEFAULT_COLOR_CYCLE[0]
             ax[axInd].set_xlim(sLims)
             ByLims = np.array([
                 np.min([ax[axInd].get_ylim()[0], emFields['By'].min()]),
                 np.max([ax[axInd].get_ylim()[1], emFields['By'].max()])])
             ax[axInd].set_ylim(ByLims)
-            ax[axInd].set_xlabel('s [m]')
             ax[axInd].set_ylabel('By [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
             ax[axInd].grid(True)
         elif quantity == 'Bz':
-            ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['Bz'])
+            ax[axInd].plot(sEmFields, emFields['Bz'], lineStyle, color=color)
             # , color=DEFAULT_COLOR_CYCLE[0]
             ax[axInd].set_xlim(sLims)
             BzLims = np.array([0, np.max([ax[axInd].get_ylim()[1], emFields['Bz'].max()])])
             ax[axInd].set_ylim(BzLims)
-            ax[axInd].set_xlabel('s [m]')
             ax[axInd].set_ylabel('Bz [T]')  # , color=DEFAULT_COLOR_CYCLE[0]
             ax[axInd].grid(True)
         elif quantity == 'Ez':
-            ax[axInd].plot(emFields['z']+sShiftEMFields+sShiftGlobal, emFields['Ez']/1e6, '--')
+            ax[axInd].plot(sEmFields, emFields['Ez']/1e6, lineStyle, color=color)
             # , color=DEFAULT_COLOR_CYCLE[0]
             ax[axInd].set_xlim(sLims)
             EzLims = np.array([
@@ -244,39 +260,36 @@ def plot_transport(
         elif quantity == 'BeamPosition':
             noMarkers = 20
             markEvery = int(len(s) / noMarkers)
+            markersPerMeter = 1.  # [m]
+            markEvery = int(len(s) / (s[-1] - s[0]) / markersPerMeter)
             if markEvery < 1:
                 markEvery = 1
-            p = ax[axInd].plot(s, transpTab['mean_X'], '-v', markevery=markEvery)
+            p = ax[axInd].plot(
+                s, transpTab[meanXName], lineStyle+'v', markevery=markEvery, color=color)
             ax[axInd].plot(
-                s, transpTab['mean_Y'], '-^', markevery=markEvery, color=p[0].get_color())
+                s, transpTab[meanYName],
+                lineStyle+'^', markevery=markEvery, color=p[0].get_color())
             ax[axInd].set_xlim(sLims)
             beamPositionLims = np.array([
-                np.min([
-                    ax[axInd].get_ylim()[0],
-                    transpTab[['mean_X', 'mean_Y']].stack().min()]),
-                np.max([
-                    ax[axInd].get_ylim()[1],
-                    transpTab[['mean_X', 'mean_Y']].stack().max()])])
+                np.min([ax[axInd].get_ylim()[0], transpTab[[meanXName, meanYName]].stack().min()]),
+                np.max([ax[axInd].get_ylim()[1], transpTab[[meanXName, meanYName]].stack().max()])])
             ax[axInd].set_ylim(beamPositionLims)
-            ax[axInd].set_xlabel('s [m]')
             ax[axInd].set_ylabel('Beam pos. [mm]')
             ax[axInd].legend(['x', 'y'])
             ax[axInd].grid(True)
         elif quantity == 'mean_E':
-            ax[axInd].plot(s, transpTab['mean_E'])
+            ax[axInd].plot(s, transpTab['mean_E'], lineStyle, color=color)
             ax[axInd].set_xlim(sLims)
             Elims = np.array([
                 np.min([ax[axInd].get_ylim()[0], transpTab['mean_E'].min()]),
                 np.max([ax[axInd].get_ylim()[1], transpTab['mean_E'].max()])])
             ax[axInd].set_ylim(Elims)
-            ax[axInd].set_xlabel('s [m]')
             ax[axInd].set_ylabel('E [MeV]')
             ax[axInd].grid(True)
         elif quantity == 'CaptureEfficiency':
             ax[axInd].plot(
-                captureEff['s']/1e3+sShiftEMFields+sShiftGlobal,
-                captureEff['CaptureEfficiency']*normFactorCaptureEff, '--'
-            )
+                sCaptureEff, captureEff['CaptureEfficiency']*normFactorCaptureEff,
+                lineStyle, color=color)
             ax[axInd].set_xlim(sLims)
             ax[axInd].set_ylim([0, 1])
             ax[axInd].set_ylabel('Capture eff.')
@@ -284,13 +297,18 @@ def plot_transport(
         elif quantity == 'Emittances':
             noMarkers = 20
             markEvery = int(len(s) / noMarkers)
+            markersPerMeter = 1.  # [m]
+            markEvery = int(len(s) / (s[-1] - s[0]) / markersPerMeter)
             if markEvery < 1:
                 markEvery = 1
-            p = ax[axInd].plot(s, transpTab['emitt_x']/1e3, '-v', markevery=markEvery)
+            p = ax[axInd].plot(
+                s, transpTab['emitt_x']/1e3, lineStyle+'v', markevery=markEvery, color=color)
             ax[axInd].plot(
-                s, transpTab['emitt_y']/1e3, '-^', markevery=markEvery, color=p[0].get_color())
+                s, transpTab['emitt_y']/1e3,
+                lineStyle+'^', markevery=markEvery, color=p[0].get_color())
             ax[axInd].plot(
-                s, transpTab['emitt_4d']/1e3, '-', markevery=markEvery, color=p[0].get_color())
+                s, transpTab['emitt_4d']/1e3,
+                lineStyle, markevery=markEvery, color=p[0].get_color())
             ax[axInd].set_xlim(sLims)
             emitLims = np.array([
                 np.min([
@@ -300,18 +318,21 @@ def plot_transport(
                     ax[axInd].get_ylim()[1],
                     transpTab[['emitt_x', 'emitt_y', 'emitt_4d']].stack().max()])])
             ax[axInd].set_ylim(emitLims/1e3)
-            ax[axInd].set_xlabel('s [m]')
             ax[axInd].set_ylabel('Emitt. [pimmrad]')
             ax[axInd].legend(['x (2d)', 'y (2d)', 'Trans. 4d'])
             ax[axInd].grid(True)
         elif quantity == 'Sigmas':
             noMarkers = 20
             markEvery = int(len(s) / noMarkers)
+            markersPerMeter = 1.  # [m]
+            markEvery = int(len(s) / (s[-1] - s[0]) / markersPerMeter)
             if markEvery < 1:
                 markEvery = 1
-            p = ax[axInd].plot(s, transpTab[sigmaXName], '--v', markevery=markEvery)
+            p = ax[axInd].plot(
+                s, transpTab[sigmaXName], lineStyle+'v', markevery=markEvery, color=color)
             ax[axInd].plot(
-                s, transpTab[sigmaYName], '--^', markevery=markEvery, color=p[0].get_color())
+                s, transpTab[sigmaYName],
+                lineStyle+'^', markevery=markEvery, color=p[0].get_color())
             ax[axInd].set_xlim(sLims)
             sigmaLims = np.array([
                 np.min([
@@ -320,6 +341,7 @@ def plot_transport(
                     ax[axInd].get_ylim()[1], transpTab[[sigmaXName, sigmaYName]].stack().max()])])
             ax[axInd].set_ylim(sigmaLims)
             ax[axInd].set_ylabel('Sigma [mm]')
+            ax[axInd].legend(['x (2d)', 'y (2d)'])
             ax[axInd].grid(True)
         elif quantity == 'TwissBetas':
             try:
@@ -327,9 +349,11 @@ def plot_transport(
                     np.min([ax[axInd].get_ylim()[0], transpTab['beta_x'].min()]),
                     np.max([ax[axInd].get_ylim()[1], transpTab['beta_y'].max()])
                 ])
-                p = ax[axInd].plot(s, transpTab['beta_x'], '--v', markevery=markEvery)
+                p = ax[axInd].plot(
+                    s, transpTab['beta_x'], lineStyle+'v', markevery=markEvery, color=color)
                 ax[axInd].plot(
-                    s, transpTab['beta_y'], '--^', markevery=markEvery, color=p[0].get_color())
+                    s, transpTab['beta_y'],
+                    lineStyle+'^', markevery=markEvery, color=p[0].get_color())
                 ax[axInd].set_xlim(sLims)
                 ax[axInd].set_ylim(betaLims)
                 ax[axInd].set_ylabel('Betatron function [m]')
