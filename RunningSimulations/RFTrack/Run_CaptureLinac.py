@@ -220,18 +220,46 @@ CHICANE_COLLIM_X_Z_FROM_CENTER = 0.1325  # [m]
 #
 FINAL_L = 1.  # [m]
 #
-TRACKING_VARIANT = 'PositronBunch'
-# TRACKING_VARIANT = 'RefPart1'
-# TRACKING_VARIANT = 'RefPartBacktrack'
-#
-BUNCH_FILEPATH = 'RunningSimulations/RFTrack/YongkeTool_V3/Dat/' + \
-    'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
-RFTRACK_FORMAT = 'rftrack_xp_t'
+TRACKING_VARIANT = 'RefPart'
 BUNCH_PDGID = -11
 PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
 PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
-BUNCH_Z = 0.
-BUNCH_DOWNSAMPLING = 1
+BUNCH_Z = 0.  # [m]
+#
+# TRACKING_VARIANT = 'RefPartBacktrack'
+#
+# TRACKING_VARIANT = 'Bunch'
+# # BUNCH_FILEPATH = 'RunningSimulations/RFTrack/YongkeTool_V3/Dat/' + \
+# #     'TargetOutputPositrons_E6GeV_SpotSize0.5mm_EmittXY15um_ConvTarget5X0.dat'
+# #   Older distribution
+# BUNCH_FILEPATH = 'Data/Geant4/CaptureSystemV0_20230414/Target_trk_output_amor_leave_positrons.dat'
+# #   Newer distribution
+# RFTRACK_FORMAT = 'rftrack_xp_t'
+# BUNCH_PDGID = -11
+# PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
+# PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
+# BUNCH_Z = 0.  # [m]
+# BUNCH_DOWNSAMPLING = 5
+# or
+# TRACKING_VARIANT = 'Bunch'
+# BUNCH_FILEPATH = 'Data/Geant4/CaptureSystemV0_20230414/Target_trk_output_amor_leave_electrons.dat'
+# RFTRACK_FORMAT = 'rftrack_xp_t'
+# BUNCH_PDGID = +11  # -11 = positrons, +11 = electrons
+# PARTICLE_CHARGE = -1  # [e], +1 = positrons, -1 = electrons
+# PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
+# BUNCH_Z = 0.  # [m]
+# BUNCH_DOWNSAMPLING = 5
+# or
+# TRACKING_VARIANT = 'Bunch'
+# BUNCH_FILEPATH = 'RFTrackOutput/CaptureLinac_After5RFStructs_Z16p35_T16564/' + \
+#     'Bunch6dT_After1stTracking.dat'
+# RFTRACK_FORMAT = 'rftrack_Px_S'
+# BUNCH_PDGID = -11
+# PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
+# PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
+# BUNCH_Z = 16.35  # [m]
+# BUNCH_T = 16563.9507  # [mm/c]
+# BUNCH_DOWNSAMPLING = 1
 #
 AUTOPHASE = True
 #
@@ -352,10 +380,10 @@ if TRACK_AFTER_AMD:
     if not AUTOPHASE:
         tRf = RF_T0  # [mm/c]
     else:
-        t0RefPart1 = REF_PART_1_T0_AUTOPHASE \
+        t0RefPart = REF_PART_1_T0_AUTOPHASE \
             + amdFieldLength / bd.p_to_beta(REF_PART_1_P0_AUTOPHASE, BUNCH_PDGID)  # [mm/c]
-        refPart1Lat = np.array([
-            0., 0., 0., 0., t0RefPart1, REF_PART_1_P0_AUTOPHASE,
+        refPartLat = np.array([
+            0., 0., 0., 0., t0RefPart, REF_PART_1_P0_AUTOPHASE,
             PARTICLE_MASS, PARTICLE_CHARGE, +1.])
         tRf = None
     rfGap = rft.Drift()
@@ -380,7 +408,7 @@ if TRACK_AFTER_AMD:
         try:
             print('Setting rf.t0 = {:f} mm/c'.format(tRf))
         except TypeError:
-            print('Using autophase...')
+            print('Using autophase for RF structure no. {:d}...'.format(structInd+1))
         if RF_FIELDMAP_TYPE == 'SinglePeriod':
             rf = rfttools.rf_struct_from_single_period(
                 rfField, RF_FIELDMAP_DIM, RF_N_PERIODS_PER_STRUCTURE, powerScalingFactor,
@@ -423,8 +451,8 @@ if TRACK_AFTER_AMD:
                 tRf += chicaneGap.get_length() * 1e3  # [mm/c]
     if AUTOPHASE:
         print('Autophasing in lattice...')
-        pzFinalAutophase = lat.autophase(rft.Bunch6d(refPart1Lat))
-        print('pzFinalAutophase 1st tracking = {:e} MeV/c'.format(pzFinalAutophase))
+        pzFinalAutophase = lat.autophase(rft.Bunch6d(refPartLat))
+        print('pzFinalAutophase = {:e} MeV/c'.format(pzFinalAutophase))
     vol.add(lat, 0, 0, amdExitZInVolume, 'entrance')
     # TODO: Simplify script wrt solenoid (analytical or simulated is almost the same)
     if SOLENOID_TYPE != 'HomogeneousChannel':
@@ -489,10 +517,13 @@ if TRACK_AFTER_AMD:
             vol.add(
                 chicaneCollimX, CHICANE_COLLIM_X_OFFSET, 0,
                 chicaneCenter+CHICANE_COLLIM_X_Z_FROM_CENTER, 'entrance')
+    refPartVol = np.array([
+        0., 0., 0., 0., REF_PART_1_Z0_TRACK, REF_PART_1_P0_TRACK,
+        PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_1_T0_TRACK])
     # if AUTOPHASE:
     #     print('Autophasing in volume...')
-    #     pzFinalAutophase = vol.autophase(rft.Bunch6dT(refPart1Vol))
-    #     print('pzFinalAutophase 1st tracking = {:e} MeV/c'.format(pzFinalAutophase))
+    #     pzFinalAutophase = vol.autophase(rft.Bunch6dT(refPartVol))
+    #     print('pzFinalAutophase = {:e} MeV/c'.format(pzFinalAutophase))
 
 if FINAL_L > 0:
     finalDrift = rft.Drift(FINAL_L)
@@ -509,34 +540,35 @@ beamlineSetup[[
     'ElementType', 'zWrtTargetExit', 'zWrtAmdPeakField', 'MechanicalLength', 'Fieldmap'
 ]].to_csv(os.path.join(OUT_REL_PATH, 'BeamlineSetup.dat'), index=None)
 
-vol.dt_mm = 0.2
+vol.dt_mm = 0.4
 vol.tt_dt_mm = 1.  # [mm/c], track the emittance every tt_dt_mm (time)
 vol.tt_select = 'active_in_volume'
-# vol.wp_dt_mm = 0.5e3  # [mm/c], save the distr. on disk every wp_dt_mm (time)
-vol.backtrack_at_entrance = False
+# vol.wp_dt_mm = 0.2e3  # [mm/c], save the distr. on disk every wp_dt_mm (time)
+# vol.backtrack_at_entrance = False
 vol.odeint_algorithm = 'rkf45'  # Options: 'rk2', 'rkf45', 'rk8pd'
 vol.odeint_epsabs = 1e-5
 vol.verbosity = 1  # 0 (default), 1 or 2
 # TODO: Strange things still happening to variable passed to set_s0()
 vol.set_s0(float(BUNCH_Z))
-if TRACKING_VARIANT in ['RefPart1', 'PositronBunch']:
-    if TRACKING_VARIANT == 'PositronBunch':
+if TRACKING_VARIANT in ['RefPart', 'Bunch']:
+    if TRACKING_VARIANT == 'Bunch':
         # TODO: Refactorize, same code in Run_Linac1_Section1_Simple.py
         distrMatNp = np.loadtxt(BUNCH_FILEPATH, skiprows=1)
-        beamIn, _ = bd.convert_rftrack_to_standard_df(
-            rftrackDf=distrMatNp[::BUNCH_DOWNSAMPLING, :], rftrackDfFormat=RFTRACK_FORMAT,
-            s=BUNCH_Z, pdgId=BUNCH_PDGID,
-            Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0])
-        M0 = bd.convert_standard_df_to_rftrack(
-            standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT)[0].to_numpy()
-        bunchPopulation = M0.shape[0]
-        B0_6d = rft.Bunch6d(PARTICLE_MASS, bunchPopulation, PARTICLE_CHARGE, M0)
-        B0_6dT = rft.Bunch6dT(B0_6d)
-    elif TRACKING_VARIANT == 'RefPart1':
-        refPart1Vol = np.array([
-            0., 0., 0., 0., REF_PART_1_Z0_TRACK, REF_PART_1_P0_TRACK,
-            PARTICLE_MASS, PARTICLE_CHARGE, +1., REF_PART_1_T0_TRACK])
-        B0_6dT = rft.Bunch6dT(refPart1Vol)
+        if RFTRACK_FORMAT == 'rftrack_xp_t':
+            beamIn, _ = bd.convert_rftrack_to_standard_df(
+                rftrackDf=distrMatNp[::BUNCH_DOWNSAMPLING, :], rftrackDfFormat=RFTRACK_FORMAT,
+                s=BUNCH_Z, pdgId=BUNCH_PDGID,
+                Qbunch=bd.PART_CONSTS['Q'][BUNCH_PDGID]*distrMatNp.shape[0])
+            M0 = bd.convert_standard_df_to_rftrack(
+                standardDf=beamIn, rftrackDfFormat=RFTRACK_FORMAT)[0].to_numpy()
+            bunchPopulation = M0.shape[0]
+            B0_6d = rft.Bunch6d(PARTICLE_MASS, bunchPopulation, PARTICLE_CHARGE, M0)
+            B0_6dT = rft.Bunch6dT(B0_6d)
+        elif RFTRACK_FORMAT == 'rftrack_Px_S':
+            B0_6dT = rft.Bunch6dT(PARTICLE_MASS, distrMatNp.shape[0], PARTICLE_CHARGE, distrMatNp)
+            B0_6dT.t = BUNCH_T
+    elif TRACKING_VARIANT == 'RefPart':
+        B0_6dT = rft.Bunch6dT(refPartVol)
     vol.set_s1(float(zStop1stTracking))
     vol.t_max_mm = zStop1stTracking * 1e3 + T_ADD_NON_RELATIVISTIC
     print('1st particle tracking ends at s1 = {:f} m or at t_max = {:f} mm/c.'.format(
