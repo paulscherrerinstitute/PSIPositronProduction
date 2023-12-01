@@ -9,12 +9,81 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# INPUT Conventional FODO from 780 MeV #########################################
-TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = 0.  # [m], initialization just to enable output of beamline setup
+# INPUT Conventional FODO from 780 MeV #############################################################
+# TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = 0.  # [m]
+#   initialization just to enable output of beamline setup
+# #
+# TRACK_ONLY_REF_PART = False
+# BUNCH_FILEPATH = 'Data/RFTrack/CaptureLinac/' + \
+#     'PositronLinac_15RFStruct_LBandLargeR_2D_SolenoidsType1and2/' + \
+#     'DistrOut_After2ndTracking_6d.sdf_txt'
+# RFTRACK_FORMAT = 'rftrack_xp_t'
+# BUNCH_PDGID = -11
+# PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
+# PARTICLE_MASS = rft.electronmass   # [MeV/c/c]
+# BUNCH_Z = 0.
+# BUNCH_DOWNSAMPLING = 20
+# FILTER_SPECS_MAIN_BUNCH = 'MainBunch'
+# #
+# TRACK_AFTER_MATCHING_1 = True
+# #
+# # RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+# # RF_FIELDMAP_DIM = '1D'
+# # RF_MOMENTUM_GAIN_PER_STRUCTURE = 59.35  # [MeV/c]
+# # or
+# RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
+# RF_FIELDMAP_DIM = '2D'
+# RF_MOMENTUM_GAIN_PER_STRUCTURE = 59.35  # [MeV/c]
+# #
+# RF_N_PERIODS_PER_STRUCTURE = None
+# RF_FIELDMAP_GRAD = 20e6  # [V/m]
+# RF_N_STRUCTURES = 13  # 13 (1.54 GeV) + 22 (2.84 GeV)
+# RF_L_STRUCTURE = 3.240  # [m]
+# RF_R_APERTURE = 30e-3  # [m]
+# RF_FREQ = 2e9  # [Hz]
+# RF_PHASES = (0., )  # [deg]
+# RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
+# RF_SAMPLING_STEPS_PER_PERIOD = 360. / 5.
+# #
+# INITIAL_L = 0.  # [m]
+# #
+# MATCHING_1 = {
+#     'Type': 'QuadMatching1',
+#     'QuadLength': 0.500000,  # [m]
+#     'QuadStrengths': [-0.193742, 0.560282, -0.600896, 0.501008, -0.442391],  # [1/m2]
+#     'BrhoRef': 780. / PARTICLE_CHARGE,  # [MV/c]
+#     'DriftLength': 3.000000,  # [m]
+#     'RadialAperture': 45e-3,  # [m]
+# }
+# MATCHING_1_STRENGTH_TUNING = 0.9
+# #
+# FODO_1 = {
+#     'Type': 'QuadFodo1',
+#     'QuadLength': 0.350000,  # [m]
+#     'QuadStrength': 0.824542,  # [1/m2]
+#     'BrhoRef': 780. / PARTICLE_CHARGE,  # [MV/c]
+#     'DriftLength': 4.051648,  # [m]
+# }
+# FODO_1_STRENGTH_TUNING = 0.85
+# TODO: _TUNING paraameters far from 1 because setup does not exactly correspond to that determined
+#  with Elegant. This was an oversight which could be easily ocrrected.
+# # Best trial with 1D RF field map:
+# # MATCHING_1_STRENGTH_TUNING = 0.75, FODO_1_STRENGTH_TUNING = 0.75
+# # --> Capture efficiency = 0.925
+# #
+# FINAL_L = 1.  # [m]
+####################################################################################################
+
+# INPUT Conventional FODO from 735 MeV, with Chicane ###############################################
+TARGET_EXIT_Z_WRT_AMD_PEAK_FIELD = 0.  # [m]
+#   initialization just to enable output of beamline setup
+LAT_R_APERTURE = 30e-3  # [m]
+LAT_SAMPLING_STEPS_PER_MM = None  # [1/mm]
 #
 TRACK_ONLY_REF_PART = False
-BUNCH_FILEPATH = 'Data/RFTrack/CaptureLinac/' \
-    'PositronLinac_15RFStruct_LBandLargeR_SolenoidsType1and2/DistrOut_After2ndTracking_6d.sdf_txt'
+BUNCH_FILEPATH = 'RFTrackOutput/Baseline/' + \
+    'PositronLinac_Chicane2m_After5RFStructs_14RFStructs_Positrons/' + \
+    'DistrOut_After2ndTracking_6d.sdf_txt'
 RFTRACK_FORMAT = 'rftrack_xp_t'
 BUNCH_PDGID = -11
 PARTICLE_CHARGE = +1   # [e], +1 = positrons, -1 = electrons
@@ -25,48 +94,49 @@ FILTER_SPECS_MAIN_BUNCH = 'MainBunch'
 #
 TRACK_AFTER_MATCHING_1 = True
 #
-RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
-RF_FIELDMAP_DIM = '1D'
+# RF_FIELDMAP = 'RunningSimulations/RFTrack/YongkeTool_V3/field/field_map_LargeR_Lband.dat'
+# RF_FIELDMAP_DIM = '1D'
+# RF_MOMENTUM_GAIN_PER_STRUCTURE = 59.35  # [MeV/c]
+# or
+# RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_YZplane_dy2mm_dz0p1L.dat'
+RF_FIELDMAP = 'Data/Fieldmaps/pLinacF3_full44cells_m2_YZplane_dy1mm_dz0p025L.dat'
+RF_FIELDMAP_DIM = '2D'
+RF_SMOOTH = 0
+RF_MOMENTUM_GAIN_PER_STRUCTURE = 58.42  # [MeV/c]
+#
 RF_N_PERIODS_PER_STRUCTURE = None
 RF_FIELDMAP_GRAD = 20e6  # [V/m]
-RF_N_STRUCTURES = 13 + 22  # 13 (1.54 GeV) + 22 (2.84 GeV)
+RF_N_STRUCTURES = 14  # 14 (1.54 GeV) + 22 (2.84 GeV)
 RF_L_STRUCTURE = 3.240  # [m]
-RF_R_APERTURE = None
-#   Current RF_L_STRUCTURE including RF_SEPARATION = 3.207 m
+RF_R_APERTURE = 30e-3  # [m]
 RF_FREQ = 2e9  # [Hz]
-RF_L_CELL = bd.C / RF_FREQ * 9./20.  # [m]
-# RF_L_FLANGE = xxx  # [m]
-# RF_L_MECH_MARGIN = xxx  # [m]
 RF_PHASES = (0., )  # [deg]
 RF_SET_GRADIENTS = (20e6, 20e6, 20e6, 20e6, 20e6)  # [V/m]
-RF_SEPARATION = RF_L_STRUCTURE - 3.207140  # [m], struct. separation partially included in fieldmap
-RF_SAMPLING_STEPS_PER_PERIOD = 360. / 5.
-RF_MOMENTUM_GAIN_PER_STRUCTURE = 59.35  # [MeV/c]
+RF_SAMPLING_STEPS_PER_PERIOD = 360. / 1.
 #
 INITIAL_L = 0.  # [m]
 #
 MATCHING_1 = {
     'Type': 'QuadMatching1',
     'QuadLength': 0.500000,  # [m]
-    'QuadStrengths': [-0.193742, 0.560282, -0.600896, 0.501008, -0.442391],  # [1/m2]
-    'BrhoRef': 780. / PARTICLE_CHARGE,  # [MV/c]
-    'DriftLength': 3.000000,  # [m]
+    'QuadStrengths': [-0.153088, 0.564855, -0.691750, 0.428890, -0.441825],  # [1/m2]
+    'BrhoRef': 735. / PARTICLE_CHARGE,  # [MV/c]
+    'DriftLength': 2.000000,  # [m]
     'RadialAperture': 45e-3,  # [m]
 }
-MATCHING_1_STRENGTH_TUNING = 0.75
+MATCHING_1_STRENGTH_TUNING = 1.0
 #
 FODO_1 = {
     'Type': 'QuadFodo1',
     'QuadLength': 0.350000,  # [m]
-    'QuadStrength': 0.824542,  # [1/m2]
-    'BrhoRef': 780. / PARTICLE_CHARGE,  # [MV/c]
-    'DriftLength': 4.051648,  # [m]
-    'RadialAperture': 30e-3,  # [m]
+    'QuadStrength': 0.8404469,  # [1/m2]
+    'BrhoRef': 735. / PARTICLE_CHARGE,  # [MV/c]
+    'DriftLength': 4.005464,  # [m]
 }
-FODO_1_STRENGTH_TUNING = 0.75
+FODO_1_STRENGTH_TUNING = 1.0
 # Best trial:
-# MATCHING_1_STRENGTH_TUNING = 0.75, FODO_1_STRENGTH_TUNING = 0.75
-# --> Capture efficiency = 0.925
+#   MATCHING_1_STRENGTH_TUNING = , FODO_1_STRENGTH_TUNING =
+#   --> Capture efficiency = 0.925
 #
 FINAL_L = 1.  # [m]
 ###################################################################################################
