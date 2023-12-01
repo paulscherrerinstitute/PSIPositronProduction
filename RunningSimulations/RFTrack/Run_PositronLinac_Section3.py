@@ -85,21 +85,17 @@ lat = rft.Lattice()
 # TODO: Is the following not allowed as in Volume()?
 # lat.set_aperture(LAT_R_APERTURE, LAT_R_APERTURE, 'circular')
 beamlineSetup = pd.DataFrame(
-    columns=['ElementType', 'zWrtTargetExit', 'MechanicalLength', 'Fieldmap']
-)
+    columns=['ElementType', 'zWrtTargetExit', 'MechanicalLength', 'Fieldmap'])
 
-refPart1 = bd.get_json_entry(
-    BUNCH_FILEPATH, FILTER_SPECS_MAIN_BUNCH, 'RefParticle1')
+refPart1 = bd.get_json_entry(BUNCH_FILEPATH, FILTER_SPECS_MAIN_BUNCH, 'RefParticle1')
 refPart1 = np.array([
-    0., 0., 0., 0., refPart1['t']*bd.C*1e-6, refPart1['pz'], PARTICLE_MASS, PARTICLE_CHARGE, +1.
-])
+    0., 0., 0., 0., refPart1['t']*bd.C*1e-6, refPart1['pz'], PARTICLE_MASS, PARTICLE_CHARGE, +1.])
 
 zFinal = 0.  # [m]
 if INITIAL_L > 0:
     initialDrift = rft.Drift(INITIAL_L)
     initialDrift.set_aperture(
-        MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular'
-    )
+        MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular')
     lat.append(initialDrift)
     zFinal += initialDrift.get_length()
 
@@ -120,32 +116,16 @@ for quadStrength in MATCHING_1['QuadStrengths']:
 
 quadPolarity = 1.
 quadFodo1 = rft.Quadrupole(FODO_1['QuadLength'], 0)
-quadFodo1.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
-# if not TRACK_AFTER_MATCHING_1:
-#     # TODO: Refactorize
-#     driftFodo1 = rft.Drift(FODO_1['DriftLength'])
-#     driftFodo1.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
-#     for cellInd in range(5):
-#         lat.append(quadTmp)
-#         quadPolarity *= -1
-#         beamlineSetup.loc[len(beamlineSetup.index)] = [
-#             'QuadFodo1', zFinal, FODO_1['QuadLength'],
-#             '(no fieldmap, z indicates quad starting edge)'
-#         ]
-#         lat.append(driftFodo1)
-#         zFinal += quadTmp.get_length() + driftFodo1.get_length()
+    quadFodo1.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
 if TRACK_AFTER_MATCHING_1:
     # TODO: Refactorize this?
     if RF_N_PERIODS_PER_STRUCTURE is not None:
         rf = rfttools.rf_struct_from_single_period(
-            RF_FIELDMAP, RF_FIELDMAP_DIM, RF_N_PERIODS_PER_STRUCTURE, None,
-            None, None, aperture=FODO_1['RadialAperture']
-        )
+            rfField, RF_FIELDMAP_DIM, RF_N_PERIODS_PER_STRUCTURE, None, None, None,
+            aperture=RF_R_APERTURE)
     else:
-        rf = rfttools.rf_struct_from_full_fieldmap(
-            RF_FIELDMAP, RF_FIELDMAP_DIM, None,
-            None, None, aperture=FODO_1['RadialAperture']
-        )
+        rf = rfttools.rf_from_field_map(
+            rfField, RF_FIELDMAP_DIM, None, None, None, smooth=RF_SMOOTH, aperture=RF_R_APERTURE)
     rf.set_nsteps(int(rf.get_length() / (bd.C/RF_FREQ) * RF_SAMPLING_STEPS_PER_PERIOD))
     BrhoRef = FODO_1['BrhoRef']
     quadRfGap = rft.Drift((FODO_1['DriftLength'] - rf.get_length()) / 2.)
@@ -178,8 +158,7 @@ if TRACK_AFTER_MATCHING_1:
         lat.append(rf)
         zFinal += rf.get_length() / 2.
         beamlineSetup.loc[len(beamlineSetup.index)] = [
-            'RF', zFinal, RF_L_STRUCTURE, os.path.basename(RF_FIELDMAP)
-        ]
+            'RF', zFinal, RF_L_STRUCTURE, os.path.basename(RF_FIELDMAP)]
         zFinal += rf.get_length() / 2.
         BrhoRef += RF_MOMENTUM_GAIN_PER_STRUCTURE
         # Drift
@@ -202,15 +181,15 @@ beamlineSetup[[
 ]].to_csv(os.path.join(OUT_REL_PATH, 'BeamlineSetup.dat'), index=None)
 
 # TODO: Verify tracking options with Andrea
-trackingOpts = rft.TrackingOptions()
-trackingOpts.tt_dt_mm = 1.   # [mm/c], track the emittance every tt_dt_mm (time)
-trackingOpts.wp_dt_mm = 0.5e3   # [mm/c], save the distr. on disk every wp_dt_mm (time)
-trackingOpts.backtrack_at_entrance = False
-trackingOpts.odeint_algorithm = 'rkf45'   # Options: 'rk2', 'rkf45', 'rk8pd'
-# TODO: Following parameter in Lattice()?
+# trackingOpts = rft.TrackingOptions()
+lat.backtrack_at_entrance = False
+lat.odeint_algorithm = 'rkf45'  # Options: 'rk2', 'rkf45', 'rk8pd'
+lat.odeint_epsabs = 1e-5
+lat.verbosity = 1  # 0 (default), 1 or 2
+# TODO: Following parameters in Lattice()?
 # trackingOpts.dt_mm = 0.2
-trackingOpts.odeint_epsabs = 1e-5
-trackingOpts.verbosity = 1   # 0 (default), 1 or 2
+# trackingOpts.tt_dt_mm = 1.  # [mm/c], track the emittance every tt_dt_mm (time)
+# trackingOpts.wp_dt_mm = 0.5e3  # [mm/c], save the distr. on disk every wp_dt_mm (time)
 
 if TRACK_ONLY_REF_PART:
     B1_6d = lat.track(rft.Bunch6dT(refPart1))
@@ -219,11 +198,11 @@ else:
 M1_6d = B1_6d.get_phase_space("%x %xp %y %yp %t %Pc")
 bd.convert_rftrack_to_standard_df(
     rftrackDf=M1_6d, rftrackDfFormat='rftrack_xp_t', s=zFinal*1e3, pdgId=BUNCH_PDGID,
-    outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_6d')
-)
+    outFwfPath=os.path.join(OUT_REL_PATH, 'DistrOut_6d'))
 
 fig1, ax1 = plt.subplots(9, 1)
 rfttools.save_plot_transport(ax1, lat, B0_6d, B1_6d, OUT_REL_PATH)
 plt.show(block=False)
 
-input("Press Enter to continue...")
+print("Continue debugging to close...")
+print("... closed!")
