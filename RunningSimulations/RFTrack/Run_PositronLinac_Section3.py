@@ -1,4 +1,5 @@
 import RF_Track as rft
+import OctavePythonInterface as opi
 import RFTrackTools as rfttools
 import BeamDynamics as bd
 import SimulationData as sd
@@ -122,6 +123,7 @@ quadFodo1 = rft.Quadrupole(FODO_1['QuadLength'], 0)
 if RF_R_APERTURE is not None:
     quadFodo1.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
 if TRACK_AFTER_MATCHING_1:
+    rfField = opi.load_octave_matrices(RF_FIELDMAP)
     # TODO: Refactorize this?
     if RF_N_PERIODS_PER_STRUCTURE is not None:
         rf = rfttools.rf_struct_from_single_period(
