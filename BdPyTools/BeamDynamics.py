@@ -363,11 +363,11 @@ def check_distribution_offsets(
             if verbose:
                 print(
                     'Correcting offsets {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'
-                        .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits))
+                    .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits))
         else:
             print(
                 'Offset cannot be corrected with {:s}Avg = {:.3f} mm and {:s}Avg = {:.3f} {:s}.'
-                    .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits))
+                .format(planeName, uAvg, uDivName, uDivAvg, uDivUnits))
     return u, uDiv
 
 
