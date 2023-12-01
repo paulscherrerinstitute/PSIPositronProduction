@@ -107,12 +107,13 @@ for quadStrength in MATCHING_1['QuadStrengths']:
     quadTmp = rft.Quadrupole(MATCHING_1['QuadLength'], quadStrengthRftrack)
     quadTmp.set_aperture(MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular')
     lat.append(quadTmp)
+    zFinal += quadTmp.get_length() / 2.
     beamlineSetup.loc[len(beamlineSetup.index)] = [
         'QuadMatching1', zFinal, MATCHING_1['QuadLength'],
-        '{:.3f} MV/c/m (no fieldmap)'.format(quadTmp.get_strength())
-    ]
+        '{:.3f} MV/c/m (no fieldmap)'.format(quadTmp.get_strength())]
+    zFinal += quadTmp.get_length() / 2.
     lat.append(driftMatching1)
-    zFinal += quadTmp.get_length() + driftMatching1.get_length()
+    zFinal += driftMatching1.get_length()
 
 quadPolarity = 1.
 quadFodo1 = rft.Quadrupole(FODO_1['QuadLength'], 0)
@@ -136,10 +137,12 @@ if TRACK_AFTER_MATCHING_1:
         quadStrengthRftrack = FODO_1['QuadStrength'] * FODO_1['QuadLength'] * BrhoRef  # [MV/c/m]
         quadFodo1.set_strength(quadPolarity*quadStrengthRftrack*FODO_1_STRENGTH_TUNING)
         lat.append(quadFodo1)
+        zFinal += quadFodo1.get_length() / 2.
         beamlineSetup.loc[len(beamlineSetup.index)] = [
             'QuadFodo1', zFinal, FODO_1['QuadLength'],
             '{:.3f} MV/c/m (no fieldmap)'.format(quadFodo1.get_strength())
         ]
+        zFinal += quadFodo1.get_length() / 2.
         quadPolarity *= -1
         # Drift
         lat.append(quadRfGap)
