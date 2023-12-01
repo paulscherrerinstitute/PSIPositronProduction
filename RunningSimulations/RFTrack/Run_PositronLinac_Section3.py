@@ -106,6 +106,8 @@ for quadStrength in MATCHING_1['QuadStrengths']:
             * MATCHING_1_STRENGTH_TUNING  # [MV/c/m]
     quadTmp = rft.Quadrupole(MATCHING_1['QuadLength'], quadStrengthRftrack)
     quadTmp.set_aperture(MATCHING_1['RadialAperture'], MATCHING_1['RadialAperture'], 'circular')
+    if LAT_SAMPLING_STEPS_PER_MM is not None:
+        quadTmp.set_nsteps(int(quadTmp.get_length() * 1e3 * LAT_SAMPLING_STEPS_PER_MM))
     lat.append(quadTmp)
     zFinal += quadTmp.get_length() / 2.
     beamlineSetup.loc[len(beamlineSetup.index)] = [
@@ -136,6 +138,8 @@ if TRACK_AFTER_MATCHING_1:
         # Quad
         quadStrengthRftrack = FODO_1['QuadStrength'] * FODO_1['QuadLength'] * BrhoRef  # [MV/c/m]
         quadFodo1.set_strength(quadPolarity*quadStrengthRftrack*FODO_1_STRENGTH_TUNING)
+        if LAT_SAMPLING_STEPS_PER_MM is not None:
+            quadFodo1.set_nsteps(int(quadTmp.get_length() * 1e3 * LAT_SAMPLING_STEPS_PER_MM))
         lat.append(quadFodo1)
         zFinal += quadFodo1.get_length() / 2.
         beamlineSetup.loc[len(beamlineSetup.index)] = [
