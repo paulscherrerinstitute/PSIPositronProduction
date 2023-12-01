@@ -17,7 +17,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
+	p_central		 			= 1438.36,   ! Relativistic beta*gamma at 735 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -29,15 +29,15 @@
 &optimization_setup
 	verbose 					= 1,
 	equation 					= "
-									MATCHING.END#1.betax 14.537345 - abs
-									MATCHING.END#1.betay 3.488415 - abs +
-									MATCHING.END#1.alphax 0.0 - abs 10.0 * +
-									MATCHING.END#1.alphay 0.0 - abs 10.0 * +
+									MATCHING.END#1.betax 14.3836 - abs
+									MATCHING.END#1.betay 3.39553 - abs +
+									MATCHING.END#1.alphax 0.0 - abs 5.0 * +
+									MATCHING.END#1.alphay 0.0 - abs 5.0 * +
 								  ",
 	mode 						= "minimize",
 	method 						= "simplex",
 	target 						= 1e-6,
-	tolerance 					= 1e-4,
+	tolerance 					= 1e-5,
 	n_passes 					= 5,
 	n_evaluations 				= 1000,
 	log_file 					= /dev/tty,
@@ -90,16 +90,16 @@
 &twiss_output
 	filename					= %s.twi,
 	matched						= 0,
-	beta_x						= 6.742,
-	beta_y						= 7.333,
-	alpha_x						= -0.204,
-	alpha_y						= -0.198,
+	beta_x						= 7.850,
+	beta_y						= 6.938,
+	alpha_x						= -0.158,
+	alpha_y						= -0.0608,
 &end
 
 &sdds_beam
 	input_type					= "elegant",
 	sample_interval				= 1,
-	input						= ../../../Data/RFTrackResults/CaptureLinac/PositronLinac_15RFStruct_LBandLargeR_SolenoidsType1and2/DistrOut_After2ndTracking_6d.sdds,
+	input						= ../../../../Data/RFTrack/CaptureLinac/PositronLinac_Chicane2m_After5RFStructs_14RFStructs_Positrons_Downsampled10/DistrOut_After1stTracking_6d.sdds,
 	reuse_bunch					= 1
 &end
 
@@ -130,7 +130,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
+	p_central		 			= 1438.36,   ! Relativistic beta*gamma at 735 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -142,8 +142,8 @@
 &twiss_output
 	filename					= %s.twi,
 	matched						= 0,
-	beta_x						= 6.742,
-	beta_y						= 7.333,
-	alpha_x						= -0.204,
-	alpha_y						= -0.198,
+	beta_x						= 7.850,
+	beta_y						= 6.938,
+	alpha_x						= -0.158,
+	alpha_y						= -0.0608,
 &end

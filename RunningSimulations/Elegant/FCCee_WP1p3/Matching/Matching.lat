@@ -1,12 +1,12 @@
 Q: CHARGE, TOTAL=5.0e-9
 Drift.Start: DRIFT, L=0.0
 Drift.Matching: DRIFT, L=2.0
-"QUAD.M1": QUAD,L=0.5,K1=-0.1937416045176161
-"QUAD.M2": QUAD,L=0.5,K1=0.560282075836015
-"QUAD.M3": QUAD,L=0.5,K1=-0.6008962646950103
-"QUAD.M4": QUAD,L=0.5,K1=0.501007796544451
-"QUAD.M5": QUAD,L=0.5,K1=-0.4423907375054597
-Quad.Foc.HalfSlice: QUADRUPOLE, L=0.175, K1=0.824542
+"QUAD.M1": QUAD,L=0.5,K1=-0.153088
+"QUAD.M2": QUAD,L=0.5,K1=0.564855
+"QUAD.M3": QUAD,L=0.5,K1=-0.691750
+"QUAD.M4": QUAD,L=0.5,K1=0.428890
+"QUAD.M5": QUAD,L=0.5,K1=-0.441825
+Quad.Foc.HalfSlice: QUADRUPOLE, L=0.175, K1=0.8404469
 Matching.Start: MARKER, FITPOINT=1
 Matching.End: MARKER, FITPOINT=1
 Match: Line=(Q, Matching.Start, Drift.Start, Quad.M1, Drift.Matching, Quad.M2, Drift.Matching, Quad.M3, Drift.Matching, Quad.M4, Drift.Matching, Quad.M5, Drift.Matching, Quad.Foc.HalfSlice, Matching.End)
