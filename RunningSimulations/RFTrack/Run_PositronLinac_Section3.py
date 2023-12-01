@@ -119,6 +119,7 @@ for quadStrength in MATCHING_1['QuadStrengths']:
 
 quadPolarity = 1.
 quadFodo1 = rft.Quadrupole(FODO_1['QuadLength'], 0)
+if RF_R_APERTURE is not None:
     quadFodo1.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
 if TRACK_AFTER_MATCHING_1:
     # TODO: Refactorize this?
@@ -132,8 +133,8 @@ if TRACK_AFTER_MATCHING_1:
     rf.set_nsteps(int(rf.get_length() / (bd.C/RF_FREQ) * RF_SAMPLING_STEPS_PER_PERIOD))
     BrhoRef = FODO_1['BrhoRef']
     quadRfGap = rft.Drift((FODO_1['DriftLength'] - rf.get_length()) / 2.)
-    # TODO: Work with RF_R_APERTURE
-    quadRfGap.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
+    if RF_R_APERTURE is not None:
+        quadRfGap.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
     for structInd in np.arange(RF_N_STRUCTURES):
         # Quad
         quadStrengthRftrack = FODO_1['QuadStrength'] * FODO_1['QuadLength'] * BrhoRef  # [MV/c/m]
@@ -177,7 +178,8 @@ if TRACK_AFTER_MATCHING_1:
 
 if FINAL_L > 0:
     finalDrift = rft.Drift(FINAL_L)
-    finalDrift.set_aperture(FODO_1['RadialAperture'], FODO_1['RadialAperture'], 'circular')
+    if RF_R_APERTURE is not None:
+        finalDrift.set_aperture(RF_R_APERTURE, RF_R_APERTURE, 'circular')
     lat.append(finalDrift)
     zFinal += finalDrift.get_length()
 
