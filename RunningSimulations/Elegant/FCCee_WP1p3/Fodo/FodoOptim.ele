@@ -17,7 +17,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 1526.42,   ! Relativistic beta*gamma at 780 MeV/c
+	p_central		 			= 1438.36,   ! Relativistic beta*gamma at 735 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -41,8 +41,9 @@
 	equation 					= "
 									FODO.END#1.betax FODO.START#1.betax - abs
 									FODO.END#1.psix 1.33248 - abs +
+									FODO.END#1.betay FODO.START#1.betay - abs +
+									FODO.END#1.psiy 1.33248 - abs +
 								  ",
-									!FODO.END#1.psiy 1.33248 - abs +
 	mode 						= "minimize",
 	method 						= "simplex",
 	target 						= 1e-6,
@@ -81,8 +82,8 @@
 &twiss_output
 	filename					= %s.twi,
 	matched						= 0,
-	beta_x						= 14.537345,
-	beta_y						= 3.431833,
+	beta_x						= 14.3836,
+	beta_y						= 3.39553,
 	alpha_x						= 0,
 	alpha_y						= 0,
 &end
@@ -91,15 +92,15 @@
 	bunch						= %s.bun,
 	n_particles_per_bunch 		= 10000,
 	time_start 					= 0,
-	emit_nx 					= 10500e-6,
-	beta_x 						= 14.537345,
+	emit_nx 					= 10000e-6,
+	beta_x 						= 14.3836,
 	alpha_x 					= 0,
 	eta_x						= 0,
-	emit_ny 					= 10500e-6,
-	beta_y 						= 3.431833,
+	emit_ny 					= 10000e-6,
+	beta_y 						= 3.39553,
 	alpha_y 					= 0,
 	eta_y						= 0,
-	Po 							= 1526.42
+	Po 							= 1438.36,   ! Relativistic beta*gamma at 735 MeV/c
 	sigma_dp 					= 0.001,
 	sigma_s 					= 1e-3,
 	dp_s_coupling 				= 0,
@@ -144,7 +145,7 @@
 	concat_order		 		= 0,
 	print_statistics	 		= 0,
 	random_number_seed	 		= 9876543210,
-	p_central		 			= 1526.42
+	p_central		 			= 1438.36,   ! Relativistic beta*gamma at 735 MeV/c
 	tracking_updates	 		= 1,
 	always_change_p0	 		= 1
 &end
@@ -156,8 +157,8 @@
 &twiss_output
 	filename	= %s.twi,
 	matched		= 0,
-	beta_x		= 14.537345,
-	beta_y		= 3.431833,
+	beta_x		= 14.3836,
+	beta_y		= 3.39553,
 	alpha_x		= 0,
 	alpha_y		= 0
 &end
